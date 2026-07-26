@@ -41,7 +41,46 @@ Get-Content C:\Temp\out.log -Encoding Unicode
 
 ---
 
-## ⚠️ ข้อจำกัดที่ยังแก้ไม่ได้: รัน test แบบ headless ไม่ได้
+---
+
+## ✅ รัน test อัตโนมัติได้แล้ว (2026-07-27)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File D:\ea-farm\tools\run-mql5-tests.ps1
+```
+
+deploy → compile → Strategy Tester → parse JSON → เทียบ `git_sha` กับ HEAD ในคำสั่งเดียว
+พิสูจน์ครบทุกขั้นด้วย `tools/probe/TesterProbe.mq5` (รันจบ 8 วินาที)
+
+### สภาพแวดล้อมที่ใช้ได้จริง — ตรวจแล้ว
+
+| หัวข้อ | ค่า | ทำไมสำคัญ |
+|--------|-----|-----------|
+| Terminal สำหรับ **compile** | `C:\Program Files\MetaTrader 5\metaeditor64.exe` | คอมไพล์ไม่ต้องมีบัญชี |
+| Terminal สำหรับ **รัน test** | `C:\Program Files\IUX Markets MT5 Terminal3\terminal64.exe` | ★ Strategy Tester **ต้องมีบัญชี+history** และมีแค่ตัวนี้ที่มี (`IUXMarkets-Demo`) — data folder ของ `MetaTrader 5` มีแต่ log เปล่า |
+| Data folder | `…\Terminal\A45801173FBAFA01B9AFF0EEDE7938E3` | ที่วาง EA + Include + `.set` |
+| Symbol | `EURUSD.iux` | ★ มี suffix `.iux` ใส่ `EURUSD` เปล่าๆ tester abort |
+| ช่วง history | 2025.01.01 – 2026.06.19 (H1) | ★ วันที่นอกช่วงนี้ tester abort |
+| ผลลัพธ์ | `…\Terminal\Common\Files\ea-farm-<suite>-result.json` | `FILE_COMMON` |
+
+### 5 กับดักที่เสียเวลาไปแล้ว — อย่าทำซ้ำ
+
+1. **`.set` ค่า string ต้องเป็น `Name=value` เปล่าๆ** — suffix `||||N` (ที่ใช้กับ numeric
+   param ตอน optimize) จะกลายเป็น**ส่วนหนึ่งของ string** → เจอ `FileOpen err=5004`
+   เพราะชื่อไฟล์กลายเป็น `result.json||||N`
+2. **★ EA ที่เรียก `ExpertRemove()` ใน `OnInit` → tester log ว่า `tester stopped because
+   OnInit failed` และ terminal exit code = 0** ทั้งที่ test รันสำเร็จทุกตัว
+   → **ห้ามตัดสินผลจาก exit code เด็ดขาด อ่านไฟล์ JSON อย่างเดียว**
+3. **`FILE_UTF8` ไม่มีใน MQL5** — ต้อง `FILE_BIN` + `StringToCharArray(..., CP_UTF8)`
+   ดูตัวอย่างที่รันได้จริงใน `tools/probe/TesterProbe.mq5`
+4. **ต้อง copy `Include\Farm` เข้า data folder ก่อน** — `#include <Farm/...>` ใน data folder
+   ไม่เห็นไฟล์ใน repo
+5. **ไฟล์ผลอาจเป็นของรอบเก่า** — runner เช็ค mtime + `git_sha` ว่าตรง HEAD ทั้งคู่
+   ไม่งั้นจะอ่านผลเก่าแล้วนึกว่าเขียว
+
+---
+
+## ⚠️ ข้อจำกัดเดิม (แก้แล้ว — เก็บไว้เป็นบันทึก): รัน test แบบ headless ไม่ได้
 
 `tests/mql5/TestWire.mq5` เป็น **Script** (`OnStart()`) และ **MT5 รัน Script แบบ
 command-line ไม่ได้** — ต้องลากลงชาร์ตด้วยมือเท่านั้น

@@ -117,7 +117,7 @@
 | # | เรื่อง | สถานะ | บันทึกเมื่อ |
 |---|-------|-------|------------|
 | ~~D1~~ | ~~Path โปรเจกต์มีอักษรไทย + เว้นวรรค — MQL5 compiler, venv, git บน Windows มีปัญหา encoding~~ | ✅ **แก้แล้ว** — ย้าย repo มา `D:\ea-farm` + `git init -b main` + `.gitattributes` บังคับ LF | 2026-07-26 |
-| D2 | ยังไม่เลือกโบรกเกอร์/สเปก VPS — กระทบ spread model ใน backtest (SPEC-032) | ⏳ ต้องรู้ก่อน Phase 3 | 2026-07-26 |
+| D2 | โบรกเกอร์/สเปก VPS — กระทบ spread model ใน backtest (SPEC-032) | 🟡 **พบหลักฐาน: IUX Markets** (บัญชี `IUXMarkets-Demo` ใน MT5 บนเครื่องนี้ · 15 symbol · EURUSD.iux H1 history 2025.01.01–2026.06.19) — รอเจ้าของยืนยันว่าใช้รายนี้จริงและมีสเปก VPS ไหม | 2026-07-27 |
 | ~~D3~~ | ~~netting หรือ hedging account — กระทบ `OrderRouter` logic โดยตรง~~ | ✅ **ตัดสินแล้ว: hedging** → [ADR-001](decisions/ADR-001-hedging-account.md) · SPEC-011 เขียนครบแล้ว | 2026-07-26 |
 | D4 | ยังไม่กำหนดชุด symbol และ timeframe หลัก | ⏳ ต้องรู้ก่อน SPEC-007 (default: EURUSD H1 สำหรับ dev) | 2026-07-26 |
 | D5 | ยังไม่กำหนดจำนวนบัญชี/ทุนต่อบัญชีเป้าหมาย — กระทบ P1–P6 threshold | ⏳ ต้องรู้ก่อน SPEC-025 | 2026-07-26 |

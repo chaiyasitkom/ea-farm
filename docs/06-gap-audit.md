@@ -109,10 +109,15 @@ bar timestamp alignment, และ **backtest/live parity** (SPEC-033) ซึ่
 ถ้าไม่มี canonical name จะมองว่า `EURUSD.a` กับ `EURUSDm` เป็นสองสินทรัพย์
 → exposure ต่อ EUR ถูกนับแยก → **ทะลุ limit จริงโดยที่ตัวเลขดูปลอดภัย**
 
+**✅ ยืนยันแล้วว่าเป็นปัญหาจริง ไม่ใช่ทฤษฎี (2026-07-27):** โบรกเกอร์บนเครื่องนี้ (IUX Markets)
+ใช้ suffix `.iux` ทุกตัว — `EURUSD.iux` · `XAUUSD.iux` · `BTCUSD.iux` ครบ 15 symbol
+เจอตอนตั้ง Strategy Tester harness (tester abort ถ้าใส่ `EURUSD` เปล่าๆ)
+
 | | |
 |---|---|
 | **ต้องทำ** | SPEC-064 SymbolRegistry — map `(broker, raw_symbol) → canonical` + base/quote currency + asset class |
 | **Phase** | ต้องเสร็จก่อน SPEC-024 (currency decomposition) |
+| **ยกระดับ** | 🟡 MEDIUM → 🟠 **HIGH** — ยืนยันแล้วว่าเกิดจริงบนโบรกเกอร์ที่จะใช้ ไม่ใช่ความเสี่ยงสมมติ |
 
 ### G8 — Swap / triple-swap วันพุธ ไม่ได้พูดถึง
 
