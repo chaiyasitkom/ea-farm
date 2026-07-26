@@ -1,0 +1,75 @@
+# ── secrets / credentials ─────────────────────────────────────────
+# ห้าม commit ข้อมูลเข้าสู่ระบบเด็ดขาด (AGENTS.md กฎข้อ 4)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+**/credentials.json
+**/accounts.yaml
+**/accounts.yml
+!**/accounts.example.yaml
+
+# ── Python ────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# ── MQL5 / MetaTrader ─────────────────────────────────────────────
+*.ex4
+*.ex5
+*.log
+mt5-ea/**/*.ex5
+# MT5 Strategy Tester artifacts
+tester/
+*.opt
+*.set.bak
+
+# ── data / artifacts (ใหญ่เกินใส่ git — ใช้ path ภายนอกหรือ DVC) ──
+data/
+*.parquet
+*.csv
+*.feather
+*.duckdb
+research/registry/artifacts/
+*.onnx
+*.pkl
+*.joblib
+*.lgb
+
+# ── logs / runtime ────────────────────────────────────────────────
+logs/
+*.jsonl
+!tests/**/*.jsonl
+farm_kill.txt
+*.pid
+
+# ── DB ────────────────────────────────────────────────────────────
+pgdata/
+*.dump
+*.sql.gz
+
+# ── OS / editor ───────────────────────────────────────────────────
+Thumbs.db
+desktop.ini
+Desktop.ini
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/settings.json.example
+*.swp
+*~
+
+# ── NOTE: contracts/gen/ ต้อง commit (generated แต่ต้องอยู่ใน repo
+#    เพื่อให้ CI ตรวจ codegen-diff ได้ — ดู docs/02-contracts.md §6)

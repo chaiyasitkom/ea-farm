@@ -1,0 +1,43 @@
+# บังคับ LF ทั้ง repo
+#
+# เหตุผลไม่ใช่แค่ความสวยงาม: wire protocol ใช้ JSON-lines ที่ terminate ด้วย \n
+# เท่านั้น (docs/02-contracts.md §1) ถ้า git แปลง LF→CRLF ในไฟล์ test fixture
+# หรือ golden file จะทำให้ framing test ผ่าน/ไม่ผ่านต่างกันตามเครื่อง
+# และ debug ยากมาก — ล็อกไว้ที่ LF ทุกเครื่อง
+
+* text=auto eol=lf
+
+# JSON Schema + fixture: LF เด็ดขาด ห้ามยืดหยุ่น
+*.json      text eol=lf
+*.jsonl     text eol=lf
+
+# source
+*.py        text eol=lf
+*.mq5       text eol=lf
+*.mqh       text eol=lf
+*.sql       text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.md        text eol=lf
+*.toml      text eol=lf
+*.sh        text eol=lf
+Makefile    text eol=lf
+
+# Windows-only script ที่ต้องเป็น CRLF จริงๆ
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+
+# binary — ห้ามให้ git แตะ
+*.ex4       binary
+*.ex5       binary
+*.onnx      binary
+*.parquet   binary
+*.pkl       binary
+*.joblib    binary
+*.png       binary
+*.jpg       binary
+*.dump      binary
+
+# generated — ยุบใน diff view แต่ยังต้อง commit (ดู docs/02-contracts.md §6)
+contracts/gen/** linguist-generated=true

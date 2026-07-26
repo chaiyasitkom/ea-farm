@@ -1,0 +1,127 @@
+# Backlog — เรียงตามลำดับที่ต้องทำ
+
+สถานะ: `TODO` · `SPEC_READY` (Claude เขียน spec เสร็จ Codex ทำได้) · `IN_PROGRESS` · `IN_REVIEW` · `DONE` · `BLOCKED`
+
+---
+
+## Phase 0 — Foundations
+
+| ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
+|----|-----|-------|---------|-------|
+| SPEC-001 | MT5 Executor skeleton + Wire (socket, JSON-lines, reconnect) | Codex | — | **SPEC_READY** |
+| SPEC-002 | Repo scaffold, `.gitignore`, `.env.example`, Makefile | Codex | — | TODO |
+| SPEC-003 | `contracts/schema/*.json` ทุก message type | **Claude** | — | TODO |
+| SPEC-004 | Codegen: schema → pydantic + MQL5 struct/serializer | Codex | 003 | TODO |
+| SPEC-005 | Round-trip test harness (py ↔ mql5) | Codex | 004 | TODO |
+| SPEC-006 | Postgres + TimescaleDB, migration, repository layer | Codex | 003 | TODO |
+| SPEC-007 | Data ingest: MT5 history → Parquet (8 คู่ 5 ปี M1/M5/H1) | Codex | 002 | TODO |
+| SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | TODO |
+| SPEC-009 | CI: ruff, mypy, pytest, codegen-diff | Codex | 004 | TODO |
+
+## Phase 1 — Execution Plane
+
+| ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
+|----|-----|-------|---------|-------|
+| SPEC-010 | `StateReporter.mqh` — HELLO/HEARTBEAT/BAR/STATE + backfill 300 bar | Codex | 001,004 | TODO |
+| SPEC-011 | `OrderRouter.mqh` — target-state reconciler ★ ยากสุด | Codex | 010 | TODO |
+| SPEC-012 | Intent dedupe cache + expiry handling | Codex | 011 | TODO |
+| SPEC-013 | Gateway: asyncio TCP server, auth, session registry | Codex | 006 | TODO |
+| SPEC-014 | Persist intents/exec_reports/account_state | Codex | 013 | TODO |
+| SPEC-015 | EMA baseline strategy (พิสูจน์ท่อ ไม่ใช่ทำเงิน) | Codex | 013 | TODO |
+| SPEC-016 | Chaos test harness (kill brain, cut net, restart EA, dup intent) | Codex | 011,013 | TODO |
+| SPEC-017 | Position reconciliation ตอน `OnInit` | Codex | 011 | TODO |
+| SPEC-018 | DB ↔ MT5 history consistency checker | Codex | 014 | TODO |
+
+## Phase 2 — Risk Layer ★
+
+| ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
+|----|-----|-------|---------|-------|
+| SPEC-019 | `LocalRiskGuard.mqh` R1–R5, R9–R12, R15, R17 | Codex | 011 | TODO |
+| SPEC-020 | Lot sizing + currency conversion (XAUUSD/USDJPY/EURGBP) | Codex | 019 | TODO |
+| SPEC-021 | R6 daily loss + R7 max DD + HWM persistence | Codex | 019 | TODO |
+| SPEC-022 | R8 margin level + R14 consecutive loss + halt persistence | Codex | 021 | TODO |
+| SPEC-023 | `SafeMode.mqh` + R13 kill file + R16 brain timeout | Codex | 019 | TODO |
+| SPEC-024 | Currency exposure decomposition (P3) | Codex | 014 | TODO |
+| SPEC-025 | `brain/risk/` P1,P2,P5,P6,P9,P10,P11 | Codex | 024 | TODO |
+| SPEC-026 | Correlation engine + P4 correlated risk cap | Codex | 024 | TODO |
+| SPEC-027 | `RISK_DIRECTIVE` end-to-end + mode precedence test | Codex | 025 | TODO |
+| SPEC-028 | Ops dashboard v1 + **kill switch** | Codex | 025 | TODO |
+| SPEC-029 | Telegram alerting | Codex | 025 | TODO |
+| SPEC-030 | Risk scenario suite (20 สถานการณ์เลวร้าย) | **Claude ออกแบบ** / Codex code | 019–027 | TODO |
+
+## Phase 3 — Research + ML
+
+| ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
+|----|-----|-------|---------|-------|
+| SPEC-031 | Feature store (point-in-time, versioned, hashed) | Codex | 008 | TODO |
+| SPEC-032 | Backtest engine (event-driven, spread/slip/comm/swap) | Codex | 031 | TODO |
+| SPEC-033 | Backtest ↔ live parity test | Codex | 032,015 | TODO |
+| SPEC-034 | Label design (triple-barrier) | **Claude** | 031 | TODO |
+| SPEC-035 | LightGBM baseline + ONNX export | Codex | 034 | TODO |
+| SPEC-036 | Walk-forward + purged CV + embargo | Codex | 035 | TODO |
+| SPEC-037 | Leakage test suite (shuffled label sanity) | Codex | 036 | TODO |
+| SPEC-038 | `brain/signal/` ONNX inference service | Codex | 035 | TODO |
+| SPEC-039 | Model registry + promotion CLI | Codex | 036 | TODO |
+
+## Phase 4 — Regime + News
+
+| ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
+|----|-----|-------|---------|-------|
+| SPEC-040 | Regime features (realized vol, ADX, Hurst, corr matrix) | Codex | 031 | TODO |
+| SPEC-041 | Regime classifier + interpretable labels | Codex | 040 | TODO |
+| SPEC-042 | Regime → scale mapping + A/B backtest proof | Codex | 041,032 | TODO |
+| SPEC-043 | Economic calendar ingest + block windows | Codex | 006 | TODO |
+| SPEC-044 | `brain/news/` LLM sentiment + schema validator + fail-closed | Codex | 043 | TODO |
+| SPEC-045 | LLM cost guard + budget alert | Codex | 044 | TODO |
+
+## Phase 5 — Auto-Optimization
+
+| ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
+|----|-----|-------|---------|-------|
+| SPEC-046 | Walk-forward orchestrator (scheduled, CPU-isolated) | Codex | 036 | TODO |
+| SPEC-047 | Optuna param search + overfit penalty | Codex | 046 | TODO |
+| SPEC-048 | Champion/Challenger runner (micro lot parallel) | Codex | 039 | TODO |
+| SPEC-049 | Degradation monitor (L3) → auto scale down | Codex | 048 | TODO |
+| SPEC-050 | Promotion gate (manual approval) + 1-command rollback | Codex | 048 | TODO |
+
+## Phase 6 — Scale-Out
+
+| ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
+|----|-----|-------|---------|-------|
+| SPEC-051 | Allocation config (declarative YAML) | Codex | 025 | TODO |
+| SPEC-052 | Multi-terminal deploy automation | Codex | 051 | TODO |
+| SPEC-053 | NSSM services, auto-restart, log rotation | Codex | 052 | TODO |
+| SPEC-054 | Multi-VPS: VPN, TLS, session isolation | Codex | 053 | TODO |
+| SPEC-055 | Backup/restore (DB, artifacts, config) | Codex | 053 | TODO |
+| SPEC-056 | Runbook | **Claude** | 053 | TODO |
+
+## Phase 7 — Live Ramp
+
+| ID | งาน | ผู้ทำ | สถานะ |
+|----|-----|-------|-------|
+| SPEC-057 | Live readiness audit (full risk review) | **Claude** | TODO |
+| SPEC-058 | Live tracking-error monitor vs backtest | Codex | TODO |
+| SPEC-059 | Capital ramp automation + ramp-down trigger | Codex | TODO |
+
+---
+
+## หนี้เทคนิค / ค้างคาใจ
+
+| # | เรื่อง | สถานะ | บันทึกเมื่อ |
+|---|-------|-------|------------|
+| ~~D1~~ | ~~Path โปรเจกต์มีอักษรไทย + เว้นวรรค — MQL5 compiler, venv, git บน Windows มีปัญหา encoding~~ | ✅ **แก้แล้ว** — ย้าย repo มา `D:\ea-farm` + `git init -b main` + `.gitattributes` บังคับ LF | 2026-07-26 |
+| D2 | ยังไม่เลือกโบรกเกอร์/สเปก VPS — กระทบ spread model ใน backtest (SPEC-032) | ⏳ ต้องรู้ก่อน Phase 3 | 2026-07-26 |
+| D3 | ยังไม่ตัดสินว่า netting หรือ hedging account — กระทบ `OrderRouter` logic โดยตรง | ⏳ **ต้องรู้ก่อน SPEC-011** (default: hedging) | 2026-07-26 |
+| D4 | ยังไม่กำหนดชุด symbol และ timeframe หลัก | ⏳ ต้องรู้ก่อน SPEC-007 (default: EURUSD H1 สำหรับ dev) | 2026-07-26 |
+| D5 | ยังไม่กำหนดจำนวนบัญชี/ทุนต่อบัญชีเป้าหมาย — กระทบ P1–P6 threshold | ⏳ ต้องรู้ก่อน SPEC-025 | 2026-07-26 |
+
+---
+
+## Environment (ยืนยันแล้ว 2026-07-26)
+
+| หัวข้อ | ค่า |
+|--------|-----|
+| Repo path | `D:\ea-farm` (ASCII เท่านั้น — ห้ามย้ายกลับไป path ที่มีอักษรไทย/เว้นวรรค) |
+| Git | 2.51.1.windows.1 · branch หลัก `main` |
+| Line ending | LF บังคับผ่าน `.gitattributes` (ยกเว้น `.bat/.cmd/.ps1`) |
+| Remote | ยังไม่มี — local only |
