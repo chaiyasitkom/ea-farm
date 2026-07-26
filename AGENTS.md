@@ -32,6 +32,16 @@
 | 10 | `except:` เปล่า หรือกลืน error | risk path ต้อง fail-closed |
 | 11 | merge เข้า `main` เอง | ต้องผ่าน Claude review |
 | 12 | เปลี่ยน target-state protocol เป็น imperative order command | ข้อตัดสินใจสถาปัตยกรรมหลัก |
+| 13 | `git add -A` หรือ `git add .` | Claude ทำงานใน working tree เดียวกัน จะกวาดไฟล์ของอีกฝ่ายเข้า commit — เกิดขึ้นจริงแล้ว ดู `05-collab-protocol.md` |
+| 14 | commit/แก้ไฟล์ใน `docs/` `contracts/schema/` `AGENTS.md` `CLAUDE.md` `README.md` | Claude เป็นเจ้าของ — เห็นค้างใน `git status` ก็ปล่อยไว้ |
+| 15 | commit ลง `main` | ใช้ `feat/SPEC-NNN-*` เท่านั้น |
+| 16 | เขียนว่า "compile ผ่าน" ถ้าไม่ได้เห็น compiler output จริง | ไม่มี MetaEditor ในสภาพแวดล้อมของคุณ — เขียนว่า "รอ compile gate" |
+
+**git ที่ใช้ได้:**
+```bash
+git add mt5-ea brain tests research ops contracts/gen   # ระบุ path เสมอ
+git branch --show-current                                # เช็คก่อน commit ทุกครั้ง
+```
 
 ## กฎการเขียนโค้ด
 

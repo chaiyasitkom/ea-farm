@@ -52,8 +52,9 @@ GitHub Actions รันไม่ได้ (ไม่มี MT5) และ **Cod
 
 | | |
 |---|---|
-| **ต้องตัดสิน** | ดูคำถาม Q1 ท้ายเอกสาร |
-| **ผลถ้าต้องพึ่งคน** | เพิ่มขั้น "human compile & test gate" ใน flow · Codex ต้องเขียน test ที่ output อ่านง่ายและ copy กลับมาได้ |
+| **✅ ตอบแล้วด้วยหลักฐาน** | ตรวจ repo พบ `__pycache__` ของ `test_wire_resilience.py` (= Python test รันแล้ว) แต่ **ไม่มีไฟล์ `.ex5` เลย** → Codex ไม่มี MetaEditor/MT5 |
+| **แก้แล้ว** | เพิ่ม §MQL5 compile & test gate ใน `05-collab-protocol.md` · AGENTS.md ข้อ 16 |
+| **ผลกระทบ** | MQL5 ทั้งหมด (EA, RiskGuard, OrderRouter = ส่วนสำคัญสุด) เขียนโดยไม่เคยผ่าน compiler · รอบแก้ช้ากว่า Python 2–3 เท่า · SPEC-065 ต้องให้ test เขียนผลเป็น JSON เพื่อ copy กลับได้ |
 
 ---
 
@@ -146,12 +147,24 @@ Backtest spec บอกว่าจำลอง swap แต่ไม่ระบ
 
 ## ❓ คำถามที่ต้องให้เจ้าของโปรเจกต์ตัดสิน
 
-### Q1 — Codex มี MT5 + MetaEditor ให้ใช้ไหม? (G3) ⚠️ **บล็อกการวางแผน workflow**
+### ~~Q1 — Codex มี MT5 ไหม?~~ ✅ ตอบด้วยหลักฐานแล้ว: **ไม่มี**
 
-- **ถ้ามี** → workflow เดิมใช้ได้ Codex compile + รัน test เองแล้วแปะผล
-- **ถ้าไม่มี** → ต้องเพิ่มขั้น human gate: Codex เขียน → เจ้าของ (หรือ Claude Code ในเครื่องนี้)
-  compile + รัน + ส่งผลกลับ → Codex แก้ ต้องปรับ `05-collab-protocol.md` และคาดว่ารอบ
-  แก้ MQL5 จะช้ากว่า Python 2–3 เท่า
+เหลือแค่ตัดสินว่า **ใครทำหน้าที่ compile gate** — เจ้าของโปรเจกต์เอง หรือให้ Claude Code
+ในเครื่องนี้ทำ (Claude รัน MetaEditor CLI ได้: `metaeditor64.exe /compile:... /log`)
+ถ้าให้ Claude ทำ = ขัดกฎ "Claude ไม่แตะโค้ด" เล็กน้อย แต่แค่ *คอมไพล์และรายงาน error*
+ไม่ได้แก้โค้ด — ผมเสนอให้ทำแบบนี้เพราะเร็วกว่ารอคนมาก
+
+### Q0 — ⚠️ พบเหตุการณ์: Claude commit ทับงาน Codex
+
+`git add -A` ของผมกวาดโค้ด SPEC-001 ที่ Codex กำลังเขียนเข้ามาใน commit เอกสาร
+และ commit ไปลงบน branch ของ Codex (`feat/SPEC-001-mt5-executor`) แทน `main`
+
+**แก้แล้ว** — `git reset --soft` → แยก commit เอกสารไป `main` (`b334d62`) →
+ยืนยันไฟล์ Codex ทั้ง 7 ไฟล์ครบด้วย md5 → งาน Codex ยังเป็น untracked รอ Codex commit เอง
+**ไม่มีอะไรสูญหาย**
+
+**สาเหตุราก:** `05-collab-protocol.md` ไม่มีกฎเรื่องทำงานพร้อมกันใน working tree เดียว
+→ เพิ่ม §ทำงานพร้อมกัน + ตารางแยกโซนความเป็นเจ้าของไฟล์ + ห้าม `git add -A` ทั้งสองฝ่าย
 
 ### Q2 — R12 `friday_close_before` = ปิดทุกอย่างก่อนตลาดปิดศุกร์ เอาไหม?
 

@@ -161,6 +161,84 @@
 6. ❌ **ห้ามรายงานว่าเสร็จถ้า test แดง**
 7. ❌ **ห้ามเพิ่ม dependency ใหม่โดยไม่บอก** — ระบุใน handoff report เสมอ
 8. ⚠️ **ถ้าสงสัยเรื่อง risk → ถาม ไม่ใช่เดา**
+9. ❌ **ห้ามใช้ `git add -A` / `git add .` เด็ดขาด — ต้องระบุ path ที่ตัวเองเป็นเจ้าของเท่านั้น**
+10. ❌ **ห้าม commit ไฟล์ที่อีกฝ่ายเป็นเจ้าของ** แม้จะเห็นค้างอยู่ใน `git status`
+
+---
+
+## ⚠️ ทำงานพร้อมกันใน working tree เดียว
+
+**เกิดขึ้นจริงแล้ว 2026-07-26:** Claude รัน `git add -A` เพื่อ commit เอกสาร แต่กวาดโค้ด
+SPEC-001 ที่ Codex กำลังเขียนอยู่เข้ามาใน commit เดียวกัน และ commit นั้นไปลงบน
+branch ของ Codex ด้วย ผลคือ commit message อธิบายแค่เอกสารแต่มีโค้ดปนอยู่
+(แก้แล้ว: `git reset --soft` → แยก commit เอกสารไป `main` → ยืนยันไฟล์ Codex ครบด้วย md5)
+
+### กฎแยกโซนความเป็นเจ้าของไฟล์
+
+| path | เจ้าของ | อีกฝ่ายทำได้ |
+|------|---------|--------------|
+| `docs/**` · `contracts/schema/**` · `AGENTS.md` · `CLAUDE.md` · `README.md` | **Claude** | อ่าน · เสนอแก้ผ่าน implementation note |
+| `mt5-ea/**` · `brain/**` · `research/**` · `ops/**` · `tests/**` · `contracts/gen/**` · `.github/**` · `Makefile` | **Codex** | อ่าน · review · ห้ามแก้/commit |
+| `.gitignore` · `.gitattributes` · `.env.example` | Codex (Claude แก้ได้ถ้าเกี่ยวกับ protocol เช่น LF) | บอกอีกฝ่ายในรายงาน |
+
+### กฎ commit
+
+```bash
+# ✅ Claude
+git add docs contracts/schema AGENTS.md CLAUDE.md README.md
+
+# ✅ Codex
+git add mt5-ea brain tests research ops contracts/gen
+
+# ❌ ห้ามทั้งคู่
+git add -A        git add .        git commit -a
+```
+
+### กฎ branch
+
+- **Claude commit ลง `main` ตรงได้** (เอกสารไม่ต้อง review — แต่ Codex ตั้งคำถามได้)
+- **Codex commit ลง `feat/SPEC-NNN-*` เท่านั้น** merge เข้า main หลัง review
+- ก่อน commit ให้เช็ค `git branch --show-current` ว่าอยู่ branch ที่ควรอยู่
+  (เหตุการณ์ข้างบนเกิดเพราะ Claude ไม่เช็คแล้ว commit ทับ branch ของ Codex)
+- ถ้าเห็นไฟล์ของอีกฝ่ายค้างใน `git status` = **ปกติ ปล่อยไว้** ไม่ใช่ของเรา
+
+---
+
+## 🔨 MQL5 compile & test gate
+
+**สถานะที่ตรวจพบ 2026-07-26:** Codex รัน Python test ได้ (มี `__pycache__`)
+แต่ไม่มีไฟล์ `.ex5` ในโปรเจกต์เลย → **Codex ไม่มี MetaEditor/MT5 ให้คอมไพล์**
+
+ผลคือ MQL5 ทั้งหมด (EA, LocalRiskGuard, OrderRouter — ส่วนที่สำคัญที่สุดของระบบ)
+ถูกเขียนโดยไม่เคยผ่าน compiler เลย MQL5 มีกับดักที่ compiler จับได้และคนอ่านไม่เจอ
+เช่น implicit conversion, `datetime` vs `long`, array ที่ไม่ resize, struct ที่มี string
+ใน `ArrayResize` ดังนั้น "โค้ดที่ไม่เคยคอมไพล์" ≠ "โค้ดที่เสร็จ"
+
+### ขั้นตอนเพิ่มเข้ามาใน flow
+
+```
+Codex implement  ──►  ❶ COMPILE GATE (มนุษย์/Claude Code ในเครื่อง)
+                          MetaEditor คอมไพล์ · เก็บ error+warning ทั้งหมด
+                          รัน TestWire.mq5 บน MT5 · เก็บ output
+                              │ ส่งผลกลับให้ Codex
+                              ▼
+                      ❷ Codex แก้ตาม error  ──► วนซ้ำจน 0 error 0 warning
+                              │
+                              ▼
+                      ❸ Handoff report (ต้องแนบ compiler output จริง)
+                              │
+                              ▼
+                      ❹ Claude review
+```
+
+### ผลที่ต้องยอมรับ
+
+- รอบแก้ MQL5 จะช้ากว่า Python ~2–3 เท่า เพราะมีมนุษย์อยู่ในลูป
+- Codex **ห้ามเขียนในรายงานว่า "compile ผ่าน"** ถ้าไม่ได้เห็น compiler output จริง
+  ให้เขียนว่า *"ยังไม่ได้คอมไพล์ — รอ compile gate"*
+- SPEC-065 (MQL5 test harness) ต้องให้ test เขียนผลเป็น **JSON ลงไฟล์**
+  เพื่อให้คน copy กลับมาให้ Codex ได้ง่าย และให้ CI ตรวจไฟล์ผลลัพธ์ได้
+  (CI ยังรัน MT5 เองไม่ได้ แต่ตรวจได้ว่าผลล่าสุดเขียว และ commit hash ตรงกับโค้ดปัจจุบัน)
 
 ---
 
