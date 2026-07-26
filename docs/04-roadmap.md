@@ -76,10 +76,18 @@
 - [ ] Manual test: สร้าง daily loss เกิน limit บน demo → HALT จริง และ restart EA แล้วยัง HALT
 - [ ] รัน 3 บัญชี demo ขนาน 10 วันทำการ ไม่มีการละเมิด limit ใดๆ
 - [ ] Claude review risk layer แล้วอนุมัติเป็นลายลักษณ์อักษรใน `docs/reviews/`
+- [ ] **SL เป็น broker-side ทุกไม้** — ตรวจด้วยการ kill MT5 ทั้ง terminal ตอนถือ position
+      แล้วดูว่า SL ยังอยู่ใน account history ฝั่งโบรกเกอร์ (G5)
+- [ ] **Watchdog ทำงาน** — kill brain process → ได้ Telegram ใน ≤ 90s + service restart เอง (G2)
+- [ ] **Runbook ขั้นต้นมีแล้ว** (SPEC-030b) — ครอบคลุมขั้นต่ำ: VPS ตาย · brain ตาย ·
+      position ค้างไม่ตรง · kill switch · ขอปิดทุกอย่างด่วนตอนไม่มีคอม (G4)
 
 > **จุดตัดสินใจ:** ผ่าน Phase 2 = พร้อมขึ้น live ด้วยทุนเล็ก (≤10%) ด้วยกลยุทธ์ rule-based
 > ทำแบบนี้จะได้ข้อมูล live จริงมาใช้ตอน Phase 3 และรู้ว่า infra ทนจริงไหม
 > **แนะนำให้ทำ** — ดีกว่ารอ ML เสร็จแล้วขึ้น live ทั้งสองอย่างพร้อมกัน (debug แยกไม่ออก)
+>
+> ⚠️ 3 checkbox ล่างเพิ่มเข้ามาจาก [gap audit](06-gap-audit.md) — เดิมแผนให้ขึ้นเงินจริง
+> โดยยังไม่มี watchdog และ runbook ซึ่งเป็นลำดับที่ผิด
 
 ---
 
@@ -90,7 +98,7 @@
 | # | งาน | ผู้ทำ | Deliverable |
 |---|-----|-------|-------------|
 | 3.1 | Feature store: point-in-time correct, versioned, hashed | Codex | ★ ห้าม look-ahead |
-| 3.2 | Backtest engine: event-driven, spread/slippage/commission/swap จริง | Codex | |
+| 3.2 | Backtest engine: event-driven, spread/slippage/commission/swap จริง | Codex | ★ **triple-swap วันพุธ** + swap จริงจากโบรกเกอร์ ไม่ใช่ค่าคงที่ (G8) |
 | 3.3 | Backtest ↔ live parity test: รัน strategy เดียวกันทั้ง 2 ทาง เทียบ signal | Codex | ★ ถ้าไม่ตรง = backtest เชื่อไม่ได้ |
 | 3.4 | Label design (triple-barrier หรือ fixed-horizon) | **Claude ออกแบบ** | `docs/specs/SPEC-labels.md` |
 | 3.5 | LightGBM baseline + ONNX export | Codex | |

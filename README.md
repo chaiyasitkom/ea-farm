@@ -39,6 +39,8 @@
 | [docs/03-risk-spec.md](docs/03-risk-spec.md) | กฎ risk 4 ชั้น พร้อมตัวเลข default | ทั้งคู่ |
 | [docs/04-roadmap.md](docs/04-roadmap.md) | 8 phase + milestone + exit criteria | ทั้งคู่ |
 | [docs/05-collab-protocol.md](docs/05-collab-protocol.md) | Claude ↔ Codex แบ่งงานกันอย่างไร | ทั้งคู่ |
+| [docs/06-gap-audit.md](docs/06-gap-audit.md) | ช่องว่างที่เจอตอน audit + คำถามที่ต้องตัดสิน | ทั้งคู่ |
+| [docs/decisions/](docs/decisions/) | ADR — ข้อตัดสินใจสถาปัตยกรรมพร้อมเหตุผล | ทั้งคู่ |
 | [docs/backlog.md](docs/backlog.md) | รายการ ticket ทั้งหมด เรียงลำดับ | ทั้งคู่ |
 | [docs/specs/](docs/specs/) | Spec รายตัวที่ Codex ลงมือได้เลย | **Codex** |
 | [AGENTS.md](AGENTS.md) | กฎสำหรับ Codex | Codex |

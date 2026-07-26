@@ -32,7 +32,14 @@
 ║  │ ONNX inference│  HMM / cluster   │ calendar +   │ rule strategies │ ║
 ║  │ → intent      │  → regime label  │ LLM sentiment│                 │ ║
 ║  │                  + scale hint    │ → block/bias │                 │ ║
-║  └───────────────┴──────────────────┴──────────────┴─────────────────┘ ║
+║  └───────┬───────┴─────────┬────────┴──────────────┴─────────────────┘ ║
+║          │ features        │ ต้องการราคา "ทุก" symbol ไม่ใช่แค่ที่เทรด   ║
+║  ┌───────┴─────────────────┴──────────────────────────────────────────┐ ║
+║  │ MARKET DATA COLLECTOR  ★ ไม่ผูกกับบัญชีใด                          │ ║
+║  │  1 MT5 terminal อ่านอย่างเดียว + MetaTrader5 python pkg            │ ║
+║  │  push bar ทุก symbol ในจักรวาล → correlation (P4), regime, feature │ ║
+║  │  EA ส่งมาแค่ symbol ที่ตัวเองเทรด — ไม่พอสำหรับ portfolio risk      │ ║
+║  └────────────────────────────────────────────────────────────────────┘ ║
 ║                              │ proposed intents                        ║
 ║                              ▼                                          ║
 ║  ┌────────────────────────────────────────────────────────────────────┐ ║
@@ -47,6 +54,13 @@
 ║  │ TimescaleDB   │  │ FastAPI+HTMX   │  │ breach / disconnect / DD   │ ║
 ║  └───────────────┘  └────────────────┘  └────────────────────────────┘ ║
 ╚════════════════════════════════════╪═════════════════════════════════════╝
+                                     │
+        ┌────────────────────────────┴─────────────────────────────┐
+        │ WATCHDOG  ★ process แยก เล็กที่สุด ไม่มี dependency ร่วม   │
+        │  brain เขียน liveness file ทุก 5s · watchdog อ่านทุก 15s  │
+        │  brain เงียบ > 60s → Telegram alert + restart service     │
+        │  เหตุผล: alerting อยู่ *ใน* brain — brain ตาย = ไม่มีใครบอก │
+        └──────────────────────────────────────────────────────────┘
                                      │ JSON-lines over TCP (localhost/VPN)
                                      │ 1 session per terminal
                                      ▼
@@ -127,6 +141,34 @@ model ที่ยัง fit ไม่เสร็จหลุดไปเทร
 | `news` | economic calendar + headlines | `NewsWindow` (block period) + `Bias` | LLM เรียกแบบ async, cache, มี fallback = block ตาม calendar เฉยๆ |
 | `risk` | intents ทุก account + state | approved intents / directives | **มีอำนาจสุดท้าย** ห้าม bypass |
 | `store` | ทุกอย่าง | Postgres + TimescaleDB | append-only สำหรับ audit trail |
+| `collector` | MT5 read-only terminal | bar ทุก symbol ในจักรวาล | ★ ไม่ผูกบัญชี · ไม่มีสิทธิ์เทรด · ถ้าตาย = regime/correlation ใช้ค่าเก่า → P10 stale guard ต้อง reject |
+| `watchdog` | liveness file ของ brain | Telegram alert + restart | ★ process แยก **ห้ามแชร์ dependency กับ brain** (ไม่ใช้ DB, ไม่ import brain) |
+
+### ทำไมต้องมี `collector` แยก — ช่องว่างที่เจอตอน audit
+
+EA ส่ง `BAR` มาแค่ symbol ที่ตัวเองเทรด แต่:
+- **P4 correlation cap** ต้องมีราคาของ **ทุก** symbol ในจักรวาล เพื่อคำนวณ correlation matrix
+- **RegimeService** ต้องดูภาพรวมตลาด (DXY, ทองคำ, correlation ระหว่างคู่) ไม่ใช่แค่คู่ที่เทรด
+- ถ้าฟาร์มเทรดแค่ EURUSD วันนี้ brain จะไม่มีข้อมูล GBPUSD เลย → correlation คำนวณไม่ได้
+
+→ ต้องมี MT5 terminal 1 ตัวที่ **ไม่ผูกกับบัญชีเทรด** ทำหน้าที่ป้อนข้อมูลอย่างเดียว
+ใช้ `MetaTrader5` python package ดึง bar ทุก symbol แล้ว push เข้า brain ผ่าน internal API
+(ไม่ใช่ผ่าน wire protocol — collector เป็น process ใน control plane ไม่ใช่ execution plane)
+
+**ถ้า collector ตาย:** regime/correlation ใช้ข้อมูลเก่า → P10 `stale_data_guard` ต้อง reject
+intent ที่พึ่ง feature เก่ากว่า 2 bar **ห้าม fail-open** (ห้ามแปลว่า "ไม่มีข้อมูล = correlation 0")
+
+### ทำไม `watchdog` ห้ามแชร์ dependency กับ brain
+
+Alerting ทั้งหมดอยู่ **ใน** brain ถ้า brain ตาย (OOM, unhandled exception, VPS reboot)
+จะไม่มีใครส่ง Telegram บอก — เงียบไปเลย ซึ่งเป็น failure mode ที่แย่ที่สุด
+เพราะเจ้าของนอนหลับสบายคิดว่าทุกอย่างปกติ
+
+watchdog จึงต้อง:
+- เป็น process แยก แค่ไม่กี่สิบบรรทัด
+- **ไม่ import โค้ด brain · ไม่ต่อ DB · ไม่ใช้ virtualenv เดียวกัน** (dependency ร่วม = ตายพร้อมกัน)
+- อ่าน liveness file (brain เขียน timestamp ทุก 5s) เงียบ > 60s = alert + restart service
+- ตัวมันเองเป็น Windows service ที่ auto-restart
 
 ### RESEARCH PLANE — `research/`
 
@@ -179,3 +221,22 @@ model ที่ยัง fit ไม่เสร็จหลุดไปเทร
 | LLM API ล่ม / ตอบขยะ | fallback = block ตาม economic calendar อย่างเดียว | Brain |
 | Clock drift ระหว่าง VPS กับ broker | ใช้ server time จาก MT5 เป็นหลักเสมอ, ห้ามใช้ local time ตัดสิน | ทั้งคู่ |
 | DB เต็ม / เขียนไม่ได้ | brain ต้องไม่หยุดเทรด — buffer ใน memory + alert | Brain |
+| **★ VPS ตายทั้งเครื่อง / ไฟดับ / โดนโบรกเกอร์ตัด** | **SL/TP ที่ฝากไว้ที่ broker คือด่านสุดท้าย** — position ถูกปิดเองแม้ไม่มีอะไรรันอยู่ | Broker (ดูกฎด้านล่าง) |
+| **Brain ตายแบบเงียบ** (alerting อยู่ใน brain) | watchdog process แยกตรวจ liveness file → Telegram + restart | Watchdog |
+| **Collector ตาย** | regime/correlation stale → P10 reject intent ที่พึ่ง feature เก่า > 2 bar | Brain |
+| Foreign position โผล่บนบัญชีฟาร์ม | R19 alert (ไม่ block) — อาจเป็นเทรดมือทับ หรือ magic ชนกัน | EA |
+
+### ★ กฎ: SL/TP ต้องอยู่ที่ broker เสมอ ห้าม EA จำลองเอง
+
+กฎนี้เคยเป็นแค่นัยใน R9 — เขียนให้ชัดเพราะเป็นด่านสุดท้ายจริง:
+
+> ทุก position ต้องมี `sl` ที่ฝากไว้ **ฝั่ง broker** (field `POSITION_SL`)
+> **ห้าม** ใช้วิธี "EA เฝ้าราคาแล้วปิดเองเมื่อถึงจุด" (virtual/hidden SL) เด็ดขาด
+
+เหตุผล: virtual SL ทำงานได้เฉพาะเมื่อ EA ยังรันอยู่ ถ้า VPS ดับ / MT5 crash /
+เน็ตหลุดยาว position จะไม่มีอะไรปิดเลย — ขาดทุนได้ไม่จำกัดจนโดน margin call
+
+ผลตามมา: SL ต้องตั้งพร้อมกับ order เปิด (`ORDER_TYPE_BUY` + `sl` ในคำสั่งเดียว)
+ไม่ใช่เปิดแล้วค่อยตั้งตามหลัง — ถ้าเปิดสำเร็จแต่ตั้ง SL ไม่สำเร็จจะมีช่องเปลือย
+ถ้าโบรกเกอร์ไม่ยอมรับ SL ในคำสั่งเปิด (บาง ECN) → ตั้งทันทีในขั้นถัดไปและ
+**ถ้าตั้งไม่ได้ภายใน 3 ครั้ง ให้ปิด position นั้นทิ้ง** ไม่ใช่ปล่อยเปลือยไว้

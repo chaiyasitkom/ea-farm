@@ -17,6 +17,9 @@
 | SPEC-007 | Data ingest: MT5 history → Parquet (8 คู่ 5 ปี M1/M5/H1) | Codex | 002 | TODO |
 | SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | TODO |
 | SPEC-009 | CI: ruff, mypy, pytest, codegen-diff | Codex | 004 | TODO |
+| SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | 002 | TODO |
+| SPEC-064 | **SymbolRegistry** — `(broker, raw)` → canonical + base/quote currency (G7) | Codex | 006 | TODO |
+| SPEC-065 | **MQL5 test harness** — รันทุก suite แล้วเขียนผลเป็น JSON ให้ CI ตรวจได้ (G9) | Codex | 001 | TODO |
 
 ## Phase 1 — Execution Plane
 
@@ -41,13 +44,17 @@
 | SPEC-021 | R6 daily loss + R7 max DD + HWM persistence | Codex | 019 | TODO |
 | SPEC-022 | R8 margin level + R14 consecutive loss + halt persistence | Codex | 021 | TODO |
 | SPEC-023 | `SafeMode.mqh` + R13 kill file + R16 brain timeout | Codex | 019 | TODO |
-| SPEC-024 | Currency exposure decomposition (P3) | Codex | 014 | TODO |
+| SPEC-060 | **MarketDataCollector** — MT5 read-only ป้อน bar ทุก symbol (G1) | Codex | 006 | TODO |
+| SPEC-061 | **P10 stale-data guard ให้ fail-closed** — collector ตาย = reject ไม่ใช่ correlation 0 (G1) | Codex | 060 | TODO |
+| SPEC-024 | Currency exposure decomposition (P3) | Codex | 014, 064 | TODO |
 | SPEC-025 | `brain/risk/` P1,P2,P5,P6,P9,P10,P11 | Codex | 024 | TODO |
-| SPEC-026 | Correlation engine + P4 correlated risk cap | Codex | 024 | TODO |
+| SPEC-026 | Correlation engine + P4 correlated risk cap | Codex | 024, 060 | TODO |
 | SPEC-027 | `RISK_DIRECTIVE` end-to-end + mode precedence test | Codex | 025 | TODO |
 | SPEC-028 | Ops dashboard v1 + **kill switch** | Codex | 025 | TODO |
 | SPEC-029 | Telegram alerting | Codex | 025 | TODO |
 | SPEC-030 | Risk scenario suite (20 สถานการณ์เลวร้าย) | **Claude ออกแบบ** / Codex code | 019–027 | TODO |
+| SPEC-030b | **Runbook ขั้นต้น** — ย้ายมาจาก Phase 6 เพราะเงินจริงเริ่มปลาย Phase 2 (G4) | **Claude** | 028 | TODO |
+| SPEC-062 | **Watchdog** — process แยกเฝ้า brain ห้ามแชร์ dependency (G2) | Codex | 029 | TODO |
 
 ## Phase 3 — Research + ML
 
