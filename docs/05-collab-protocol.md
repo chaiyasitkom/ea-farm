@@ -177,7 +177,7 @@ branch ของ Codex ด้วย ผลคือ commit message อธิบ�
 
 | path | เจ้าของ | อีกฝ่ายทำได้ |
 |------|---------|--------------|
-| `docs/**` · `contracts/schema/**` · `AGENTS.md` · `CLAUDE.md` · `README.md` | **Claude** | อ่าน · เสนอแก้ผ่าน implementation note |
+| `docs/**` · `contracts/schema/**` · `tools/**` · `AGENTS.md` · `CLAUDE.md` · `README.md` | **Claude** | อ่าน · เสนอแก้ผ่าน implementation note |
 | `mt5-ea/**` · `brain/**` · `research/**` · `ops/**` · `tests/**` · `contracts/gen/**` · `.github/**` · `Makefile` | **Codex** | อ่าน · review · ห้ามแก้/commit |
 | `.gitignore` · `.gitattributes` · `.env.example` | Codex (Claude แก้ได้ถ้าเกี่ยวกับ protocol เช่น LF) | บอกอีกฝ่ายในรายงาน |
 
@@ -216,10 +216,12 @@ git add -A        git add .        git commit -a
 
 ### ขั้นตอนเพิ่มเข้ามาใน flow
 
+**ผู้รับผิดชอบ gate: Claude** (ตกลงแล้ว 2026-07-26) — วิธีรันดู [07-compile-gate.md](07-compile-gate.md)
+
 ```
-Codex implement  ──►  ❶ COMPILE GATE (มนุษย์/Claude Code ในเครื่อง)
+Codex implement  ──►  ❶ COMPILE GATE (Claude รัน tools/compile-gate.ps1)
                           MetaEditor คอมไพล์ · เก็บ error+warning ทั้งหมด
-                          รัน TestWire.mq5 บน MT5 · เก็บ output
+                          เขียนผลลง docs/reviews/SPEC-NNN-compile-gate-NN.md
                               │ ส่งผลกลับให้ Codex
                               ▼
                       ❷ Codex แก้ตาม error  ──► วนซ้ำจน 0 error 0 warning

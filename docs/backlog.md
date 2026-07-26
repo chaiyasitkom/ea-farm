@@ -19,7 +19,7 @@
 | SPEC-009 | CI: ruff, mypy, pytest, codegen-diff | Codex | 004 | TODO |
 | SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | 002 | TODO |
 | SPEC-064 | **SymbolRegistry** — `(broker, raw)` → canonical + base/quote currency (G7) | Codex | 006 | TODO |
-| SPEC-065 | **MQL5 test harness** — รันทุก suite แล้วเขียนผลเป็น JSON ให้ CI ตรวจได้ (G9) | Codex | 001 | TODO |
+| SPEC-065 | **MQL5 test harness** — test ต้องเป็น **EA ไม่ใช่ Script** (`OnInit`+`ExpertRemove`) เพราะ Script รัน headless ไม่ได้ · เขียนผลเป็น JSON + git sha ให้ CI ตรวจได้ (G9, [07](07-compile-gate.md)) | Codex | 001 | TODO |
 
 ## Phase 1 — Execution Plane
 
