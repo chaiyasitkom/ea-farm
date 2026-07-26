@@ -23,7 +23,7 @@
 | ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
 |----|-----|-------|---------|-------|
 | SPEC-010 | `StateReporter.mqh` — HELLO/HEARTBEAT/BAR/STATE + backfill 300 bar | Codex | 001,004 | TODO |
-| SPEC-011 | `OrderRouter.mqh` — target-state reconciler ★ ยากสุด | Codex | 010 | TODO |
+| SPEC-011 | `OrderRouter.mqh` — target-state reconciler (hedging) ★ ยากสุด | Codex | 010 | **SPEC_READY** |
 | SPEC-012 | Intent dedupe cache + expiry handling | Codex | 011 | TODO |
 | SPEC-013 | Gateway: asyncio TCP server, auth, session registry | Codex | 006 | TODO |
 | SPEC-014 | Persist intents/exec_reports/account_state | Codex | 013 | TODO |
@@ -111,7 +111,7 @@
 |---|-------|-------|------------|
 | ~~D1~~ | ~~Path โปรเจกต์มีอักษรไทย + เว้นวรรค — MQL5 compiler, venv, git บน Windows มีปัญหา encoding~~ | ✅ **แก้แล้ว** — ย้าย repo มา `D:\ea-farm` + `git init -b main` + `.gitattributes` บังคับ LF | 2026-07-26 |
 | D2 | ยังไม่เลือกโบรกเกอร์/สเปก VPS — กระทบ spread model ใน backtest (SPEC-032) | ⏳ ต้องรู้ก่อน Phase 3 | 2026-07-26 |
-| D3 | ยังไม่ตัดสินว่า netting หรือ hedging account — กระทบ `OrderRouter` logic โดยตรง | ⏳ **ต้องรู้ก่อน SPEC-011** (default: hedging) | 2026-07-26 |
+| ~~D3~~ | ~~netting หรือ hedging account — กระทบ `OrderRouter` logic โดยตรง~~ | ✅ **ตัดสินแล้ว: hedging** → [ADR-001](decisions/ADR-001-hedging-account.md) · SPEC-011 เขียนครบแล้ว | 2026-07-26 |
 | D4 | ยังไม่กำหนดชุด symbol และ timeframe หลัก | ⏳ ต้องรู้ก่อน SPEC-007 (default: EURUSD H1 สำหรับ dev) | 2026-07-26 |
 | D5 | ยังไม่กำหนดจำนวนบัญชี/ทุนต่อบัญชีเป้าหมาย — กระทบ P1–P6 threshold | ⏳ ต้องรู้ก่อน SPEC-025 | 2026-07-26 |
 

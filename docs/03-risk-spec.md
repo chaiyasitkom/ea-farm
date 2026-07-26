@@ -31,8 +31,9 @@ L0  BROKER       ── leverage, margin call, stop out (ควบคุมไ�
 |---|-----|---------|------------|
 | R1 | `risk_per_trade_pct` — ความเสี่ยงต่อไม้ (คำนวณ lot จากระยะ SL) | 0.35% | คำนวณ lot ใหม่ให้พอดี |
 | R2 | `max_lot_per_order` | 0.50 | clamp ลง + รายงาน |
-| R3 | `max_positions_per_symbol` | 1 | reject intent ที่จะเกิน |
-| R4 | `max_total_positions` | 4 | reject |
+| R3a | `max_net_volume_per_symbol` — เพดาน \|owned_net\| ต่อ symbol | 0.50 | clamp ลง + รายงาน |
+| R3b | `max_tickets_per_symbol` — **anti-bug guard ไม่ใช่กฎ risk** | 4 | block + `ERROR severity:ERROR` (เกินนี้ = logic พัง) |
+| R4 | `max_total_tickets` — นับ ticket ที่เป็นเจ้าของทั้งบัญชี | 8 | reject |
 | R5 | `max_spread_points` — spread ปัจจุบันเกิน = ไม่เข้าใหม่ | 25 pt (majors) | เลื่อนออกไป ถ้าเกิน `valid_until` = expire |
 | R6 | `daily_loss_pct` — วัดจาก equity ตอน 00:00 broker time | 2.0% | **HALT บัญชีนี้ถึงสิ้นวัน** + ปิด position ทั้งหมด |
 | R7 | `max_dd_pct` — วัดจาก equity high-water mark | 6.0% soft / 10.0% hard | soft → REDUCE_ONLY · hard → HALT + flatten |
@@ -46,6 +47,8 @@ L0  BROKER       ── leverage, margin call, stop out (ควบคุมไ�
 | R15 | `max_slippage_points` — ถ้าเกิน ยกเลิกไม่ retry | 15 | log + alert |
 | R16 | `brain_timeout_sec` — brain เงียบเกิน → SafeMode | 10 | SafeMode (`HOLD` default) |
 | R17 | `max_orders_per_minute` — กัน order storm จาก bug | 6 | block + FATAL alert |
+| R18 | `no_internal_hedge` — ห้ามถือ long+short symbol เดียวกันใต้ magic เดียวกัน ([ADR-001](decisions/ADR-001-hedging-account.md)) | บังคับ | net ออกทันที + `ERROR` + alert (เป็น anomaly ไม่ใช่สถานะปกติ) |
+| R19 | `foreign_position_alert` — พบไม้บนบัญชีที่ไม่ใช่ของ EA | alert | ไม่ block การเทรด แต่ต้องแจ้ง (กินมาร์จิ้นจริง) |
 
 ### จุดที่ Codex พลาดบ่อย — ต้องทำให้ถูก
 
@@ -55,6 +58,12 @@ L0  BROKER       ── leverage, margin call, stop out (ควบคุมไ�
 4. **R13 kill file ต้องเช็คใน `OnTimer` ทุก 1s** ไม่ใช่แค่ `OnTick` (ตลาดปิด tick ไม่มา)
 5. **R17 ต้องนับ order ที่ *ส่ง* ไม่ใช่ที่ *สำเร็จ*** — bug ที่ reject แล้ว retry รัวคือเคสที่ต้องกัน
 6. **halt state ต้อง persist** — restart EA แล้วต้องยัง halt อยู่ถ้ายังในวันเดียวกัน
+7. **R3a/R4 นับเฉพาะไม้ที่เป็นเจ้าของ (magic ตรง) — แต่ R8 margin level ต้องใช้ค่าทั้งบัญชี**
+   ไม้ของ EA อื่น/เทรดมือ กินมาร์จิ้นจริง จะมองข้ามไม่ได้ แต่เราก็ไปปิดของเขาไม่ได้
+8. **hedging: flatten หมายถึงวนปิดทุก ticket ไม่ใช่ส่ง order สวน 1 ไม้** —
+   ส่งสวนจะกลายเป็น internal hedge ละเมิด R18 ทันที
+9. **R7 max DD กับ hedging: ใช้ `AccountInfoDouble(ACCOUNT_EQUITY)`** ไม่ใช่ผลรวม
+   `POSITION_PROFIT` ของไม้ที่เป็นเจ้าของ (ตกไม้ foreign + swap + commission ที่ยังไม่ลง)
 
 ### สูตรคำนวณ lot (R1) — implement ให้ตรงนี้
 

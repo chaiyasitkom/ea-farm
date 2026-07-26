@@ -198,11 +198,19 @@ DISCONNECTED ──Init/Pump──► CONNECTING ──socket ok──► CONNEC
 
 ## 9. Open questions — Codex ต้องได้คำตอบก่อนเริ่ม
 
-| # | คำถาม | ทำไมสำคัญ | ค่า default ถ้ายังไม่ตอบ |
-|---|-------|-----------|------------------------|
-| Q1 | บัญชีเป็น **netting** หรือ **hedging**? | เปลี่ยน `OrderRouter` ทั้งหมด (SPEC-011) — ticket นี้ยังไม่กระทบ แต่ต้องรู้ก่อน SPEC-011 | สมมติ **hedging** (โบรกเกอร์ไทย/offshore ส่วนใหญ่) |
-| Q2 | มี JSON library MQL5 ที่ต้องการให้ใช้ หรือเขียนเอง? | เขียนเองคุมได้ แต่ใช้เวลา | เขียนเอง (parser ย่อยเฉพาะที่ contract ต้องใช้) — ไม่ดึง lib ภายนอกเข้า repo |
-| Q3 | Symbol/timeframe หลักคืออะไร? | ยังไม่กระทบ ticket นี้ | EURUSD H1 สำหรับ dev |
+| # | คำถาม | ทำไมสำคัญ | คำตอบ |
+|---|-------|-----------|-------|
+| Q1 | บัญชีเป็น **netting** หรือ **hedging**? | เปลี่ยน `OrderRouter` ทั้งหมด (SPEC-011) | ✅ **hedging** — ดู [ADR-001](../decisions/ADR-001-hedging-account.md) |
+| Q2 | มี JSON library MQL5 ที่ต้องการให้ใช้ หรือเขียนเอง? | เขียนเองคุมได้ แต่ใช้เวลา | เขียนเอง (parser ย่อยเฉพาะที่ contract ต้องใช้) — ไม่ดึง lib ภายนอกเข้า repo · รายงานขนาดโค้ดใน handoff |
+| Q3 | Symbol/timeframe หลักคืออะไร? | ยังไม่กระทบ ticket นี้ | EURUSD H1 สำหรับ dev (D4 ยังไม่ปิด) |
 
-> Q1, Q3 ไม่บล็อก ticket นี้ — Codex เริ่มได้เลย
-> **Q2 ให้ตัดสินใจตาม default (เขียนเอง) แล้วรายงานขนาดโค้ดใน handoff**
+**เพิ่มเข้า scope จาก ADR-001** — ticket นี้ต้องทำด้วย:
+
+- [ ] `OnInit` ตรวจ `AccountInfoInteger(ACCOUNT_MARGIN_MODE) == ACCOUNT_MARGIN_MODE_RETAIL_HEDGING`
+      ไม่ตรง → `INIT_FAILED` + log ชัดเจนว่าเจอโหมดอะไร (ห้ามปรับตัวเองไปรองรับ netting)
+- [ ] `OnInit` ตรวจ capability `SYMBOL_ORDER_MODE & SYMBOL_ORDER_CLOSEBY` เก็บเป็น flag
+      ไว้ให้ SPEC-011 ใช้ (แค่ตรวจและ log ยังไม่ต้องใช้)
+- [ ] `HELLO` payload เพิ่ม `account.margin_mode` (มีใน contract §4.1 แล้ว) ส่งค่าจริง
+      และ `symbol.order_mode_closeby` (bool)
+
+> ไม่มีคำถามค้างที่บล็อก ticket นี้ — Codex เริ่มได้เลย

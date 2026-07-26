@@ -187,15 +187,37 @@
     }
   ],
   "pending_orders": [],
-  "net_position": { "EURUSD": 0.20 },
+  "owned_net": { "EURUSD": 0.20 },
+  "owned_ticket_count": { "EURUSD": 2 },
+  "foreign_positions": {
+    "count": 0,
+    "symbols": [],
+    "total_volume": 0.0,
+    "margin_estimate": 0.0
+  },
+  "account_margin_mode": "RETAIL_HEDGING",
   "guard": {
     "halted": false,
     "halt_reason": null,
     "mode": "NORMAL",
-    "current_spread_points": 9
+    "current_spread_points": 9,
+    "internal_hedge_detected": false
   }
 }
 ```
+
+**`positions[]` ส่งเฉพาะไม้ที่ EA เป็นเจ้าของ** (`magic == InpMagic` และ symbol ตรง)
+
+| field | ความหมาย |
+|-------|----------|
+| `owned_net` | net position ของไม้ที่เป็นเจ้าของ — บวก = long, ลบ = short |
+| `owned_ticket_count` | จำนวน ticket ต่อ symbol (hedging มีได้หลายไม้ — ดู [ADR-001](decisions/ADR-001-hedging-account.md)) |
+| `foreign_positions` | ไม้บนบัญชีที่ **ไม่ใช่** ของ EA (เทรดมือ / EA อื่น / magic ชนกัน) — EA ไม่จัดการ แต่ต้องรายงาน เพราะกินมาร์จิ้นและกระทบ equity |
+| `account_margin_mode` | `RETAIL_HEDGING` เท่านั้น — ค่าอื่น = `OnInit` ต้อง fail |
+| `guard.internal_hedge_detected` | `true` = พบไม้ long+short พร้อมกันใน symbol เดียว = **anomaly** ต้อง alert ทันที |
+
+⚠️ `foreign_positions.count > 0` บนบัญชีในฟาร์ม = ต้อง alert
+บัญชีเหล่านี้ควรมีแต่ไม้ของ EA — ของแปลกปลอมแปลว่ามีคนเทรดมือทับ หรือ magic ชนกัน
 
 ### 4.5 `INTENT` (Brain → EA) ★ สำคัญสุด
 
@@ -227,17 +249,47 @@
 | กรณี | ความหมาย |
 |------|----------|
 | `target_volume` | **net position ที่ต้องการ** (บวก = long, ลบ = short, 0 = ปิดทั้งหมด) |
-| `target_volume: 0` | flatten symbol นี้ |
-| EA ปัจจุบัน +0.20, target +0.20 | **no-op** — ห้ามส่ง order ใดๆ |
-| EA ปัจจุบัน +0.20, target +0.30 | ส่ง BUY 0.10 |
-| EA ปัจจุบัน +0.20, target −0.10 | netting: ปิด 0.20 แล้วเปิด SELL 0.10 (หรือ 1 order 0.30 ถ้า netting mode) |
-| `sl_price`/`tp_price` เปลี่ยน แต่ volume เท่าเดิม | `OrderModify` เท่านั้น ห้ามปิด/เปิดใหม่ |
+| `target_volume: 0` | flatten symbol นี้ (ปิดทุก ticket ที่เป็นเจ้าของ) |
+| `sl_price`/`tp_price` เปลี่ยน แต่ volume เท่าเดิม | `PositionModify` เท่านั้น ห้ามปิด/เปิดใหม่ |
 | `valid_until` เลยแล้ว | **ทิ้ง intent** ตอบ `INTENT_ACK` status `EXPIRED` |
 | `intent_id` ซ้ำกับที่เคยรับ | ทิ้ง ตอบ `DUPLICATE` (dedupe cache ≥ 1000 รายการ) |
 | ขัดกับ `LocalRiskGuard` | ทิ้ง ตอบ `REJECTED_BY_GUARD` + reason |
-| `target_volume` > `max_lot_per_order` | clamp ลงเป็น limit **ไม่ใช่ reject** แล้วรายงานว่า clamp |
+| `target_volume` > `max_net_volume_per_symbol` | clamp ลงเป็น limit **ไม่ใช่ reject** แล้วรายงานว่า clamp |
 
 `urgency`: `NORMAL` (รอ spread ปกติได้ ≤ 30s) / `IMMEDIATE` (ส่งเลย) / `PASSIVE` (ใช้ limit order — Phase 6+)
+
+#### 4.5.1 Reconciliation semantics — **Hedging account** ★
+
+บัญชีเป็น hedging (ดู [ADR-001](decisions/ADR-001-hedging-account.md)) ดังนั้น 1 symbol
+มีได้หลาย ticket แต่ละใบมี SL/TP/ราคาเปิดของตัวเอง ตารางนี้คือกฎที่ `OrderRouter` ต้องทำตามเป๊ะ
+
+ให้ `N` = `owned_net` ปัจจุบัน · `T` = `target_volume` · `Δ = T − N`
+
+| N | T | ต้องทำ |
+|---|---|--------|
+| +0.20 | +0.20 | **NOOP** — ห้ามส่ง order (เทียบด้วย tolerance `volume_step/2` ไม่ใช่ `==`) |
+| 0 | +0.20 | OPEN BUY 0.20 (1 ticket) |
+| +0.20 | +0.30 | OPEN BUY 0.10 → **ticket ใหม่** (hedging เพิ่มไม้ ไม่ใช่ขยายไม้เดิม) |
+| +0.20 | +0.12 | partial close 0.08 จากไม้ **FIFO** (เก่าสุดก่อน) |
+| +0.20 | 0 | ปิดทุก ticket long ของ symbol นี้ |
+| +0.20 | −0.10 | **2 จังหวะ:** ① ปิด long 0.20 ให้หมด+ยืนยันสำเร็จ → ② OPEN SELL 0.10 |
+| −0.15 | −0.25 | OPEN SELL 0.10 (ticket ใหม่) |
+| มีทั้ง long และ short พร้อมกัน | any | **ANOMALY** — net ออกทันที (`CLOSE_BY` ถ้ารองรับ) + `ERROR severity:ERROR` + alert |
+
+**กฎบังคับ 5 ข้อ:**
+
+1. **No-Internal-Hedge** — ห้ามถือ long+short ของ symbol เดียวกันภายใต้ magic เดียวกัน
+   ตอน flip ต้อง **ปิดเก่าให้หมดก่อน** ห้ามสลับลำดับ
+2. **FIFO** — เลือกไม้ปิดจาก `time_open` เก่าสุด tie-break ด้วย ticket น้อยสุด (deterministic)
+3. **SL/TP เดียวกันทุกไม้** — `PositionModify` เฉพาะไม้ที่ค่าไม่ตรง ไม่แตะไม้ที่ตรงแล้ว
+4. **Leftover guard** — ถ้าปิดบางส่วนแล้วเหลือ < `volume_min` → **ปิดไม้นั้นทั้งใบ**
+   แล้วรายงาน overshoot (ลดเกินที่สั่ง = ปลอดภัยกว่า ยอมรับได้ · ลดไม่ถึง = ไม่ยอมรับ)
+5. **Flip ล้มกลางทางแล้วหยุด** — ถ้าปิดสำเร็จแต่เปิดใหม่ล้ม → อยู่ที่ flat
+   ตอบ `PARTIAL` **ห้าม retry ขั้น 2 หลัง `valid_until` หมด** (ราคาเปลี่ยน การตัดสินใจเดิมอาจไม่ valid)
+
+**Ownership:** จัดการเฉพาะ `POSITION_MAGIC == InpMagic` && `POSITION_SYMBOL == symbol`
+ไม้อื่นบนบัญชี → รายงานใน `STATE.foreign_positions` แต่ห้ามแตะ
+(ยังนับใน margin/equity/DD guard เพราะกินมาร์จิ้นจริง)
 
 `provenance` **ต้องบันทึกลง DB ทุกครั้ง** และใส่ `intent_id` ย่อใน order comment
 เพื่อให้ย้อนได้ว่า trade นี้มาจาก model ไหน
@@ -252,13 +304,27 @@
   "volume_before": 0.00,
   "volume_target": 0.20,
   "volume_clamped_to": null,
+  "overshoot_volume": 0.0,
   "actions_planned": [
-    { "op": "OPEN", "side": "BUY", "volume": 0.20 }
+    { "op": "OPEN", "side": "BUY", "volume": 0.20, "ticket": null }
   ]
 }
 ```
 
-`status` ∈ `ACCEPTED` · `NOOP` · `EXPIRED` · `DUPLICATE` · `REJECTED_BY_GUARD` · `REJECTED_MARKET_CLOSED` · `REJECTED_INVALID`
+ตัวอย่าง flip (N = +0.20 → T = −0.10) — `actions_planned` ต้องเรียงตามลำดับที่จะทำจริง:
+
+```json
+"actions_planned": [
+  { "op": "CLOSE",        "side": "BUY",  "volume": 0.20, "ticket": 1234567 },
+  { "op": "OPEN",         "side": "SELL", "volume": 0.10, "ticket": null }
+]
+```
+
+`op` ∈ `OPEN` · `CLOSE` · `CLOSE_PARTIAL` · `MODIFY_SLTP` · `CLOSE_BY`
+
+`overshoot_volume` — ลดเกินที่สั่งเพราะกฎ leftover guard (§4.5.1 ข้อ 4) `0.0` ถ้าไม่มี
+
+`status` ∈ `ACCEPTED` · `NOOP` · `EXPIRED` · `DUPLICATE` · `REJECTED_BY_GUARD` · `REJECTED_MARKET_CLOSED` · `REJECTED_INVALID` · `ANOMALY_INTERNAL_HEDGE`
 
 ### 4.7 `EXEC_REPORT` (EA → Brain)
 
@@ -364,9 +430,18 @@ CREATE TABLE account_state (      -- hypertable
   session_id TEXT NOT NULL, ts TIMESTAMPTZ NOT NULL,
   balance DOUBLE PRECISION, equity DOUBLE PRECISION, margin_level_pct DOUBLE PRECISION,
   day_pl_pct DOUBLE PRECISION, equity_hwm DOUBLE PRECISION,
-  guard_halted BOOLEAN, guard_mode TEXT, net_positions JSONB
+  guard_halted BOOLEAN, guard_mode TEXT,
+  owned_net JSONB,                        -- {"EURUSD": 0.20} ไม้ที่ EA เป็นเจ้าของ
+  owned_ticket_count JSONB,               -- {"EURUSD": 2}  hedging มีได้หลายไม้
+  foreign_position_count INT NOT NULL DEFAULT 0,   -- ไม้ที่ไม่ใช่ของ EA (R19)
+  internal_hedge_detected BOOLEAN NOT NULL DEFAULT false  -- anomaly (R18)
 );
 SELECT create_hypertable('account_state','ts');
+
+-- ควร alert เมื่อ query นี้คืนแถว: สองเงื่อนไขนี้ไม่ควรเกิดบนบัญชีในฟาร์ม
+-- SELECT * FROM account_state
+--  WHERE ts > now() - interval '5 min'
+--    AND (foreign_position_count > 0 OR internal_hedge_detected);
 
 CREATE TABLE risk_events (
   id BIGSERIAL PRIMARY KEY, ts TIMESTAMPTZ NOT NULL, scope TEXT,  -- ACCOUNT|FARM
