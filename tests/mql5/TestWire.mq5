@@ -198,6 +198,14 @@ void test_timeframe_code_matches_schema()
    AssertEqualString(FarmTimeframeCode(PERIOD_D1), "", "test_timeframe_code_matches_schema unsupported");
 }
 
+void test_pump_p99_us_uses_recorded_samples()
+{
+   CWire wire;
+   for(int i = 1; i <= 100; i++)
+      wire.TestRecordPumpElapsed((ulong)i * 100ULL);
+   AssertTrue(wire.TestPumpP99Us() == 9900ULL, "test_pump_p99_us_uses_recorded_samples");
+}
+
 void test_queue_full_drops_oldest()
 {
    CWire wire;
@@ -289,6 +297,8 @@ void RunAllTests()
    test_msg_id_two_instances_not_duplicate();
    RecordRan("test_timeframe_code_matches_schema");
    test_timeframe_code_matches_schema();
+   RecordRan("test_pump_p99_us_uses_recorded_samples");
+   test_pump_p99_us_uses_recorded_samples();
    RecordRan("test_queue_full_drops_oldest");
    test_queue_full_drops_oldest();
    RecordRan("test_send_before_ready_queues");

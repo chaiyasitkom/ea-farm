@@ -91,6 +91,10 @@ private:
    uint            m_last_heartbeat_tick;
    int             m_backoff_sec;
    int             m_missed_heartbeat_acks;
+   int             m_heartbeat_seq;
+   ulong           m_pump_samples_us[];
+   int             m_pump_sample_next;
+   int             m_pump_sample_count;
    long            m_messages_sent;
    long            m_messages_recv;
    long            m_reconnect_count;
@@ -124,6 +128,52 @@ private:
       const int jitter = (int)MathRound((double)m_backoff_sec * 1000.0 * 0.2);
       const int spread = (jitter > 0 ? (int)(GetTickCount() % (uint)(jitter * 2 + 1)) - jitter : 0);
       return m_backoff_sec * 1000 + spread;
+   }
+
+   string WireStateText() const
+   {
+      if(m_state == WIRE_DISCONNECTED)
+         return "DISCONNECTED";
+      if(m_state == WIRE_CONNECTING)
+         return "CONNECTING";
+      if(m_state == WIRE_CONNECTED)
+         return "CONNECTED";
+      if(m_state == WIRE_AUTHENTICATING)
+         return "AUTHENTICATING";
+      if(m_state == WIRE_READY)
+         return "READY";
+      if(m_state == WIRE_FAILED_AUTH)
+         return "FAILED_AUTH";
+      return "DISCONNECTED";
+   }
+
+   void RecordPumpElapsed(const ulong elapsed_us)
+   {
+      if(ArraySize(m_pump_samples_us) != 100)
+         ArrayResize(m_pump_samples_us, 100);
+      m_pump_samples_us[m_pump_sample_next] = elapsed_us;
+      m_pump_sample_next = (m_pump_sample_next + 1) % 100;
+      if(m_pump_sample_count < 100)
+         m_pump_sample_count++;
+   }
+
+   ulong PumpP99Us() const
+   {
+      if(m_pump_sample_count <= 0)
+         return 0;
+
+      ulong sorted[];
+      ArrayResize(sorted, m_pump_sample_count);
+      for(int i = 0; i < m_pump_sample_count; i++)
+         sorted[i] = m_pump_samples_us[i];
+
+      ArraySort(sorted);
+      int idx = (int)MathCeil((double)m_pump_sample_count * 0.99) - 1;
+      if(idx < 0)
+         idx = 0;
+      if(idx >= m_pump_sample_count)
+         idx = m_pump_sample_count - 1;
+      return sorted[idx];
    }
 
    void ScheduleReconnect()
@@ -390,10 +440,24 @@ private:
 
    void SendHeartbeat()
    {
-      const string payload = "{\"uptime_sec\":" + IntegerToString((int)(GetTickCount() / 1000)) + "}";
+      const int seq = m_heartbeat_seq + 1;
+      const string payload = "{"
+         "\"seq\":" + IntegerToString(seq) + ","
+         "\"wire\":{"
+            "\"state\":" + FarmJsonQuote(WireStateText()) + ","
+            "\"send_queue_depth\":" + IntegerToString(SendQueueDepth()) + ","
+            "\"messages_sent\":" + IntegerToString((int)m_messages_sent) + ","
+            "\"messages_recv\":" + IntegerToString((int)m_messages_recv) + ","
+            "\"reconnect_count\":" + IntegerToString((int)m_reconnect_count) + ","
+            "\"bytes_dropped\":" + IntegerToString((int)m_bytes_dropped) + ","
+            "\"seconds_since_last_inbound\":" + IntegerToString(SecondsSinceLastInbound()) + ","
+            "\"pump_p99_us\":" + IntegerToString((int)PumpP99Us()) +
+         "}" +
+      "}";
       const string msg = FarmMakeEnvelope("HEARTBEAT", NextMsgId(), m_session_id, TimeCurrent(), payload);
       if(SendRawLine(msg))
       {
+         m_heartbeat_seq = seq;
          m_last_heartbeat_tick = NowTick();
          m_missed_heartbeat_acks++;
       }
@@ -434,6 +498,7 @@ private:
          {
             m_session_id = FarmJsonGetString(line, "assigned_session_id", m_session_id);
             m_missed_heartbeat_acks = 0;
+            m_heartbeat_seq = 0;
             m_backoff_sec = 1;
             EnterState(WIRE_READY);
             m_log.Info("wire_ready session_id=" + m_session_id);
@@ -588,6 +653,10 @@ public:
       m_last_heartbeat_tick = 0;
       m_backoff_sec = 1;
       m_missed_heartbeat_acks = 0;
+      m_heartbeat_seq = 0;
+      m_pump_sample_next = 0;
+      m_pump_sample_count = 0;
+      ArrayResize(m_pump_samples_us, 100);
       m_messages_sent = 0;
       m_messages_recv = 0;
       m_reconnect_count = 0;
@@ -677,6 +746,7 @@ public:
       }
 
       const ulong elapsed_us = GetMicrosecondCount() - started;
+      RecordPumpElapsed(elapsed_us);
       if(elapsed_us > 50000)
          m_log.Warn(StringFormat("pump_slow_us=%I64u", elapsed_us));
       else if(m_verbose && elapsed_us > 20000)
@@ -754,6 +824,21 @@ public:
    string TestNextMsgId()
    {
       return NextMsgId();
+   }
+
+   void TestRecordPumpElapsed(const ulong elapsed_us)
+   {
+      RecordPumpElapsed(elapsed_us);
+   }
+
+   ulong TestPumpP99Us() const
+   {
+      return PumpP99Us();
+   }
+
+   string TestWireStateText() const
+   {
+      return WireStateText();
    }
 
    bool TestPopFrame(string &out_line)

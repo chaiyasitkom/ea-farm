@@ -89,11 +89,23 @@ def heartbeat(session_id: str) -> dict[str, object]:
     return {
         "v": 1,
         "type": "HEARTBEAT",
-        "msg_id": "01J8X4K2P9QZ7M3P",
+        "msg_id": "01J8X4K2P9QZ7M3NABCD123456",
         "session_id": session_id,
         "ts_server": "2026-07-26T14:30:02Z",
         "ts_sent": "2026-07-26T14:30:02Z",
-        "payload": {},
+        "payload": {
+            "seq": 1,
+            "wire": {
+                "state": "READY",
+                "send_queue_depth": 0,
+                "messages_sent": 1,
+                "messages_recv": 1,
+                "reconnect_count": 1,
+                "bytes_dropped": 0,
+                "seconds_since_last_inbound": 0,
+                "pump_p99_us": 100,
+            },
+        },
     }
 
 
@@ -138,6 +150,8 @@ class WireResilienceTests(unittest.TestCase):
                 send_message(sock, heartbeat("acct-hb-EURUSD-H1"))
                 response = recv_message(sock)
         self.assertEqual(response["type"], "HEARTBEAT_ACK")
+        self.assertEqual(response["payload"]["seq"], 1)
+        self.assertIn("server_time", response["payload"])
 
     def test_malformed_json_is_skipped_connection_stays_open(self) -> None:
         with server_process() as (_proc, port):

@@ -4,25 +4,36 @@ import argparse
 import asyncio
 import json
 import os
+import random
 import signal
 import time
-import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
 PROTOCOL_VERSION = 1
 MAX_FRAME_BYTES = 64 * 1024
+ULID_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
 
 def utc_now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
+def ulid() -> str:
+    timestamp_ms = int(time.time() * 1000)
+    chars = ["0"] * 10
+    for idx in range(9, -1, -1):
+        chars[idx] = ULID_ALPHABET[timestamp_ms & 31]
+        timestamp_ms >>= 5
+    chars.extend(ULID_ALPHABET[random.SystemRandom().randrange(32)] for _ in range(16))
+    return "".join(chars)
+
+
 def envelope(message_type: str, session_id: str, payload: dict[str, Any]) -> bytes:
     message = {
         "v": PROTOCOL_VERSION,
         "type": message_type,
-        "msg_id": uuid.uuid4().hex[:26],
+        "msg_id": ulid(),
         "session_id": session_id,
         "ts_server": utc_now(),
         "ts_sent": utc_now(),
@@ -83,7 +94,12 @@ class EchoGateway:
                 if message_type == "HELLO":
                     await self._handle_hello(writer, session_id, payload)
                 elif message_type == "HEARTBEAT" and self.heartbeat_ack:
-                    writer.write(envelope("HEARTBEAT_ACK", session_id, {"ok": True}))
+                    seq = payload.get("seq", 0)
+                    writer.write(envelope("HEARTBEAT_ACK", session_id, {
+                        "seq": seq,
+                        "server_time": utc_now(),
+                        "brain_healthy": True,
+                    }))
                     await writer.drain()
                 else:
                     writer.write(raw if raw.endswith(b"\n") else raw + b"\n")
