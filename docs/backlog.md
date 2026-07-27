@@ -15,7 +15,7 @@
 | SPEC-005 | Round-trip test harness (py ↔ mql5) | Codex | **002**, 004 | **SPEC_READY** — [spec](specs/SPEC-005-roundtrip-harness.md) |
 | SPEC-006 | **PostgreSQL** + migration + repository layer (เลื่อน TimescaleDB — [§3.1](specs/SPEC-006-database.md)) | Codex | **002**, 004 | **SPEC_READY** — [spec](specs/SPEC-006-database.md) |
 | SPEC-007 | Data ingest: MT5 history → Parquet (**6 คู่ · M1 เท่านั้นแล้ว resample** · ~10 ปี) | Codex | 002, **064** | **SPEC_READY** — [spec](specs/SPEC-007-data-ingest.md) |
-| SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | TODO |
+| SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | **SPEC_READY** — [spec](specs/SPEC-008-data-quality-gate.md) |
 | SPEC-009 | CI: ruff, mypy, pytest, codegen-diff | Codex | 004 | TODO |
 | SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | **001** (แก้จาก 002 — เป็น MQL5 ล้วน ไม่ต้องรอ scaffold) | **SPEC_READY** — [spec](specs/SPEC-063-broker-time.md) |
 | SPEC-064 | **SymbolRegistry** — `(broker, raw)` → canonical + base/quote + risk profile ต่อ symbol (G7) · 🔴 ขาดไม่ได้หลังเพิ่ม XM: `GOLD` → `XAUUSD` เดาด้วย string rule ไม่ได้ ([ADR-003](decisions/ADR-003-multi-broker.md)) | Codex | **004** (แก้จาก 006 — เป็นไฟล์ในรีโป ไม่ใช่ตาราง DB) | **SPEC_READY** — [spec](specs/SPEC-064-symbol-registry.md) |
