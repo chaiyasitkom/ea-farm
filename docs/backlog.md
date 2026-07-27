@@ -44,8 +44,8 @@
 | SPEC-021 | R6 daily loss + R7 max DD + HWM persistence | Codex | 019, **063** | **SPEC_READY** — [spec](specs/SPEC-021-drawdown-guard.md) |
 | SPEC-022 | R8 margin level + R14 consecutive loss + halt persistence | Codex | 019, 021, **063** | **SPEC_READY** — [spec](specs/SPEC-022-margin-and-loss-streak.md) |
 | SPEC-023 | `SafeMode.mqh` + R13 kill file + R16 brain timeout | Codex | 019, **063** | **SPEC_READY** — [spec](specs/SPEC-023-safemode.md) |
-| SPEC-060 | **MarketDataCollector** — MT5 read-only ป้อน bar ทุก symbol (G1) | Codex | 006 | TODO |
-| SPEC-061 | **P10 stale-data guard ให้ fail-closed** — collector ตาย = reject ไม่ใช่ correlation 0 (G1) | Codex | 060 | TODO |
+| SPEC-060 | **MarketDataCollector** — MT5 read-only ป้อน quote+bar ทุก symbol (G1) | Codex | 006, **013**, **064** | **SPEC_READY** — [spec](specs/SPEC-060-market-data-collector.md) |
+| SPEC-061 | **P10 stale-data guard ให้ fail-closed** — collector ตาย = reject ไม่ใช่ correlation 0 (G1) | Codex | 060 | **SPEC_READY** — [spec](specs/SPEC-061-stale-data-guard.md) |
 | SPEC-024 | Currency exposure decomposition (P3) | Codex | 014, 064 | TODO |
 | SPEC-025 | `brain/risk/` P1,P2,P5,P6,P9,P10,P11 | Codex | 024 | TODO |
 | SPEC-026 | Correlation engine + P4 correlated risk cap | Codex | 024, 060 | TODO |
