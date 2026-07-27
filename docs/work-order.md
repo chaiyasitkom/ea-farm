@@ -234,6 +234,95 @@ terminal64.exe /config:<ini>
 
 gate ที่ใช้เวลา 1 ชม.ทุกครั้ง = gate ที่ไม่มีใครรัน
 
+### ✅ ยืนยันแล้ว: launch บน live chart **ทำงานอยู่แล้ว** — มีหลักฐาน
+
+Codex ถามว่า *"ต้องยืนยันวิธี launch ให้ `OnInit` execute จริงก่อน"*
+**ตรวจแล้ว — มันรันไปแล้วเมื่อ 00:40 วันนี้** ดูใน
+`…\A45801173FBAFA01B9AFF0EEDE7938E3\MQL5\Logs\20260728.log`:
+
+```
+00:40:20.764  FarmExecutor (EURUSD.iux,H1)  FATAL component=FarmExecutor InpBrainToken is empty
+```
+
+บรรทัดนี้พิสูจน์ **4 อย่างพร้อมกัน**:
+
+| | |
+|---|---|
+| EA แนบชาร์ต `EURUSD.iux,H1` ได้ | ✅ |
+| **`OnInit` รันจริง** — ไปถึงบรรทัดเช็ค token แล้ว `return INIT_FAILED` | ✅ |
+| บัญชี login อยู่ (`common.ini` → `Login=2101178419 Server=IUXMarkets-Demo`) | ✅ |
+| `Print()` ของ EA ลงที่ `MQL5\Logs\YYYYMMDD.log` | ✅ ← **นี่คือช่องสังเกตผล** |
+
+**ที่ขาดคือ `ExpertParameters` เท่านั้น** — ตอนนั้นไม่ได้ส่ง `.set` เข้าไป token จึงว่าง
+· `farm-chaos.set` ที่คุณสร้างตอน 00:54 มี `InpBrainToken=test-token` แล้ว **ยังไม่ได้ลองรันซ้ำ**
+
+### ini สำหรับ live chart
+
+```ini
+[Common]
+Login=2101178419
+; ห้ามใส่ Password — บัญชีจำไว้แล้วใน common.ini (AGENTS ข้อ 4)
+
+[Experts]
+AllowLiveTrading=1
+Enabled=1
+Account=0
+Profile=0
+
+[StartUp]
+Expert=FarmExecutor
+ExpertParameters=farm-chaos.set
+Symbol=EURUSD.iux
+Period=H1
+```
+```
+terminal64.exe /config:<ini>
+```
+
+`FarmExecutor.ex5` deploy อยู่ที่ `MQL5\Experts\FarmExecutor.ex5` แล้ว → `Expert=FarmExecutor` (ไม่มี path)
+
+**⚠️ กับดักที่ต้องลองก่อน:** `[Tester]` อ่าน `.set` จาก `MQL5\Profiles\Tester\`
+แต่ **`[StartUp]` อาจอ่านจาก `MQL5\Presets\`** — ถ้า token ยังว่างหลังใส่ `ExpertParameters`
+ให้ก๊อป `.set` ไปไว้ `MQL5\Presets\` แล้วลองใหม่ · **รายงานว่าโฟลเดอร์ไหนถูกใน handoff**
+(ข้อมูลแบบนี้หายง่าย ต้องบันทึกไว้เหมือน 5 กับดักใน [gate-02 §4](reviews/SPEC-001-compile-gate-02.md))
+
+**⚠️ `[StartUp]` ไม่มี `ShutdownTerminal`** — เทอร์มินัลจะค้างเปิด
+Python fixture **ต้อง kill process เองตอนจบ** (และเช็คว่าไม่มีตัวเปิดค้างก่อนเริ่ม)
+
+### วิธีอ่าน log จาก Python — `MQL5\Logs\*.log` เป็น **UTF-16LE**
+
+```python
+open(log_path, encoding="utf-16-le")     # ไม่ใช่ utf-8
+```
+เปิดเป็น utf-8 จะได้ข้อความแทรกด้วย `\x00` แล้ว regex ไม่แมตช์
+— เสียเวลาไล่หาสาเหตุเป็นชั่วโมงถ้าไม่รู้
+
+### 🔴 สิ่งที่ยัง**ไม่รู้** และเป็นด่านถัดไป: socket whitelist
+
+รอบ 00:40 EA fail ที่เช็ค token **ก่อนถึง `g_wire.Init()`** → **ยังไม่เคยมีการเรียก
+`SocketConnect` เลยสักครั้ง** เราจึงยังไม่รู้ว่า MT5 ยอมให้ต่อ `127.0.0.1` ไหม
+
+**และตั้งค่านี้ script ไม่ได้** — ผมตรวจแล้ว `config\settings.ini` เป็น **ไฟล์เข้ารหัส**
+(อ่านเป็น binary ไม่ใช่ ini) → รายการ allowed URL แก้ได้จาก **GUI เท่านั้น**
+
+**ขั้นตอนถัดไปที่ชัดเจน:**
+1. รัน ini ข้างบนพร้อม `farm-chaos.set` + `echo_server.py` ฟังที่ port 60083
+2. ดู `MQL5\Logs\` — ถ้าเจอ error ของ `SocketConnect` → **เจ้าของต้องเปิดให้ด้วยมือ**
+   Tools → Options → Expert Advisors → เพิ่ม `127.0.0.1`
+3. ไม่ว่าผลเป็นอย่างไร **บันทึกเป็นขั้นตอน setup ในรายงาน** — เป็น state ของเครื่อง
+   ที่ไม่อยู่ใน git เครื่องใหม่จะไม่มี (จะย้ายไป runbook SPEC-030b)
+
+> [SPEC-001 §5 edge 10](specs/SPEC-001-mt5-executor.md) สั่งไว้แล้วว่า ถ้า `SocketConnect`
+> fail ต้อง log ข้อความที่**บอกวิธีแก้** — นี่คือเคสที่กฎข้อนั้นถูกออกแบบมาเพื่อ
+
+### 📌 หมายเหตุ: การแก้ config ของเทอร์มินัลต้องบันทึก
+
+เจอ `config\common.ini.codex-backup-20260728-005148` — **สำรองไว้ก่อนแก้ ทำถูกแล้ว**
+(ตรวจแล้วเนื้อไฟล์ปัจจุบันเหมือน backup ทุกบรรทัด = ไม่ได้เปลี่ยนอะไรค้างไว้)
+
+แต่ config ของเทอร์มินัล **อยู่นอก git** → ทุกการเปลี่ยนต้องลงใน handoff
+ไม่งั้นเครื่องใหม่จะตั้งไม่เหมือนเดิมแล้วหาสาเหตุไม่เจอ
+
 ### ต้องเช็คก่อนเริ่ม (2 ข้อ)
 
 1. **socket whitelist** — MT5 บล็อก `SocketConnect` ถ้า host/port ไม่อยู่ใน allow list
