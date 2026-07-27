@@ -16,10 +16,10 @@
 | SPEC-006 | **PostgreSQL** + migration + repository layer (เลื่อน TimescaleDB — [§3.1](specs/SPEC-006-database.md)) | Codex | **002**, 004 | **SPEC_READY** — [spec](specs/SPEC-006-database.md) |
 | SPEC-007 | Data ingest: MT5 history → Parquet (**6 คู่ · M1 เท่านั้นแล้ว resample** · ~10 ปี) | Codex | 002, **064** | **SPEC_READY** — [spec](specs/SPEC-007-data-ingest.md) |
 | SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | **SPEC_READY** — [spec](specs/SPEC-008-data-quality-gate.md) |
-| SPEC-009 | CI: ruff, mypy, pytest, codegen-diff | Codex | 004 | TODO |
+| SPEC-009 | **CI: ปิด G3 ด้วย attestation** — `pre-push` hook + `mql5-attest` + workflow ที่รอ remote | Codex | 002, **065** | **SPEC_READY** — [spec](specs/SPEC-009-ci.md) |
 | SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | **001** (แก้จาก 002 — เป็น MQL5 ล้วน ไม่ต้องรอ scaffold) | **SPEC_READY** — [spec](specs/SPEC-063-broker-time.md) |
 | SPEC-064 | **SymbolRegistry** — `(broker, raw)` → canonical + base/quote + risk profile ต่อ symbol (G7) · 🔴 ขาดไม่ได้หลังเพิ่ม XM: `GOLD` → `XAUUSD` เดาด้วย string rule ไม่ได้ ([ADR-003](decisions/ADR-003-multi-broker.md)) | Codex | **004** (แก้จาก 006 — เป็นไฟล์ในรีโป ไม่ใช่ตาราง DB) | **SPEC_READY** — [spec](specs/SPEC-064-symbol-registry.md) |
-| SPEC-065 | **MQL5 test harness** — test ต้องเป็น **EA ไม่ใช่ Script** (`OnInit`+`ExpertRemove`) เพราะ Script รัน headless ไม่ได้ · เขียนผลเป็น JSON + git sha ให้ CI ตรวจได้ (G9, [07](07-compile-gate.md)) | Codex | 001 | TODO |
+| SPEC-065 | **MQL5 test harness** — ส่วนใหญ่ทำแล้ว · เหลือ manifest หลาย suite + attestation ให้ CI (G9, [07](07-compile-gate.md)) | Codex | 001 | **SPEC_READY** — [spec](specs/SPEC-065-mql5-test-harness.md) |
 
 ## Phase 1 — Execution Plane
 
@@ -126,6 +126,8 @@
 | **D12** | **contract spec จริงของ XM** (`SYMBOL_TRADE_CONTRACT_SIZE` · `VOLUME_MIN` · `VOLUME_STEP`) — ถ้าเป็นบัญชี **Micro** อาจพลิก D5 ให้ $30 ใช้ได้ | ⏳ อ่านไม่ได้จนกว่า D11 ผ่าน · **ห้ามวางแผนบนการเดา** ([ADR-003 §5](decisions/ADR-003-multi-broker.md)) | 2026-07-27 |
 | **D9** | 🔴 **P3/P4 ไม่ระบุหน่วยของ exposure** — เพดานเป็น `% ของ farm equity` แต่ decomposition ให้ผลเป็น notional เทียบกันไม่ได้ · ตีความแบบ notional จะ **reject ทุกไม้ที่ทุนระดับไหนก็ตาม** (แม้ $100k ก็ได้เพดาน 0.02 lot) · เสนอนิยามเป็น **risk-normalized** ([03-risk-spec §P3](03-risk-spec.md)) | ⏳ **ต้องยืนยันก่อน SPEC-024** — เปลี่ยนความหมายของกฎ risk ไม่ใช่แค่ปรับตัวเลข | 2026-07-27 |
 | ~~D6~~ | ~~BTCUSD.iux เปิดเสาร์-อาทิตย์ไหม~~ | ✅ **ปิด — ไม่เกี่ยวแล้ว** ตัด BTCUSD ออกจากชุด symbol (rev.2) ทั้ง 6 คู่ปิดสุดสัปดาห์ กฎ weekend bar เดียวใช้ได้ทุกตัว | 2026-07-27 |
+| **D16** | ⭐ **สร้าง git remote ที่ไหน** — ตอนนี้ repo อยู่บนเครื่องเดียว **ไม่มี backup** เครื่องพัง = หาย ADR + spec + schema ทั้งหมด · และ **ไม่มี remote = ไม่มี CI** | 🔴 **แนะนำให้ทำก่อนอย่างอื่น** — ความเสี่ยงสูงสุดต่อความพยายามต่ำสุด · ตัวเลือก: GitHub private · GitLab · Gitea ในเครื่อง · **ไม่บล็อก SPEC-009 ชั้น 1–2** ([SPEC-009 §3.2](specs/SPEC-009-ci.md)) | 2026-07-28 |
+| **D17** | ตั้ง self-hosted runner บนเครื่อง Windows นี้ไหม | 🟠 ถ้าเอา จะได้ MQL5 gate อัตโนมัติจริง **แทน attestation** · ต้องมี D16 ก่อน ([SPEC-009 §4.4](specs/SPEC-009-ci.md)) | 2026-07-28 |
 | **D7** | สเปก VPS (CPU/RAM/latency ไป IUX) | ⏳ กระทบ SPEC-032 spread model + Phase 6 | 2026-07-27 |
 | **D13** | **ติดตั้ง PostgreSQL อย่างไร** — เครื่องไม่มี Docker · ไม่มี PG · มี WSL2 · **ต้องติดตั้งซอฟต์แวร์ = เจ้าของตัดสิน** | ⏳ แนะนำ **native บน Windows** (ตรงกับ VPS ที่จะเป็น Windows เพราะ MT5 · ชิ้นส่วนน้อยสุด) · **ไม่บล็อกการเขียนโค้ด** — Codex เขียน migration + repository ได้เลย ต่อ DB จริงตอนรัน test marker `db` ([SPEC-006 §9.1](specs/SPEC-006-database.md)) | 2026-07-28 |
 | **D15** | 🔴 **historical broker→UTC mapping** — MT5 คืนเวลา broker · แปลงเป็น UTC ต้องรู้ offset **ณ ขณะนั้นในอดีต** ซึ่งเลื่อนตาม DST ปีละ 2 ครั้ง · `CBrokerTime` (SPEC-063) ตรวจได้แค่ offset **ปัจจุบัน** → ใช้แปลงข้อมูลปี 2016 = **ผิดครึ่งปีทุกปี** · SPEC-007 จึงเก็บ `time_broker` แบบ naive **ปฏิเสธที่จะเดา** | ⏳ **ต้องแก้ก่อน SPEC-032/033** · ทางเลือก: ปฏิทิน DST ของโบรกเกอร์ · หรือ infer จากขอบสัปดาห์ของข้อมูลเอง ([SPEC-007 §4.3](specs/SPEC-007-data-ingest.md)) | 2026-07-28 |

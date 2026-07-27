@@ -38,7 +38,20 @@ Telegram alerting เป็นโมดูลใน brain ถ้า brain ตา
 | **ต้องทำ** | SPEC-062 Watchdog (process แยก **ห้าม** import brain / ต่อ DB / ใช้ venv เดียวกัน) |
 | **Phase** | ต้องเสร็จก่อนจบ Phase 2 (ก่อนเงินจริง) |
 
-### G3 — ใครคอมไพล์และรัน MQL5 test? CI ทำไม่ได้ ⚠️ **ต้องให้เจ้าของตัดสิน**
+### ~~G3~~ — ใครคอมไพล์และรัน MQL5 test? CI ทำไม่ได้ → ✅ **มีคำตอบแล้ว 2026-07-28**
+
+> **ทางออก: attestation** — CI รัน MQL5 ไม่ได้ **แต่ตรวจได้ว่ามีคนรันแล้ว**
+> · [SPEC-065](specs/SPEC-065-mql5-test-harness.md) เขียน `gate/mql5-latest.json`
+>   ที่มี `git_sha` + ผลทุก suite แล้ว commit ลง repo
+> · [SPEC-009](specs/SPEC-009-ci.md) เพิ่ม `mql5-attest` เข้า `check`:
+>   **แตะ `mt5-ea/**` หรือ `tests/mql5/**` แล้วไม่รัน gate ใหม่ → push ไม่ผ่าน**
+>
+> ⚠️ **เป็น attestation ไม่ใช่ proof** — แก้มือได้ แต่เปลี่ยนคำกล่าวอ้าง "test ผ่าน"
+> จากข้อความที่ตรวจไม่ได้ → ไฟล์ที่ **diff ได้ · มีประวัติใน git · ไม่ตรงเมื่อไรก็เห็น**
+> · ทางที่แข็งกว่าคือ **self-hosted runner** (D17) ซึ่งต้องมี git remote ก่อน (D16)
+> · **สองทางไม่ขัดกัน** — วันที่มี runner มันจะเป็นคนเขียนไฟล์เดิมนี้ โครงสร้างไม่ต้องรื้อ
+
+<details><summary>บริบทเดิม</summary>
 
 **เจอจาก:** CI spec = `ruff, mypy, pytest, codegen-diff` — ไม่มี MQL5 เลย
 แต่ `AGENTS.md` เขียนว่า *"ห้ามรายงานเสร็จถ้า test แดง"*
@@ -55,6 +68,8 @@ GitHub Actions รันไม่ได้ (ไม่มี MT5) และ **Cod
 | **✅ ตอบแล้วด้วยหลักฐาน** | ตรวจ repo พบ `__pycache__` ของ `test_wire_resilience.py` (= Python test รันแล้ว) แต่ **ไม่มีไฟล์ `.ex5` เลย** → Codex ไม่มี MetaEditor/MT5 |
 | **แก้แล้ว** | เพิ่ม §MQL5 compile & test gate ใน `05-collab-protocol.md` · AGENTS.md ข้อ 16 |
 | **ผลกระทบ** | MQL5 ทั้งหมด (EA, RiskGuard, OrderRouter = ส่วนสำคัญสุด) เขียนโดยไม่เคยผ่าน compiler · รอบแก้ช้ากว่า Python 2–3 เท่า · SPEC-065 ต้องให้ test เขียนผลเป็น JSON เพื่อ copy กลับได้ |
+
+</details>
 
 ---
 

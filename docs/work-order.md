@@ -980,6 +980,57 @@ lot = min(lot, volume_max, max_lot_per_order) ← clamp ลงเท่านั
 
 ---
 
+# รอบที่ 5.15 — SPEC-065 + SPEC-009 (ปิด Phase 0)
+
+📄 [SPEC-065](specs/SPEC-065-mql5-test-harness.md) · [SPEC-009](specs/SPEC-009-ci.md)
+· ทำคู่กัน — 009 พึ่งไฟล์ที่ 065 ออก
+
+## SPEC-065 — ส่วนใหญ่ทำไปแล้ว เหลือ 2 อย่าง
+
+**สิ่งที่มีแล้ว ห้ามทำซ้ำ:** deploy · compile · `.set` · tester headless ·
+เทียบ `git_sha` · ตรวจ `ran_names` · หลายโบรกเกอร์ + `[SKIP]` · เช็ค terminal ค้าง
+
+**ที่ต้องเพิ่ม:**
+1. **manifest แยกไฟล์** `tools/mql5-suites.json` — เพิ่ม suite = แก้ JSON อย่างเดียว
+   · กำลังจะมีอีก **7 suite** (BrokerTime · FarmMessages · RoundTrip · FarmSymbols ·
+   StateReporter · IntentCache · Reconciler) · suite ที่ยังไม่มีไฟล์ → `[SKIP]` ไม่ใช่ FAIL
+2. **`gate/mql5-latest.json`** — attestation ที่ commit ลง repo (ดู SPEC-009)
+
+★★ **ต้องลบไฟล์ผลลัพธ์ก่อนรันทุก suite** — ถ้าไม่ลบ suite ที่ compile ไม่ผ่าน
+จะ "ผ่าน" ด้วยผลรอบก่อน (กับดักเดียวกับ SPEC-005 edge 1) · **test 2 คือตัวที่กันเรื่องนี้**
+
+## SPEC-009 — ปิด G3 ด้วย attestation
+
+**CI รัน MQL5 ไม่ได้ แต่ตรวจได้ว่ามีคนรันแล้ว**
+
+```
+mql5-attest:
+  แตะ mt5-ea/** หรือ tests/mql5/** แล้ว git_sha ใน attestation ไม่ตรง HEAD
+  → FAIL → push ไม่ผ่าน
+  แก้แต่ docs/ หรือ brain/ → PASS โดยไม่ต้องรัน MT5
+```
+
+**3 ชั้น — ชั้น 1–2 ใช้ได้วันนี้ ไม่ต้องมี remote:**
+
+| ชั้น | | ต้องมี remote |
+|------|---|---------------|
+| 1 | `pre-push` hook รัน `check` | ❌ |
+| 2 | `mql5-attest` อยู่ใน `check` | ❌ |
+| 3 | workflow บน runner | ✅ |
+
+**`pre-push` ไม่ใช่ `pre-commit`** — pre-commit ช้าเกินไป คนจะใช้ `--no-verify`
+จนเป็นนิสัย และ commit ระหว่างทางควร commit ได้
+
+🔴 **พูดตรงๆ: นี่คือ attestation ไม่ใช่ proof** — แก้ JSON ด้วยมือได้
+แต่มันเปลี่ยนคำกล่าวอ้าง *"test ผ่าน"* จากข้อความที่ตรวจไม่ได้ →
+**ไฟล์ที่ diff ได้ · มีประวัติใน git · ไม่ตรงเมื่อไรก็เห็น**
+· ทางที่แข็งกว่าคือ self-hosted runner (D17) ซึ่งต้องมี remote ก่อน (D16)
+· **สองทางไม่ขัดกัน** — วันที่มี runner มันจะเขียนไฟล์เดิมนี้ โครงสร้างไม่ต้องรื้อ
+
+**`check` ทั้งชุดต้อง < 2 นาที** — gate ที่ช้าคือ gate ที่ถูก `--no-verify`
+
+---
+
 # รอบที่ 6 — `local_limits` ต่อกับ EA input
 
 **เส้นตาย: ก่อน merge SPEC-019**
