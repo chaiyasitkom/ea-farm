@@ -87,9 +87,14 @@ lot             = min(lot, volume_max, max_lot_per_order)   // clamp ลงเ�
 `clamp` ยก `lot` ขึ้นถึง `volume_min` เสมอ → บรรทัดเช็คกลายเป็น dead code
 → intent ที่ควร reject จะถูกเปิดที่ `volume_min` **โดยเสี่ยงเกิน R1 เท่าไรก็ได้ อย่างเงียบสนิท**
 
-> ตัวอย่างจริง: equity $10, R1 = 0.35% → risk_money = $0.035
-> EURUSD SL 20 pip ควรได้ `raw_lot` = 0.000175 → ต้อง **reject**
-> แต่ bug จะเปิด 0.01 lot = เสี่ยงจริง $2.00 = **20% ของบัญชี (57 เท่าของ R1)**
+> ตัวอย่างจริง: **standard** account equity $30, R1 = 0.35% → risk_money = $0.105
+> EURUSD SL 20 pip ควรได้ `raw_lot` = 0.000525 → ต้อง **reject**
+> แต่ bug จะเปิด 0.01 lot = เสี่ยงจริง $2.00 = **6.7% ของบัญชี (19 เท่าของ R1)**
+> ทอง SL $5 หนักกว่า: $5.00 = **16.7% ของบัญชี (48 เท่า)**
+>
+> บน **cent** account ที่ $30 (ค่าที่ตัดสินใน [ADR-002](decisions/ADR-002-symbols-capital-hours.md) §3.2)
+> `raw_lot` ออกมา 0.02–0.07 อยู่เหนือ `volume_min` จึงยังไม่ทริกเกอร์ bug นี้ —
+> **แต่ยังต้องแก้** เพราะจะทริกเกอร์ทันทีเมื่อ SL กว้างผิดปกติ หรือ equity ตกจาก drawdown
 
 **หลักการ:** clamp **ลง**ได้เสมอ (ปลอดภัยขึ้น) · clamp **ขึ้น**ห้ามเด็ดขาด (เสี่ยงเกินที่สั่ง)
 ดู [ADR-002](decisions/ADR-002-symbols-capital-hours.md) §4

@@ -170,7 +170,7 @@ schema กำหนด `exclusiveMinimum: 0` → ส่ง `0` **fail validation
 
 | เรื่อง | สถานะ |
 |-------|-------|
-| `USDCNY.iux` ไม่มีในโบรกเกอร์ | รอเจ้าของเลือก `USDCNH` หรือตัดทิ้ง — **ไม่กระทบ schema** เพราะ symbol ไม่ใช่ enum |
-| **D5 ทุนต่อบัญชี** | 🔴 BLOCKER ของ SPEC-020/025 · **ไม่บล็อก SPEC-004** |
+| ~~`USDCNY.iux` ไม่มีในโบรกเกอร์~~ | ✅ **ปิดแล้ว 2026-07-27 — ตัดทิ้ง** ([ADR-002](../decisions/ADR-002-symbols-capital-hours.md) rev.4) · ชุด symbol ปิดสนิทที่ 6 คู่ · **ไม่กระทบ schema** เพราะ symbol ไม่ใช่ enum (นี่คือผลของการตัดสินใจข้อ 1 ใน §4) |
+| **D5 ทุนต่อบัญชี** | 🟡 **$30 × ≥2 บัญชี** — เหลือยืนยันว่าเป็น cent account · **ไม่บล็อก SPEC-004/020/025 อีกแล้ว** |
 | `order comment` ยาวได้ 31 ตัวอักษร | ULID 26 ตัว + prefix ใส่ไม่พอ → schema กำหนดให้ใช้ `i:<12 ตัวแรก>` · 12 ตัวแรกของ ULID เป็น timestamp+random บางส่วน **ไม่การันตี unique** ใช้เป็นเบาะแสตอน debug เท่านั้น การผูก trade↔intent ที่เชื่อถือได้ต้องมาจาก `exec_reports.intent_id` ใน DB |
 | validator สำหรับ invariant ข้ามฟิลด์ | เขียนไว้ใน `$comment` ทุกไฟล์แล้ว · **SPEC-004/005 ต้อง implement เป็นโค้ด + test** schema จับให้ไม่ได้ |
