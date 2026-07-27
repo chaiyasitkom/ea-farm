@@ -439,7 +439,34 @@ open(log_path, encoding="utf-16-le")     # ไม่ใช่ utf-8
 
 ---
 
-# รอบที่ 5 — `local_limits` ต่อกับ EA input
+# รอบที่ 5 — SPEC-064 SymbolRegistry
+
+📄 [spec เต็ม](specs/SPEC-064-symbol-registry.md) · **SPEC_READY** · 20 test · ต่อจาก SPEC-004 ได้ทันที
+
+ปิด [G7](06-gap-audit.md) ที่ตอนนี้เกิดขึ้นจริงแล้ว:
+
+```
+IUX: EURUSD.iux · XAUUSD.iux      XM: EURUSD · GOLD
+                                          └── เดาด้วย string rule ไม่ได้
+```
+
+**หัวใจ 3 ข้อ:**
+
+| | |
+|---|---|
+| **fail-closed** | เจอ raw ที่ไม่มีในตาราง → EA `INIT_FAILED` · brain ทิ้ง message · **ห้ามเดา** |
+| **ห้ามตัด suffix** | acceptance มี `grep` ห้ามเจอ `.replace` / `StringSubstr` / `removesuffix` ใน path นี้ — ต้องเป็น table lookup ล้วน |
+| **cross-check 2 ฝั่ง** | MQL5 dump ทุก mapping ลง JSON แล้ว Python เทียบทีละคู่ — **ถ้าสองฝั่งไม่ตรง ระบบจะนับ exposure ผิดโดยไม่มีอะไรพัง** |
+
+`contracts/symbols.json` **Claude กรอกเนื้อให้ครบแล้วใน spec §5** — ก๊อปไปใช้ได้เลย
+**ห้ามแก้เอง** เพราะมีค่า risk (R5/R10/R11) อยู่ข้างใน
+
+`max_spread_points` ยัง `null` ทั้ง 6 ตัว (ยังไม่ calibrate จากสถิติจริง)
+→ R5 ข้าม + WARN · `production_ready = false` · **บล็อกที่ประตูเงินจริง ไม่ใช่บล็อกตอนนี้**
+
+---
+
+# รอบที่ 6 — `local_limits` ต่อกับ EA input
 
 **เส้นตาย: ก่อน merge SPEC-019**
 
