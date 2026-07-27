@@ -11,7 +11,7 @@
 | SPEC-001 | MT5 Executor skeleton + Wire (socket, JSON-lines, reconnect) | Codex | — | **SPEC_READY** |
 | SPEC-002 | Repo scaffold, `.gitignore`, `.env.example`, Makefile | Codex | — | TODO |
 | SPEC-003 | `contracts/schema/*.json` ทุก message type | **Claude** | — | ✅ **DONE** — 13 schema + README · [handoff](reviews/SPEC-003-schema-handoff.md) |
-| SPEC-004 | Codegen: schema → pydantic + MQL5 struct/serializer | Codex | 003 | **SPEC_READY** ← ปลดล็อกแล้ว |
+| SPEC-004 | Codegen: schema → pydantic + MQL5 struct/serializer | Codex | 003 | **SPEC_READY** — [spec](specs/SPEC-004-codegen.md) |
 | SPEC-005 | Round-trip test harness (py ↔ mql5) | Codex | 004 | TODO |
 | SPEC-006 | Postgres + TimescaleDB, migration, repository layer | Codex | 003 | TODO |
 | SPEC-007 | Data ingest: MT5 history → Parquet (**6 คู่ · M1 เท่านั้นแล้ว resample** · ~10 ปี) | Codex | 002 | TODO |

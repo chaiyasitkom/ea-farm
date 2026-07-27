@@ -36,13 +36,14 @@
 
     "positions": {
       "type": "array",
-      "maxItems": 512,
-      "items": { "$ref": "#/$defs/position" }
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/position" },
+      "description": "R4 max_total_tickets = 8 → ปกติ ≤ 8 · เพดาน 64 เป็น headroom. ★ ห้ามขึ้นไปถึงหลักร้อย เพราะ 1 position ≈ 250 byte JSON และ frame ทั้ง message จำกัดที่ 64 KB — 512 ไม้จะสร้าง frame ที่ส่งไม่ได้เลย"
     },
 
     "pending_orders": {
       "type": "array",
-      "maxItems": 512,
+      "maxItems": 64,
       "items": { "$ref": "#/$defs/pending_order" },
       "description": "ว่างตลอดใน Phase 1–5 (urgency PASSIVE/limit order เริ่ม Phase 6)"
     },
