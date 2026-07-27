@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/intent.json",
+  "title": "INTENT payload",
+  "description": "Brain → EA ★ message ที่สำคัญที่สุด · ต้องได้ INTENT_ACK · semantics = **target-state** ไม่ใช่คำสั่ง order — EA คำนวณส่วนต่างเอง (ADR-001 §4.5.1)",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["intent_id", "symbol", "target_volume", "max_slippage_points", "sl_price", "tp_price", "valid_until", "urgency", "provenance"],
+
+  "properties": {
+    "intent_id": {
+      "$ref": "common.json#/$defs/ulid",
+      "description": "dedupe key — EA เก็บ cache ≥ 1000 รายการ · id ซ้ำ → ทิ้งแล้วตอบ DUPLICATE **ห้ามทำซ้ำ** เพราะทำซ้ำ = order ซ้ำ = เงินหาย"
+    },
+    "symbol": { "$ref": "common.json#/$defs/symbol" },
+    "target_volume": {
+      "$ref": "common.json#/$defs/signed_volume",
+      "description": "**net position ที่ต้องการ** ไม่ใช่ขนาด order · บวก = long · ลบ = short · 0 = flatten symbol นี้ทั้งหมด. เทียบกับ owned_net ด้วย tolerance volume_step/2 ห้ามใช้ =="
+    },
+    "max_slippage_points": { "$ref": "common.json#/$defs/points", "description": "R15 · เกินแล้ว **ยกเลิก ห้าม retry**" },
+    "sl_price": {
+      "$ref": "common.json#/$defs/price_or_null",
+      "description": "R9 บังคับมีค่าเมื่อ target_volume ≠ 0 · apply ค่าเดียวกันกับ **ทุก ticket** ที่เป็นเจ้าของใน symbol นี้ (ADR-001 §5) · null เมื่อ target_volume = 0"
+    },
+    "tp_price": { "$ref": "common.json#/$defs/price_or_null" },
+    "valid_until": {
+      "$ref": "common.json#/$defs/ts_utc",
+      "description": "เลยแล้ว → ทิ้ง intent ตอบ EXPIRED. เทียบกับ **ts_server** ไม่ใช่เวลา local · ห้าม retry ขั้นที่ 2 ของ flip หลังเลยเวลานี้"
+    },
+    "urgency": {
+      "enum": ["NORMAL", "IMMEDIATE", "PASSIVE"],
+      "description": "NORMAL = รอ spread ปกติได้ ≤ 30s · IMMEDIATE = ส่งเลย · PASSIVE = limit order **Phase 6+ ยังไม่ implement** ได้รับตอนนี้ให้ตอบ REJECTED_INVALID"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "**ต้องบันทึกลง DB ทุกครั้ง** เพื่อย้อนได้ว่า trade นี้มาจาก model ไหน — เป็นหลักฐาน audit ห้าม UPDATE/DELETE",
+      "required": ["strategy_id", "decided_at"],
+      "properties": {
+        "strategy_id":   { "type": "string", "pattern": "^[a-z0-9_]{1,32}$" },
+        "model_version": { "type": ["string", "null"], "maxLength": 128, "description": "null = rule-based ไม่มี model (เช่น ema_baseline ใน Phase 1)" },
+        "feature_hash":  { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{8,64}$", "description": "hash ของ feature vector ที่ใช้ตัดสิน — runtime ต้อง assert ว่าตรงกับตอน train (SPEC-031)" },
+        "regime":        { "type": ["string", "null"], "maxLength": 32 },
+        "confidence":    { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "P9 sanity: ต้องอยู่ใน [0,1] เท่านั้น นอกช่วง = model เพี้ยน reject + alert" },
+        "risk_scale_applied": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "scale_factor ที่ถูกคูณไปแล้ว (P7 regime × RISK_DIRECTIVE) — บันทึกไว้เพื่อย้อนดูว่าโดนหั่นเท่าไร" },
+        "news_state":    { "type": ["string", "null"], "enum": ["CLEAR", "PRE_EVENT", "IN_EVENT", "POST_EVENT", "UNKNOWN", null] },
+        "decided_at":    { "$ref": "common.json#/$defs/ts_utc", "description": "เวลาที่ brain ตัดสินใจ — ใช้วัด decision→fill latency" }
+      }
+    }
+  },
+
+  "$comment": "invariant ที่ schema บังคับไม่ได้: sl_price ต้องอยู่ฝั่งถูกของราคาปัจจุบัน (long → sl < price · short → sl > price) และห่างเกิน stops_level — P9 ต้องเช็คก่อนส่ง ไม่ใช่ปล่อยให้โบรกเกอร์ reject"
+}

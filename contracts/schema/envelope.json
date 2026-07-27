@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/envelope.json",
+  "title": "Envelope",
+  "description": "ห่อหุ้มทุก message · 1 message = 1 JSON object + \\n (LF) · UTF-8 ไม่มี BOM · frame ≤ 64 KB นับเป็น byte ไม่ใช่ตัวอักษร",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["v", "type", "msg_id", "session_id", "ts_server", "ts_sent", "payload"],
+
+  "properties": {
+    "v": {
+      "const": 1,
+      "description": "protocol version — ไม่ตรง = ปฏิเสธ session ทันที (HELLO_ACK reject_reason VERSION_MISMATCH)"
+    },
+    "type": {
+      "enum": [
+        "HELLO", "HELLO_ACK",
+        "HEARTBEAT", "HEARTBEAT_ACK",
+        "BAR", "STATE",
+        "INTENT", "INTENT_ACK",
+        "EXEC_REPORT", "RISK_DIRECTIVE",
+        "CONFIG_UPDATE", "ERROR"
+      ],
+      "description": "type ที่ไม่รู้จัก → log ระดับ DEBUG แล้ว **ข้าม** ห้ามปิด connection (forward compat §7)"
+    },
+    "msg_id":     { "$ref": "common.json#/$defs/ulid" },
+    "session_id": { "$ref": "common.json#/$defs/session_id" },
+    "ts_server": {
+      "$ref": "common.json#/$defs/ts_utc",
+      "description": "เวลา broker server **แปลงเป็น UTC จริงแล้ว** — ใช้ตัดสินใจเทรด. ⚠️ TimeCurrent() คืนเวลา broker-local ไม่ใช่ UTC ต้องหัก offset ก่อน (ดู SPEC-063 BrokerTime)"
+    },
+    "ts_sent": {
+      "$ref": "common.json#/$defs/ts_utc",
+      "description": "เวลา local ตอนส่ง (TimeGMT()) — ใช้วัด latency **เท่านั้น** ห้ามใช้ตัดสินใจเทรด clock drift ทำให้ผลเพี้ยน"
+    },
+    "payload": {
+      "type": "object",
+      "description": "รูปร่างตาม type — ดูไฟล์ <type ตัวเล็ก>.json"
+    }
+  },
+
+  "$comment": "additionalProperties=true ทุกที่โดยเจตนา — §7 บังคับว่าทั้ง 2 ฝั่งต้องข้าม unknown field ได้ ถ้าตั้ง false จะทำให้เพิ่ม optional field กลายเป็น breaking change"
+}

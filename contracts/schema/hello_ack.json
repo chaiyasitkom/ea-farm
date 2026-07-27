@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/hello_ack.json",
+  "title": "HELLO_ACK payload",
+  "description": "Brain → EA · accepted=false → EA เข้า FAILED_AUTH **รอ 60 วินาที** ก่อนลองใหม่ (ไม่ใช่ backoff ปกติ) และเข้า SafeMode",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["accepted", "server_time", "brain_version"],
+
+  "properties": {
+    "accepted":   { "type": "boolean" },
+    "server_time": { "$ref": "common.json#/$defs/ts_utc" },
+    "assigned_session_id": {
+      "oneOf": [
+        { "$ref": "common.json#/$defs/session_id" },
+        { "type": "null" }
+      ],
+      "description": "session_id ที่ gateway กำหนด — EA ต้องใช้ค่านี้แทนที่ตัวเองสร้าง. null เมื่อ accepted=false"
+    },
+    "brain_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "reject_reason": {
+      "oneOf": [
+        { "enum": ["BAD_TOKEN", "VERSION_MISMATCH", "DUPLICATE_SESSION", "ACCOUNT_NOT_REGISTERED", "MARGIN_MODE_NOT_HEDGING"] },
+        { "type": "null" }
+      ],
+      "description": "ต้องไม่ null เมื่อ accepted=false. MARGIN_MODE_NOT_HEDGING = gateway ปฏิเสธเพราะ account.margin_mode ≠ RETAIL_HEDGING (ADR-001)"
+    },
+    "initial_directive": {
+      "$ref": "risk_directive.json#/$defs/directive_core",
+      "description": "โหมดเริ่มต้นตอนต่อ — EA ต้อง apply ทันทีก่อนเทรด ห้ามสมมติว่าเป็น NORMAL"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/hello.json",
+  "title": "HELLO payload",
+  "description": "EA → Brain · ครั้งเดียวตอนต่อ · ต้องได้ HELLO_ACK ภายใน 5s ไม่งั้นปิด socket แล้ว backoff",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["token", "ea_version", "terminal_build", "account", "symbol", "timeframe", "strategy_id", "magic", "local_limits"],
+
+  "properties": {
+    "token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "เทียบกับ env FARM_TOKEN ฝั่ง gateway. ⚠️ ห้าม log ค่านี้ทั้งสองฝั่ง — mask เป็น *** ตอน log"
+    },
+    "ea_version":     { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "terminal_build": { "type": "integer", "minimum": 3800, "description": "MetaEditor/terminal build — ต่ำกว่า 3800 ไม่รองรับ" },
+    "account":        { "$ref": "common.json#/$defs/account_info" },
+    "symbol":         { "$ref": "common.json#/$defs/symbol_spec" },
+    "timeframe":      { "$ref": "common.json#/$defs/timeframe" },
+    "strategy_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]{1,32}$",
+      "description": "ตัวเล็ก + _ เท่านั้น ใช้เป็น key ใน P6 strategy_allocation"
+    },
+    "magic": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647,
+      "description": "POSITION_MAGIC ที่ EA เป็นเจ้าของ — ownership ทั้งหมดตัดสินจาก (magic, symbol) ตาม ADR-001"
+    },
+    "local_limits":   { "$ref": "common.json#/$defs/local_limits" }
+  }
+}

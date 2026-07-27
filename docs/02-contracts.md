@@ -3,6 +3,11 @@
 > **นี่คือเอกสารที่สำคัญที่สุดสำหรับ Codex**
 > ทุก message ที่วิ่งระหว่าง MQL5 กับ Python ต้องตรงกับที่นี่เป๊ะ
 > ถ้าจะเปลี่ยนอะไร → เปิด issue ให้ Claude อัปเดต spec ก่อน ห้ามแก้ฝ่ายเดียว
+>
+> ⚠️ **ตั้งแต่ SPEC-003 (2026-07-27): [`contracts/schema/*.json`](../contracts/schema/) เป็น source of truth ที่ผูกพัน**
+> เอกสารนี้เป็นคำอธิบาย เหตุผล และตัวอย่าง — **ถ้าสองที่ไม่ตรงกัน schema ชนะ**
+> ตัวอย่าง JSON ในเอกสารนี้ย่อ ULID ให้อ่านง่าย ของจริงต้อง 26 ตัวอักษรเสมอ
+> อ่าน [`contracts/schema/README.md`](../contracts/schema/README.md) ก่อนเขียน codegen
 
 ---
 
@@ -42,7 +47,7 @@
 |-------|------|------|
 | `v` | int | protocol version — mismatch = ปฏิเสธ session |
 | `type` | string | enum ตาราง §3 |
-| `msg_id` | string(26) | ULID-like, monotonic ต่อ session — ใช้ dedupe |
+| `msg_id` | string(26) | **ULID เต็มรูป** Crockford base32 = 48-bit ms timestamp + 80-bit random · monotonic ต่อ session และ **ต้องไม่ซ้ำข้าม EA restart** เพราะเป็น dedupe key (ตัวนับที่รีเซ็ตตอน restart ใช้ไม่ได้) |
 | `session_id` | string | `acct-{login}-{symbol}-{timeframe}` |
 | `ts_server` | ISO8601 UTC | **เวลาจาก broker server** (`TimeCurrent()`) — ใช้ตัดสินใจ |
 | `ts_sent` | ISO8601 UTC | เวลา local ตอนส่ง — ใช้วัด latency เท่านั้น |
@@ -66,7 +71,7 @@
 | `INTENT_ACK` | EA → Brain | — | — |
 | `EXEC_REPORT` | EA → Brain | ทุกครั้งที่ order มีผล | ❌ |
 | `RISK_DIRECTIVE` | Brain → EA | เมื่อ risk state เปลี่ยน | ✅ `INTENT_ACK` (reuse) |
-| `CONFIG_UPDATE` | Brain → EA | ไม่บ่อย | ✅ |
+| `CONFIG_UPDATE` | Brain → EA | ไม่บ่อย | ✅ `INTENT_ACK` · 🚫 **RESERVED ห้าม implement ก่อน Phase 5** |
 | `ERROR` | ทั้งสองทาง | เมื่อเกิดปัญหา | ❌ |
 
 ---
@@ -88,10 +93,10 @@
     "balance": 10000.00,
     "equity": 10000.00,
     "is_demo": true,
-    "margin_mode": "NETTING"
+    "margin_mode": "RETAIL_HEDGING"
   },
   "symbol": {
-    "name": "EURUSD",
+    "name": "EURUSD.iux",
     "digits": 5,
     "point": 0.00001,
     "tick_size": 0.00001,
@@ -104,13 +109,17 @@
     "freeze_level": 0,
     "swap_long": -7.2,
     "swap_short": 1.4,
-    "trade_mode": "FULL"
+    "trade_mode": "FULL",
+    "order_mode_closeby": true
   },
   "timeframe": "H1",
   "strategy_id": "trend_v1",
+  "magic": 770001,
   "local_limits": {
     "max_lot_per_order": 0.50,
-    "max_positions": 3,
+    "max_net_volume_per_symbol": 0.50,
+    "max_tickets_per_symbol": 4,
+    "max_total_tickets": 8,
     "max_spread_points": 25,
     "daily_loss_pct": 2.0,
     "max_dd_pct": 6.0
@@ -120,6 +129,13 @@
 
 `local_limits` ส่งขึ้นไปเพื่อให้ brain **รู้** ว่า EA จำกัดอะไรอยู่ (จะไม่ส่ง intent ที่เกิน)
 แต่ **brain แก้ค่านี้ไม่ได้** — ค่ามาจาก EA input เท่านั้น
+
+**เปลี่ยนจากฉบับแรก (SPEC-003):**
+- `margin_mode` เป็น `RETAIL_HEDGING` ตาม [ADR-001](decisions/ADR-001-hedging-account.md) (เดิมตัวอย่างเขียน `NETTING` ซึ่งขัดกับ ADR)
+- เพิ่ม `magic` — ownership ทั้งหมดตัดสินจาก `(magic, symbol)` brain ต้องรู้ค่านี้
+- เพิ่ม `symbol.order_mode_closeby` ตาม ADR-001 §2
+- `local_limits.max_positions` → แยกเป็น `max_net_volume_per_symbol` (R3a) +
+  `max_tickets_per_symbol` (R3b) + `max_total_tickets` (R4) ตาม ADR-001 §3
 
 ### 4.2 `HELLO_ACK` (Brain → EA)
 
@@ -134,8 +150,26 @@
 }
 ```
 
-`accepted: false` + `reject_reason` (`BAD_TOKEN` / `VERSION_MISMATCH` / `DUPLICATE_SESSION` / `ACCOUNT_NOT_REGISTERED`)
+`accepted: false` + `reject_reason` (`BAD_TOKEN` / `VERSION_MISMATCH` / `DUPLICATE_SESSION` /
+`ACCOUNT_NOT_REGISTERED` / `MARGIN_MODE_NOT_HEDGING`)
 → EA ต้อง **ไม่ retry ทันที** รอ 60s แล้วค่อยลองใหม่ และเข้า SafeMode
+
+`MARGIN_MODE_NOT_HEDGING` เพิ่มใน SPEC-003 — gateway ต้องปฏิเสธซ้ำอีกชั้นถ้า
+`account.margin_mode ≠ RETAIL_HEDGING` ไม่พึ่งแค่ `OnInit` ฝั่ง EA
+(EA เวอร์ชันเก่าหรือถูกแก้อาจข้ามการเช็คไป — ชั้น server ต้องกันเอง)
+
+### 4.2.1 `HEARTBEAT` / `HEARTBEAT_ACK`
+
+เดิมไม่มีนิยาม payload ทั้งที่อยู่ใน type enum → นิยามใน SPEC-003 แล้ว
+ดู [`heartbeat.json`](../contracts/schema/heartbeat.json) · [`heartbeat_ack.json`](../contracts/schema/heartbeat_ack.json)
+
+- `HEARTBEAT` พา **wire metric** ขึ้นไปด้วย (`send_queue_depth`, `reconnect_count`,
+  `bytes_dropped`, `seconds_since_last_inbound`, `pump_p99_us`) — ใช้ขึ้น dashboard
+  และเป็นสัญญาณเตือนว่าท่อไม่นิ่งก่อนที่จะขาดจริง
+- `bytes_dropped > 0` = queue เต็มจนต้อง drop = **ข้อมูลหาย ต้อง alert**
+- `seq` ต้องจับคู่กัน — EA นับ **ack ที่หายไปตาม seq** ไม่ใช่นับจำนวน ack ที่ได้
+- `HEARTBEAT_ACK.brain_healthy: false` = brain ตอบได้แต่รู้ตัวว่าไม่พร้อมตัดสินใจ
+  → EA เข้า SafeMode ทันที ไม่ต้องรอ R16 timeout ครบ 10s
 
 ### 4.3 `BAR` (EA → Brain)
 
@@ -392,6 +426,23 @@
 ```
 
 `severity` ∈ `WARN` · `ERROR` · `FATAL` — `fatal: true` → ปิด session
+
+`code` ต้องเป็น `UPPER_SNAKE` คงที่ (ใช้ group alert ได้) และ `message`
+**ต้องมีตัวเลขจริงที่วัดได้** — `"frame 71204 bytes exceeds 65536"` ไม่ใช่ `"frame too large"`
+
+### 4.10 `CONFIG_UPDATE` — 🚫 RESERVED
+
+นิยามใน SPEC-003 เพื่อไม่ให้ `type` enum มีช่องว่างที่ต้องเดา แต่ **ห้าม implement ก่อน Phase 5**
+EA ที่ยังไม่รองรับ → ตอบ `INTENT_ACK` status `REJECTED_INVALID`
+reason `CONFIG_UPDATE_NOT_SUPPORTED`
+
+**★ กฎเหล็ก:** `settings` **ห้ามมี risk parameter ใดๆ เลย** (R1–R19, lot, SL, spread,
+daily loss, DD, magic) — ค่าเหล่านั้นมาจาก EA input **เท่านั้น** ตาม §4.1 และ
+[risk-spec L1](03-risk-spec.md)
+
+ถ้าอนาคตอยากให้ brain สั่งเข้มขึ้น → ใช้ `RISK_DIRECTIVE` ที่**เข้มได้แต่ผ่อนไม่ได้**
+ไม่ใช่ `CONFIG_UPDATE` ที่เปลี่ยนค่าได้อิสระทั้งสองทาง
+นี่คือเหตุผลที่ `settings` เป็น `additionalProperties: false` — ต่างจาก message อื่นทั้งหมด
 
 ---
 

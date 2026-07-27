@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/state.json",
+  "title": "STATE payload",
+  "description": "EA → Brain ทุก 5s หรือเมื่อ position เปลี่ยน · ไม่ต้อง ack · positions[] ส่งเฉพาะไม้ที่ EA เป็นเจ้าของ (magic ตรง + symbol ตรง) ตาม ADR-001",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "balance", "equity", "margin_used", "margin_free", "margin_level_pct",
+    "equity_hwm", "day_start_equity", "day_pl", "day_pl_pct",
+    "positions", "pending_orders", "owned_net", "owned_ticket_count",
+    "foreign_positions", "account_margin_mode", "guard"
+  ],
+
+  "properties": {
+    "balance":     { "$ref": "common.json#/$defs/money" },
+    "equity":      { "$ref": "common.json#/$defs/money", "description": "ทั้งบัญชี รวมไม้ foreign — R7 max DD ต้องใช้ค่านี้ ไม่ใช่ผลรวม POSITION_PROFIT ของไม้ที่เป็นเจ้าของ" },
+    "margin_used": { "$ref": "common.json#/$defs/money" },
+    "margin_free": { "$ref": "common.json#/$defs/money" },
+    "margin_level_pct": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "R8 · null เมื่อ margin_used = 0 (MT5 คืน 0 ซึ่งกำกวมกับ 'margin level 0% = ใกล้ล้าง') — ต้องส่ง null ไม่ใช่ 0"
+    },
+    "equity_hwm": {
+      "$ref": "common.json#/$defs/money",
+      "description": "high-water mark ของ equity — **ต้อง persist ข้ามการ restart EA** (ไฟล์/GlobalVariable) ไม่ใช่ตัวแปรใน memory"
+    },
+    "day_start_equity": {
+      "$ref": "common.json#/$defs/money",
+      "description": "equity ณ 00:00 **broker time** — ต้องรอด DST/timezone เปลี่ยน (SPEC-063)"
+    },
+    "day_pl":     { "$ref": "common.json#/$defs/money" },
+    "day_pl_pct": { "$ref": "common.json#/$defs/pct", "description": "R6 วัดจาก equity ไม่ใช่ closed P/L" },
+
+    "positions": {
+      "type": "array",
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/position" }
+    },
+
+    "pending_orders": {
+      "type": "array",
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/pending_order" },
+      "description": "ว่างตลอดใน Phase 1–5 (urgency PASSIVE/limit order เริ่ม Phase 6)"
+    },
+
+    "owned_net":          { "$ref": "common.json#/$defs/volume_map" },
+    "owned_ticket_count": { "$ref": "common.json#/$defs/count_map", "description": "hedging มีได้หลาย ticket ต่อ symbol — R3b คุมไม่ให้เกิน" },
+
+    "foreign_positions": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["count", "symbols", "total_volume", "margin_estimate"],
+      "description": "R19 · ไม้บนบัญชีที่ไม่ใช่ของ EA (เทรดมือ / EA อื่น / magic ชนกัน) — EA ห้ามแตะ แต่ต้องรายงานเพราะกินมาร์จิ้นและกระทบ equity จริง. count > 0 บนบัญชีในฟาร์ม = ต้อง alert",
+      "properties": {
+        "count":           { "type": "integer", "minimum": 0 },
+        "symbols":         { "type": "array", "maxItems": 128, "items": { "$ref": "common.json#/$defs/symbol" } },
+        "total_volume":    { "$ref": "common.json#/$defs/volume" },
+        "margin_estimate": { "$ref": "common.json#/$defs/money" }
+      }
+    },
+
+    "account_margin_mode": { "$ref": "common.json#/$defs/margin_mode" },
+
+    "guard": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["halted", "mode", "current_spread_points", "internal_hedge_detected"],
+      "properties": {
+        "halted": { "type": "boolean", "description": "**ต้อง persist ข้าม restart** — restart EA แล้วต้องยัง halt อยู่ถ้ายังในวันเดียวกัน" },
+        "halt_reason": {
+          "oneOf": [
+            { "enum": ["R6_DAILY_LOSS", "R7_MAX_DD_HARD", "R8_MARGIN_LEVEL", "R13_KILL_FILE", "R14_CONSECUTIVE_LOSS", "R16_BRAIN_TIMEOUT", "R17_ORDER_STORM", "MANUAL"] },
+            { "type": "null" }
+          ],
+          "description": "ต้องไม่ null เมื่อ halted=true — ต้องรู้ว่า halt เพราะกฎข้อไหนเพื่อ audit"
+        },
+        "mode": { "$ref": "common.json#/$defs/guard_mode", "description": "ค่าที่ **มีผลจริง** = เข้มที่สุดระหว่าง local guard กับ RISK_DIRECTIVE ล่าสุด" },
+        "current_spread_points": { "$ref": "common.json#/$defs/points" },
+        "internal_hedge_detected": {
+          "type": "boolean",
+          "description": "R18 · true = พบไม้ long+short พร้อมกันใน symbol เดียวใต้ magic เดียว = **ANOMALY** ไม่ใช่สถานะปกติ ต้อง net ออกทันที + alert"
+        },
+        "halted_until": {
+          "oneOf": [
+            { "$ref": "common.json#/$defs/ts_utc" },
+            { "type": "null" }
+          ],
+          "description": "optional · R14 halt 4 ชม. ต้องรู้ว่าปลดเมื่อไร · null = halt ถึงสิ้นวัน หรือต้องปลดด้วยมือ"
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "position": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["ticket", "symbol", "side", "volume", "price_open", "sl", "tp", "profit", "swap", "magic", "time_open"],
+      "properties": {
+        "ticket":     { "type": "integer", "minimum": 1 },
+        "symbol":     { "$ref": "common.json#/$defs/symbol" },
+        "side":       { "$ref": "common.json#/$defs/side" },
+        "volume":     { "$ref": "common.json#/$defs/volume", "description": "บวกเสมอ — ทิศทางอยู่ที่ side" },
+        "price_open": { "$ref": "common.json#/$defs/price" },
+        "sl": {
+          "$ref": "common.json#/$defs/price_or_null",
+          "description": "R9 บังคับให้มีค่า และต้องเป็น **broker-side** — G5 ตรวจด้วยการ kill terminal ทั้งตัวแล้วดูว่า SL ยังอยู่ฝั่งโบรกเกอร์"
+        },
+        "tp":     { "$ref": "common.json#/$defs/price_or_null" },
+        "profit": { "$ref": "common.json#/$defs/money" },
+        "swap":   { "$ref": "common.json#/$defs/money" },
+        "magic":  { "type": "integer", "minimum": 1 },
+        "comment": {
+          "type": ["string", "null"],
+          "maxLength": 31,
+          "description": "MT5 จำกัด 31 ตัวอักษร — ใส่ intent_id **ย่อ** ไม่ใช่ ULID เต็ม 26 ตัว เพราะต้องมี prefix ด้วย. รูปแบบ i:<12 ตัวแรกของ ULID>"
+        },
+        "time_open": { "$ref": "common.json#/$defs/ts_utc", "description": "ใช้เรียง FIFO ตอนเลือกไม้ปิด — tie-break ด้วย ticket น้อยสุด (ADR-001)" }
+      }
+    },
+
+    "pending_order": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["ticket", "symbol", "type", "volume", "price_open", "magic", "time_setup"],
+      "properties": {
+        "ticket":     { "type": "integer", "minimum": 1 },
+        "symbol":     { "$ref": "common.json#/$defs/symbol" },
+        "type":       { "enum": ["BUY_LIMIT", "SELL_LIMIT", "BUY_STOP", "SELL_STOP", "BUY_STOP_LIMIT", "SELL_STOP_LIMIT"] },
+        "volume":     { "$ref": "common.json#/$defs/volume" },
+        "price_open": { "$ref": "common.json#/$defs/price" },
+        "sl":         { "$ref": "common.json#/$defs/price_or_null" },
+        "tp":         { "$ref": "common.json#/$defs/price_or_null" },
+        "magic":      { "type": "integer", "minimum": 1 },
+        "time_setup": { "$ref": "common.json#/$defs/ts_utc" },
+        "time_expiration": {
+          "oneOf": [
+            { "$ref": "common.json#/$defs/ts_utc" },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  },
+
+  "$comment": "invariant ที่ต้อง validate ในโค้ด: owned_net คำนวณจาก positions[] ได้ตรงกัน · owned_ticket_count ตรงกับจำนวน positions[] ต่อ symbol · ทุก position.magic ต้องเท่ากับ magic ที่ส่งใน HELLO · internal_hedge_detected ต้องเป็น true ถ้า positions[] มีทั้ง BUY และ SELL ใน symbol เดียว"
+}

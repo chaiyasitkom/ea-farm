@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/error.json",
+  "title": "ERROR payload",
+  "description": "ทั้งสองทาง · ไม่ต้อง ack · fatal=true → ปิด session · การส่ง ERROR เป็น best-effort ห้ามให้การส่งล้มเหลวไปบล็อกการปิด socket",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["code", "severity", "message", "fatal"],
+
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{2,63}$",
+      "description": "รหัสคงที่ UPPER_SNAKE — ใช้ group/alert ได้. ที่ใช้แล้ว: PROTOCOL_FRAME_TOO_LARGE · PROTOCOL_VERSION_MISMATCH · JSON_PARSE_FAILED · EA_SHUTDOWN · SOCKET_SEND_FAILED · SEND_QUEUE_OVERFLOW · HELLO_ACK_TIMEOUT · MARGIN_MODE_INVALID · SYMBOL_SELECT_FAILED"
+    },
+    "severity": { "$ref": "common.json#/$defs/severity" },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "ต้องมี **ตัวเลขจริงที่วัดได้** เช่น 'frame 71204 bytes exceeds 65536' ไม่ใช่ 'frame too large' — ข้อความที่ไม่มีตัวเลข debug ไม่ได้"
+    },
+    "context": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "description": "ข้อมูลประกอบ เช่น {\"type\":\"BAR\"} · ⚠️ ห้ามใส่ token หรือข้อมูลลับ"
+    },
+    "fatal": {
+      "type": "boolean",
+      "description": "true → ปิด session ทันทีหลังส่ง. ต้องสอดคล้องกับ severity: severity=FATAL → fatal=true"
+    }
+  },
+
+  "$comment": "invariant: severity=FATAL → fatal=true · severity=WARN → fatal=false · JSON ที่ parse ไม่ได้ให้ log WARN แล้วข้ามบรรทัดนั้น **ห้ามปิด connection** (SPEC-001 §4)"
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/heartbeat_ack.json",
+  "title": "HEARTBEAT_ACK payload",
+  "description": "Brain → EA · ตอบทุก HEARTBEAT · การมาถึงของ message นี้คือสิ่งที่รีเซ็ต R16 brain timeout",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["seq", "server_time"],
+
+  "properties": {
+    "seq": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "echo กลับ seq เดิม — EA จับคู่เพื่อนับว่าขาด ack กี่ครั้ง ห้ามนับแค่จำนวน ack ที่ได้"
+    },
+    "server_time": { "$ref": "common.json#/$defs/ts_utc" },
+    "brain_healthy": {
+      "type": "boolean",
+      "description": "optional · false = brain ยังตอบได้แต่รู้ตัวว่าไม่พร้อมตัดสินใจ (เช่น feature store ค้าง) → EA ควรเข้า SafeMode ไม่ใช่รอ timeout ครบ 10s"
+    }
+  }
+}

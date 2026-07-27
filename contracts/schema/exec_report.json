@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/exec_report.json",
+  "title": "EXEC_REPORT payload",
+  "description": "EA → Brain ทุกครั้งที่ order มีผล · ไม่ต้อง ack · **append-only ใน DB ห้าม UPDATE/DELETE** เป็นหลักฐาน audit · 1 intent อาจมีหลาย EXEC_REPORT (flip = 2 ขั้น = 2 report)",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["intent_id", "op", "result", "retcode", "retcode_text", "side", "volume_requested", "volume_filled", "attempt"],
+
+  "properties": {
+    "intent_id": { "$ref": "common.json#/$defs/ulid" },
+    "op":        { "enum": ["OPEN", "CLOSE", "CLOSE_PARTIAL", "MODIFY_SLTP", "CLOSE_BY"] },
+    "result": {
+      "enum": ["FILLED", "PARTIAL", "REJECTED", "TIMEOUT", "RETRYING"],
+      "description": "PARTIAL ที่เกิดจาก flip ล้มขั้น 2 = อยู่ที่ flat ซึ่งปลอดภัยกว่าเป้าหมาย → ยอมรับได้ ให้ brain ตัดสินใจส่ง intent ใหม่ **ห้าม EA retry เอง**"
+    },
+    "retcode": {
+      "type": "integer",
+      "description": "MT5 trade retcode เช่น 10009 = TRADE_RETCODE_DONE · **ต้องบันทึกค่าดิบ** ไม่ใช่แปลงเป็น bool สำเร็จ/ไม่สำเร็จ เพราะแต่ละ code ต้องจัดการต่างกัน"
+    },
+    "retcode_text": { "type": "string", "maxLength": 64, "description": "ชื่อ constant เช่น TRADE_RETCODE_DONE — ให้คนอ่าน log เข้าใจไม่ต้องเปิดตาราง" },
+    "ticket": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "description": "null เมื่อ order ไม่เกิด (REJECTED/TIMEOUT) — ⚠️ TIMEOUT + ticket null **ไม่ได้แปลว่า order ไม่เข้า** อาจเข้าแล้วแต่ตอบกลับไม่ทัน ต้อง reconcile ตอน OnInit (SPEC-017)"
+    },
+    "side":             { "$ref": "common.json#/$defs/side" },
+    "volume_requested": { "$ref": "common.json#/$defs/volume" },
+    "volume_filled":    { "$ref": "common.json#/$defs/volume", "description": "0 เมื่อ REJECTED · < requested เมื่อ PARTIAL" },
+    "price_requested":  { "$ref": "common.json#/$defs/price_or_null" },
+    "price_filled":     { "$ref": "common.json#/$defs/price_or_null", "description": "null เมื่อไม่ได้ fill" },
+    "slippage_points": {
+      "type": ["integer", "null"],
+      "description": "**มีเครื่องหมายได้** — ลบ = ได้ราคาดีกว่าที่ขอ. ถ้าเก็บเป็น abs จะมองไม่เห็นว่าโบรกเกอร์ให้ slippage ข้างเดียวหรือไม่ ซึ่งเป็นสัญญาณโบรกเกอร์ไม่ดี"
+    },
+    "spread_at_send_points": { "$ref": "common.json#/$defs/points" },
+    "latency_ms": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "เวลาจากส่ง order ถึงได้ผล — SPEC-001 §6 กำหนด p95 intent→filled < 500ms"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "ครั้งที่เท่าไร เริ่มที่ 1 · R17 นับ order ที่ **ส่ง** ไม่ใช่ที่สำเร็จ — bug ที่ reject แล้ว retry รัวคือเคสที่ต้องกัน"
+    },
+    "commission": { "$ref": "common.json#/$defs/money" },
+    "swap":       { "$ref": "common.json#/$defs/money" },
+    "error": {
+      "type": ["string", "null"],
+      "maxLength": 256,
+      "description": "ต้องไม่ null เมื่อ result เป็น REJECTED/TIMEOUT"
+    }
+  },
+
+  "$comment": "invariant: result=FILLED → volume_filled == volume_requested (tolerance volume_step/2) และ ticket ไม่ null · result=REJECTED → volume_filled == 0 · result=PARTIAL → 0 < volume_filled < volume_requested"
+}

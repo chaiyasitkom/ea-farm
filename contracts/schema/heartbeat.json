@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/heartbeat.json",
+  "title": "HEARTBEAT payload",
+  "description": "EA → Brain ทุก InpHeartbeatSec (default 2s) · ต้องส่งจาก OnTimer ไม่ใช่ OnTick เพราะตลาดปิดไม่มี tick · ไม่ได้ HEARTBEAT_ACK 3 ครั้งติด = ถือว่าตาย ปิด socket แล้ว reconnect",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["seq", "wire"],
+
+  "properties": {
+    "seq": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "นับขึ้นต่อ session เริ่มที่ 1 — brain ใช้ตรวจว่าขาดช่วงไหม (gap = packet loss หรือ EA หยุด)"
+    },
+    "wire": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "metric ของชั้น transport — ใช้ debug และขึ้น dashboard",
+      "required": ["state", "send_queue_depth", "messages_sent", "messages_recv", "reconnect_count", "bytes_dropped", "seconds_since_last_inbound"],
+      "properties": {
+        "state": {
+          "enum": ["DISCONNECTED", "CONNECTING", "CONNECTED", "AUTHENTICATING", "READY", "FAILED_AUTH"],
+          "description": "ค่าที่ส่งมาได้จริงมีแต่ READY (ส่งได้ก็ต่อเมื่อ connected) — ค่าอื่นมีไว้ให้ log/replay ใช้"
+        },
+        "send_queue_depth":  { "type": "integer", "minimum": 0 },
+        "messages_sent":     { "type": "integer", "minimum": 0 },
+        "messages_recv":     { "type": "integer", "minimum": 0 },
+        "reconnect_count":   { "type": "integer", "minimum": 0, "description": "เพิ่มขึ้นเรื่อยๆ = ท่อไม่นิ่ง ต้อง alert" },
+        "bytes_dropped":     { "type": "integer", "minimum": 0, "description": "> 0 = queue เต็มจนต้อง drop ตัวเก่าสุด = ข้อมูลหาย ต้อง alert" },
+        "seconds_since_last_inbound": { "type": "integer", "minimum": 0, "description": "ใช้กับ R16 brain timeout" },
+        "pump_p99_us": { "type": "integer", "minimum": 0, "description": "optional — Pump() p99 หน่วยไมโครวินาที ต้อง < 20000 ตาม SPEC-001 §6" }
+      }
+    }
+  }
+}

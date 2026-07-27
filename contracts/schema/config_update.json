@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/config_update.json",
+  "title": "CONFIG_UPDATE payload — RESERVED ยังไม่ implement",
+  "description": "Brain → EA · ต้องได้ INTENT_ACK · 🚫 **ห้าม implement ก่อน Phase 5** — นิยามไว้เพื่อไม่ให้ type ใน envelope enum เป็นช่องว่างที่ Codex ต้องเดา · EA ที่ยังไม่รองรับให้ตอบ INTENT_ACK status REJECTED_INVALID reason CONFIG_UPDATE_NOT_SUPPORTED",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["config_id", "settings"],
+
+  "properties": {
+    "config_id": { "$ref": "common.json#/$defs/ulid" },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "description": "⚠️ **additionalProperties=false โดยเจตนา — ต่างจาก message อื่นทั้งหมด** เพราะที่นี่ unknown field = ความพยายามเปลี่ยนค่าที่ไม่ได้อนุญาต ต้อง reject ไม่ใช่ข้าม",
+      "properties": {
+        "verbose_log":      { "type": "boolean", "description": "เท่ากับ InpVerboseLog" },
+        "heartbeat_sec":    { "type": "integer", "minimum": 1, "maximum": 60 },
+        "state_interval_sec": { "type": "integer", "minimum": 1, "maximum": 60 },
+        "bar_backfill_count": { "type": "integer", "minimum": 0, "maximum": 1000 }
+      }
+    },
+    "apply_at": {
+      "oneOf": [
+        { "$ref": "common.json#/$defs/ts_utc" },
+        { "type": "null" }
+      ],
+      "description": "null = ใช้ทันที"
+    }
+  },
+
+  "$comment": "★ กฎเหล็ก: settings ห้ามมี risk parameter ใดๆ เลย (R1–R19, lot, SL, spread, daily loss, DD, magic) — ค่าเหล่านั้นมาจาก EA input **เท่านั้น** ตาม 02-contracts §4.1 และ 03-risk-spec L1. ถ้าอนาคตอยากให้ brain สั่งเข้มขึ้น ให้ใช้ RISK_DIRECTIVE ซึ่งเข้มได้แต่ผ่อนไม่ได้ ไม่ใช่ CONFIG_UPDATE ที่เปลี่ยนค่าได้อิสระทั้งสองทาง"
+}

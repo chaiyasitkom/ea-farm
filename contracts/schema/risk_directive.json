@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/risk_directive.json",
+  "title": "RISK_DIRECTIVE payload",
+  "description": "Brain → EA เมื่อ risk state เปลี่ยน · ตอบด้วย INTENT_ACK (reuse) โดยใช้ directive_id เป็น intent_id · **กฎเหล็ก: สั่งเข้มกว่า EA ได้ แต่ผ่อนกว่าไม่ได้** ถ้า LocalRiskGuard halt อยู่ mode NORMAL ก็ปลดล็อกไม่ได้",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["directive_id", "mode", "scale_factor", "reason"],
+
+  "properties": {
+    "directive_id": { "$ref": "common.json#/$defs/ulid" },
+    "mode":         { "$ref": "common.json#/$defs/guard_mode" },
+    "scale_factor": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "คูณทุก target_volume · **สูงสุด 1.0** — เกิน 1 จะเป็นการ 'ผ่อน' ซึ่งผิดกฎเหล็ก จึงบังคับเพดานที่ schema · มีผลเฉพาะ mode SCALED"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "รหัสกฎที่ตรวจได้ เช่น P1_FARM_DAILY_LOSS_WARNING, P2_FARM_MAX_DD_BREACH, P4_CORRELATED_RISK — ห้ามเป็นข้อความอิสระ ต้องจับคู่กับ risk_events.rule ใน DB"
+    },
+    "detail": {
+      "type": ["string", "null"],
+      "maxLength": 256,
+      "description": "อ่านให้คนเข้าใจ เช่น 'farm day_pl = -1.6% (warn at -1.5%)'"
+    },
+    "expires_at": {
+      "oneOf": [
+        { "$ref": "common.json#/$defs/ts_utc" },
+        { "type": "null" }
+      ],
+      "description": "หมดอายุแล้ว EA กลับไปใช้ local guard เพียงลำพัง (**ไม่ใช่กลับเป็น NORMAL อัตโนมัติ**) · null = ไม่หมดอายุ ต้องรอ directive ใหม่. ⚠️ mode HALT ต้องเป็น null เสมอ — ปลดด้วยมือเท่านั้น"
+    },
+    "flatten_symbols": {
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "common.json#/$defs/symbol" },
+      "description": "ใช้เฉพาะ mode FLATTEN · **array ว่าง = ทุก symbol** (ไม่ใช่ไม่ทำอะไร) — จุดที่พลาดง่ายที่สุดใน message นี้"
+    }
+  },
+
+  "$defs": {
+    "directive_core": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["mode", "scale_factor"],
+      "description": "ชุดย่อยที่ HELLO_ACK.initial_directive ใช้ — ไม่ต้องมี directive_id/reason เพราะเป็นสถานะเริ่มต้น ไม่ใช่เหตุการณ์",
+      "properties": {
+        "mode":         { "$ref": "common.json#/$defs/guard_mode" },
+        "scale_factor": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  },
+
+  "$comment": "invariant: mode=SCALED → scale_factor < 1.0 (ไม่งั้นไม่มีความหมาย) · mode=HALT → expires_at ต้องเป็น null · mode=FLATTEN → EA ต้องวนปิดทุก ticket ไม่ใช่ส่ง order สวน 1 ไม้ (จะกลายเป็น internal hedge ละเมิด R18)"
+}

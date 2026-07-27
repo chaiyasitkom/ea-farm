@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/intent_ack.json",
+  "title": "INTENT_ACK payload",
+  "description": "EA → Brain · ตอบทุก INTENT และทุก RISK_DIRECTIVE (reuse) · ต้องตอบ **ทุกครั้ง** แม้จะทิ้ง intent เพราะ brain รอ ack เพื่อรู้ว่าคำสั่งถึงแล้ว",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["intent_id", "status", "volume_before", "volume_target", "overshoot_volume", "actions_planned"],
+
+  "properties": {
+    "intent_id": { "$ref": "common.json#/$defs/ulid", "description": "echo กลับจาก INTENT (หรือ directive_id จาก RISK_DIRECTIVE)" },
+    "status": {
+      "enum": [
+        "ACCEPTED", "NOOP", "EXPIRED", "DUPLICATE",
+        "REJECTED_BY_GUARD", "REJECTED_MARKET_CLOSED", "REJECTED_INVALID",
+        "ANOMALY_INTERNAL_HEDGE"
+      ],
+      "description": "NOOP = target ตรงกับ owned_net อยู่แล้ว ห้ามส่ง order · ANOMALY_INTERNAL_HEDGE = พบ long+short พร้อมกัน (R18) ต้อง net ออกแล้ว alert"
+    },
+    "reason": {
+      "type": ["string", "null"],
+      "maxLength": 128,
+      "description": "ต้องไม่ null เมื่อ status ขึ้นต้นด้วย REJECTED_ หรือเป็น ANOMALY_* · ใช้ rule id ที่ตรวจได้ เช่น R1_RISK_TOO_SMALL_FOR_MIN_LOT, R5_SPREAD_TOO_WIDE, R9_MISSING_SL"
+    },
+    "volume_before": { "$ref": "common.json#/$defs/signed_volume", "description": "owned_net ก่อนทำ (N)" },
+    "volume_target": { "$ref": "common.json#/$defs/signed_volume", "description": "target_volume ที่ขอมา (T)" },
+    "volume_clamped_to": {
+      "oneOf": [
+        { "$ref": "common.json#/$defs/signed_volume" },
+        { "type": "null" }
+      ],
+      "description": "ไม่ null เมื่อถูก clamp **ลง** เพราะ R2/R3a — clamp แล้วยังเป็น ACCEPTED ไม่ใช่ REJECTED (ตาม §4.5). ⚠️ clamp **ขึ้น** ห้ามเด็ดขาด ถ้า lot < volume_min ต้อง reject (ADR-002 §4)"
+    },
+    "overshoot_volume": {
+      "$ref": "common.json#/$defs/volume",
+      "description": "ลดเกินที่สั่งเพราะ leftover guard (ADR-001 §7: เหลือ < volume_min → ปิดทั้งใบ) · 0.0 ถ้าไม่มี · overshoot = ปลอดภัยกว่า ยอมรับได้ · undershoot = ไม่ยอมรับ"
+    },
+    "actions_planned": {
+      "type": "array",
+      "maxItems": 64,
+      "description": "**เรียงตามลำดับที่จะทำจริง** — flip ต้องเป็น CLOSE ก่อน OPEN เสมอ ห้ามสลับ (ADR-001 §2) · ว่างได้เมื่อ status = NOOP/EXPIRED/DUPLICATE/REJECTED_*",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["op", "side", "volume", "ticket"],
+        "properties": {
+          "op": {
+            "enum": ["OPEN", "CLOSE", "CLOSE_PARTIAL", "MODIFY_SLTP", "CLOSE_BY"],
+            "description": "CLOSE_BY ใช้ได้เฉพาะเมื่อ symbol.order_mode_closeby = true"
+          },
+          "side":   { "$ref": "common.json#/$defs/side" },
+          "volume": { "$ref": "common.json#/$defs/volume" },
+          "ticket": {
+            "type": ["integer", "null"],
+            "minimum": 1,
+            "description": "null เมื่อ op = OPEN (ยังไม่มี ticket) · ต้องไม่ null สำหรับ CLOSE/CLOSE_PARTIAL/MODIFY_SLTP"
+          }
+        }
+      }
+    }
+  },
+
+  "$comment": "invariant: status=ACCEPTED → actions_planned ต้องไม่ว่าง · status=NOOP → actions_planned ต้องว่าง · ผลรวมของ actions ต้องทำให้ owned_net ไปถึง volume_clamped_to (หรือ volume_target ถ้าไม่ clamp) ภายใน tolerance volume_step/2"
+}

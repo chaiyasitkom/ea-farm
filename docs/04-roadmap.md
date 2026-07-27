@@ -18,14 +18,14 @@
 | 0.2 | เขียน `contracts/schema/*.json` ทุก message type | **Claude** | 10 schema files |
 | 0.3 | Codegen: JSON Schema → pydantic + MQL5 struct | Codex | `make codegen` ทำงาน + round-trip test ผ่าน |
 | 0.4 | Postgres + TimescaleDB ขึ้น (Docker Compose สำหรับ dev), migration | Codex | `make db-up`, alembic migration |
-| 0.5 | Data ingest: ดึง M1/M5/H1 ย้อนหลัง 5 ปี ของ 8 คู่ → Parquet | Codex | `research/ingest/`, data quality report |
+| 0.5 | Data ingest: ดึง **M1 ย้อนหลัง ~10 ปี ของ 6 คู่** → Parquet แล้ว resample เป็น M5/M10/M15/M30/H1/H4 ([ADR-002](decisions/ADR-002-symbols-capital-hours.md)) | Codex | `research/ingest/`, data quality report |
 | 0.6 | Data quality gate: หา gap, spike, duplicate, weekend bar | Codex | report + fail ถ้าคุณภาพไม่ผ่าน |
 | 0.7 | CI: ruff, mypy, pytest, codegen-diff check | Codex | GitHub Actions เขียว |
 
 **Exit criteria**
 - [ ] `make codegen && git diff --exit-code contracts/gen/` ผ่าน
 - [ ] Round-trip test: python serialize → mql5 parse → mql5 serialize → python parse ตรงกันทุก message type
-- [ ] Data ย้อนหลัง ≥ 5 ปี ครบ 8 คู่ ผ่าน quality gate (missing bar < 0.1%)
+- [ ] Data M1 ย้อนหลัง ≥ 5 ปี ครบ 6 คู่ ผ่าน quality gate (missing bar < 0.1%)
 - [ ] CI เขียวบน `main`
 
 ---

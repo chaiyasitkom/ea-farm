@@ -10,11 +10,11 @@
 |----|-----|-------|---------|-------|
 | SPEC-001 | MT5 Executor skeleton + Wire (socket, JSON-lines, reconnect) | Codex | — | **SPEC_READY** |
 | SPEC-002 | Repo scaffold, `.gitignore`, `.env.example`, Makefile | Codex | — | TODO |
-| SPEC-003 | `contracts/schema/*.json` ทุก message type | **Claude** | — | TODO |
-| SPEC-004 | Codegen: schema → pydantic + MQL5 struct/serializer | Codex | 003 | TODO |
+| SPEC-003 | `contracts/schema/*.json` ทุก message type | **Claude** | — | ✅ **DONE** — 13 schema + README · [handoff](reviews/SPEC-003-schema-handoff.md) |
+| SPEC-004 | Codegen: schema → pydantic + MQL5 struct/serializer | Codex | 003 | **SPEC_READY** ← ปลดล็อกแล้ว |
 | SPEC-005 | Round-trip test harness (py ↔ mql5) | Codex | 004 | TODO |
 | SPEC-006 | Postgres + TimescaleDB, migration, repository layer | Codex | 003 | TODO |
-| SPEC-007 | Data ingest: MT5 history → Parquet (8 คู่ 5 ปี M1/M5/H1) | Codex | 002 | TODO |
+| SPEC-007 | Data ingest: MT5 history → Parquet (**6 คู่ · M1 เท่านั้นแล้ว resample** · ~10 ปี) | Codex | 002 | TODO |
 | SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | TODO |
 | SPEC-009 | CI: ruff, mypy, pytest, codegen-diff | Codex | 004 | TODO |
 | SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | 002 | TODO |
@@ -119,11 +119,11 @@
 | ~~D1~~ | ~~Path โปรเจกต์มีอักษรไทย + เว้นวรรค — MQL5 compiler, venv, git บน Windows มีปัญหา encoding~~ | ✅ **แก้แล้ว** — ย้าย repo มา `D:\ea-farm` + `git init -b main` + `.gitattributes` บังคับ LF | 2026-07-26 |
 | ~~D2~~ | ~~โบรกเกอร์/สเปก VPS — กระทบ spread model ใน backtest (SPEC-032)~~ | ✅ **ยืนยันแล้ว: IUX Markets** → [ADR-002](decisions/ADR-002-symbols-capital-hours.md) · history M1 ลึกกว่าที่เคยบันทึก (EURUSD/XAUUSD 2016–2026 · BTCUSD 2018–2026) — ข้อกำหนด ≥5 ปี ผ่านครบ · **ยังไม่รู้สเปก VPS** | 2026-07-27 |
 | ~~D3~~ | ~~netting หรือ hedging account — กระทบ `OrderRouter` logic โดยตรง~~ | ✅ **ตัดสินแล้ว: hedging** → [ADR-001](decisions/ADR-001-hedging-account.md) · SPEC-011 เขียนครบแล้ว | 2026-07-26 |
-| D4 | ชุด symbol และ timeframe หลัก | 🟡 **ตัดสินแล้วเป็น 8 คู่** → [ADR-002](decisions/ADR-002-symbols-capital-hours.md) rev.2 · **7 คู่ใช้ได้** `EURUSD` `USDJPY` `GBPUSD` `AUDUSD` `USDCAD` `XAUUSD` `XAGUSD` × M1/M5/M10/M15/M30/H1/H4 · ingest ดึง **M1 อย่างเดียวแล้ว resample** · 🔴 **`USDCNY.iux` ไม่มีในโบรกเกอร์** → เลือก `USDCNH` หรือตัดทิ้ง | 2026-07-27 |
-| **D5** | ทุนต่อบัญชี — กระทบ P1–P6 threshold | 🔴 **BLOCKER** — บัญชี ≥2 ✅ แต่ทุน **$10 ทำให้ R1 reject ทุก intent ทั้ง 7 คู่** (คำนวณใน [ADR-002](decisions/ADR-002-symbols-capital-hours.md) §3) · ตัวที่บังคับทุน = **XAGUSD ~$4,300** · เลือก **A** บัญชี cent · **B** เพิ่มทุน · **C** demo อย่างเดียว · **D** ตัด XAGUSD — **บล็อก SPEC-020 + SPEC-025** | 2026-07-27 |
-| ~~D6~~ | ~~BTCUSD.iux เปิดเสาร์-อาทิตย์ไหม~~ | ✅ **ปิด — ไม่เกี่ยวแล้ว** ตัด BTCUSD ออกจากชุด symbol (rev.2) ทั้ง 7 คู่ปิดสุดสัปดาห์ กฎ weekend bar เดียวใช้ได้ทุกตัว | 2026-07-27 |
+| D4 | ชุด symbol และ timeframe หลัก | 🟡 **6 คู่** → [ADR-002](decisions/ADR-002-symbols-capital-hours.md) rev.3 · `EURUSD` `USDJPY` `GBPUSD` `AUDUSD` `USDCAD` `XAUUSD` × M1/M5/M10/M15/M30/H1/H4 · ingest ดึง **M1 อย่างเดียวแล้ว resample** · 🔴 **`USDCNY.iux` ไม่มีในโบรกเกอร์** → เลือก `USDCNH` หรือตัดทิ้ง · `XAGUSD` ตัดออกแล้ว | 2026-07-27 |
+| **D5** | ทุนต่อบัญชี — กระทบ P1–P6 threshold | 🔴 **BLOCKER** — บัญชี ≥2 ✅ แต่ทุน **$10 ทำให้ R1 reject ทุก intent ทั้ง 6 คู่** (คำนวณใน [ADR-002](decisions/ADR-002-symbols-capital-hours.md) §3) · ตัด XAGUSD แล้วเพดานลงเหลือ **XAUUSD ~$1,430 แต่ยังห่าง 143 เท่า** · ต้องเลือกเพิ่ม **A** บัญชี cent · **B** เพิ่มทุน · **C** demo อย่างเดียว — **บล็อก SPEC-020 + SPEC-025** | 2026-07-27 |
+| ~~D6~~ | ~~BTCUSD.iux เปิดเสาร์-อาทิตย์ไหม~~ | ✅ **ปิด — ไม่เกี่ยวแล้ว** ตัด BTCUSD ออกจากชุด symbol (rev.2) ทั้ง 6 คู่ปิดสุดสัปดาห์ กฎ weekend bar เดียวใช้ได้ทุกตัว | 2026-07-27 |
 | **D7** | สเปก VPS (CPU/RAM/latency ไป IUX) | ⏳ กระทบ SPEC-032 spread model + Phase 6 | 2026-07-27 |
-| **D8** | contract size ของ `XAGUSD.iux` = 5,000 หรือ 1,000 oz | 🔴 **สวิงทุนที่ต้องใช้ 5 เท่า** (~$4,286 vs ~$857) · ต้องรู้ก่อนตัดสิน D5 · อ่านจาก `SYMBOL_TRADE_CONTRACT_SIZE` | 2026-07-27 |
+| ~~D8~~ | ~~contract size ของ `XAGUSD.iux`~~ | ✅ **ปิด — ไม่เกี่ยวแล้ว** ตัด XAGUSD ออกจากชุด symbol (rev.3) | 2026-07-27 |
 
 ---
 
@@ -137,7 +137,7 @@
 | Remote | ยังไม่มี — local only |
 | **โบรกเกอร์** | **IUX Markets** · บัญชี `IUXMarkets-Demo` · hedging mode ([ADR-001](decisions/ADR-001-hedging-account.md)) |
 | **Terminal** | `IUX Markets MT5 Terminal3` เท่านั้น — `C:\Program Files\MetaTrader 5` ไม่มีบัญชี/history รัน tester ไม่ได้ |
-| **Symbol** | `EURUSD` · `USDJPY` · `GBPUSD` · `AUDUSD` · `USDCAD` · `XAUUSD` · `XAGUSD` (suffix `.iux` บังคับ) · `USDCNY` ไม่มีในโบรกเกอร์ |
+| **Symbol** | **6 คู่** `EURUSD` · `USDJPY` · `GBPUSD` · `AUDUSD` · `USDCAD` · `XAUUSD` (suffix `.iux` บังคับ) · `USDCNY` ไม่มีในโบรกเกอร์ · `XAGUSD` ตัดออก |
 | **Timeframe** | M1 · M5 · M10 · M15 · M30 · H1 · H4 — MT5 เก็บแค่ M1 ที่เหลือ derive |
 | **M1 history** | EURUSD/XAUUSD 2016–2026 · อื่นๆ มีแล้ว · **`USDJPY` ยังไม่ได้ดาวน์โหลด** (มี tick ไม่มี bar) |
 | **บัญชี** | ≥ 2 บัญชี · ทุนต่อบัญชี = 🔴 **ยังไม่สรุป** ดู D5 |

@@ -96,8 +96,8 @@ lot             = min(lot, volume_max, max_lot_per_order)   // clamp ลงเ�
 
 ⚠️ **ห้ามใช้ `tick_value` ตรงๆ กับคู่ที่ quote currency ≠ account currency**
 ต้องแปลงผ่าน conversion rate — บัญชี USD มี 2 คู่ในชุดที่เข้าเคสนี้: **`USDJPY` (→JPY) · `USDCAD` (→CAD)**
-Codex ต้องเขียน unit test ให้ครบ 3 เคส: **`USDJPY` · `USDCAD` · `XAGUSD`**
-(สองตัวแรก = แปลงสกุล · ตัวหลัง = contract size ผิดปกติ 5,000 oz)
+Codex ต้องเขียน unit test ให้ครบ 3 เคส: **`USDJPY` · `USDCAD` · `XAUUSD`**
+(สองตัวแรก = แปลงสกุล · ตัวหลัง = contract size ไม่ใช่ 100,000 แต่เป็น 100 oz)
 
 ⚠️ **ห้าม hardcode `volume_min` / `volume_step` / `tick_value` / `tick_size` / `point` / `contract_size`**
 ค่าเหล่านี้ต่างกันคนละ order of magnitude ระหว่าง FX / ทอง / เงิน
@@ -107,7 +107,7 @@ Codex ต้องเขียน unit test ให้ครบ 3 เคส: **`U
 
 ## Per-symbol risk profile (R5 · R10 · R11)
 
-ตั้งแต่ [ADR-002](decisions/ADR-002-symbols-capital-hours.md) rev.2 ระบบเทรด **7 คู่ 2 asset class**
+ตั้งแต่ [ADR-002](decisions/ADR-002-symbols-capital-hours.md) rev.3 ระบบเทรด **6 คู่ 2 asset class**
 ค่าเดียวใช้ไม่ได้ — R10 = 3.0% กับ EURUSD คือ ~330 pip = กฎที่ไม่มีวันทริกเกอร์
 
 | symbol | R5 `max_spread_points` | R10 `max_sl_distance_pct` | R11 `trading_hours` (broker time) |
@@ -118,21 +118,20 @@ Codex ต้องเขียน unit test ให้ครบ 3 เคส: **`U
 | `USDJPY.iux` | TBD¹ | 0.6% | Mon 01:00 – Fri 20:00 |
 | `USDCAD.iux` | TBD¹ | 0.6% | Mon 01:00 – Fri 20:00 |
 | `XAUUSD.iux` | TBD¹ | 1.5% | Mon 01:00 – Fri 20:00 **หักพักรายวัน**¹ |
-| `XAGUSD.iux` | TBD¹ | 2.0% | Mon 01:00 – Fri 20:00 **หักพักรายวัน**¹ |
 
-**R12 friday flatten: ใช้ทุก symbol** — ทั้ง 7 คู่ปิดสุดสัปดาห์ ไม่มีตัวไหนเทรด 24/7
+**R12 friday flatten: ใช้ทุก symbol** — ทั้ง 6 คู่ปิดสุดสัปดาห์ ไม่มีตัวไหนเทรด 24/7
 
 ¹ ค่าที่ยังไม่เติม **ห้ามเดา** — อ่านจากโบรกเกอร์จริงตอน `OnInit` ผ่าน
 `SymbolInfoSessionTrade()` / `SYMBOL_SESSION_QUOTE` แล้วเก็บใน SymbolRegistry (SPEC-064)
 · R5 spread ต้องเก็บสถิติจริง ≥ 1 สัปดาห์ก่อนตั้งเพดาน ห้ามตั้งจากค่าโฆษณาของโบรกเกอร์
 
-### ★ ทั้ง 7 คู่มี USD อยู่ข้างหนึ่ง — กระทบ P3/P4/P5 โดยตรง
+### ★ ทั้ง 6 คู่มี USD อยู่ข้างหนึ่ง — กระทบ P3/P4/P5 โดยตรง
 
 **P3** ยังถูกต้อง (decompose ครบทุกสกุล) แต่ USD อยู่ใน **ทุก** position
 → เพดาน 2.0% จะ block ตั้งแต่ position ที่ 2–3 · **SPEC-025 ต้องตัดสินว่า USD ได้เพดานแยกไหม**
 
-**P4/P5** — 7 คู่ แต่เดิมพันอิสระจริง ~4 ก้อน:
-`EURUSD`+`GBPUSD` (ยุโรป) · `USDJPY` · `AUDUSD`+`USDCAD` (commodity FX) · `XAUUSD`+`XAGUSD` (โลหะ)
+**P4/P5** — 6 คู่ แต่เดิมพันอิสระจริง ~4 ก้อน:
+`EURUSD`+`GBPUSD` (ยุโรป) · `USDJPY` · `AUDUSD`+`USDCAD` (commodity FX) · `XAUUSD` (โลหะ)
 ข้ามก้อนยังมี `AUDUSD` ↔ `XAUUSD` (AUD เป็น proxy ของทอง)
 → **P4 จะ bind บ่อยกว่า P3** · **P5 = 3 หลวมเกินไป** (3 ไม้ในก้อนเดียว = เดิมพันเดียวคูณ 3)
 → SPEC-026 correlation ต้อง **fail-closed** (ข้อมูลไม่พอ = ถือว่า correlated 1.0 ไม่ใช่ 0)

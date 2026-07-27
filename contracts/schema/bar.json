@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/bar.json",
+  "title": "BAR payload",
+  "description": "EA → Brain ทุก bar close · ไม่ต้อง ack · ส่งเฉพาะ bar ที่ปิดแล้ว (is_final=true) ใน Phase 1–3 · ตอน OnInit ส่ง backfill 300 bar เรียงเก่า→ใหม่",
+
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["symbol", "timeframe", "bar_time", "open", "high", "low", "close", "tick_volume", "real_volume", "spread_points_avg", "spread_points_max", "is_final"],
+
+  "properties": {
+    "symbol":    { "$ref": "common.json#/$defs/symbol" },
+    "timeframe": { "$ref": "common.json#/$defs/timeframe" },
+    "bar_time": {
+      "$ref": "common.json#/$defs/ts_utc",
+      "description": "เวลาเปิด bar (ไม่ใช่เวลาปิด) แปลงเป็น UTC จริงแล้ว — เป็นส่วนของ primary key ใน DB (broker, symbol, timeframe, bar_time)"
+    },
+    "open":  { "$ref": "common.json#/$defs/price" },
+    "high":  { "$ref": "common.json#/$defs/price" },
+    "low":   { "$ref": "common.json#/$defs/price" },
+    "close": { "$ref": "common.json#/$defs/price" },
+    "tick_volume": { "type": "integer", "minimum": 0 },
+    "real_volume": { "type": "integer", "minimum": 0, "description": "0 บนบัญชี FX retail ปกติ — โบรกเกอร์ไม่ให้ volume จริง" },
+    "spread_points_avg": { "$ref": "common.json#/$defs/points", "description": "EA เก็บสถิติเองจาก tick ระหว่าง bar" },
+    "spread_points_max": { "$ref": "common.json#/$defs/points", "description": "ใช้ตั้งเพดาน R5 จากข้อมูลจริง ไม่ใช่ค่าโฆษณาโบรกเกอร์" },
+    "is_final": {
+      "const": true,
+      "description": "Phase 1–3 ส่งได้เฉพาะ true. ตั้งเป็น const เพื่อกันการส่ง bar ที่ยังไม่ปิดเข้า feature pipeline ซึ่งเป็นต้นเหตุ look-ahead bias. จะรองรับ false ต้อง bump v"
+    }
+  },
+
+  "$comment": "invariant ที่ schema บังคับไม่ได้ ต้อง validate ในโค้ด: low <= open <= high · low <= close <= high · spread_points_avg <= spread_points_max · bar_time ต้องหารลงตัวด้วยขนาด timeframe"
+}
