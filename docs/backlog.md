@@ -12,7 +12,7 @@
 | SPEC-002 | Repo scaffold, `.env.example`, **`tools/task.py`** (ไม่ใช่ Makefile — เครื่องนี้ไม่มี `make`) + local gate `check` | Codex | — | **SPEC_READY** — [spec](specs/SPEC-002-repo-scaffold.md) |
 | SPEC-003 | `contracts/schema/*.json` ทุก message type | **Claude** | — | ✅ **DONE** — 13 schema + README · [handoff](reviews/SPEC-003-schema-handoff.md) |
 | SPEC-004 | Codegen: schema → pydantic + MQL5 struct/serializer | Codex | 003 | **SPEC_READY** — [spec](specs/SPEC-004-codegen.md) |
-| SPEC-005 | Round-trip test harness (py ↔ mql5) | Codex | 004 | TODO |
+| SPEC-005 | Round-trip test harness (py ↔ mql5) | Codex | **002**, 004 | **SPEC_READY** — [spec](specs/SPEC-005-roundtrip-harness.md) |
 | SPEC-006 | Postgres + TimescaleDB, migration, repository layer | Codex | 003 | TODO |
 | SPEC-007 | Data ingest: MT5 history → Parquet (**6 คู่ · M1 เท่านั้นแล้ว resample** · ~10 ปี) | Codex | 002 | TODO |
 | SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | TODO |

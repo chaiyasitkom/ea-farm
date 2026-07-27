@@ -493,6 +493,40 @@ IUX: EURUSD.iux · XAUUSD.iux      XM: EURUSD · GOLD
 
 ---
 
+# รอบที่ 5.5 — SPEC-005 Round-trip harness
+
+📄 [spec เต็ม](specs/SPEC-005-roundtrip-harness.md) · **SPEC_READY** · 17 test · ต่อจาก SPEC-004 ทันที
+
+**นี่คือข้อพิสูจน์ว่า codegen ถูกจริง** — "ทั้งสองฝั่ง compile ได้" ≠ "ทั้งสองฝั่งเข้าใจตรงกัน"
+และเป็น **exit criteria ของ Phase 0** ตรงตัว
+
+```
+fixture → py parse → A → [mql5 parse → serialize] → B → py parse → A2
+assert A2 == A          ★ ตกฟิลด์เดียวหรือปัดเลขผิด จับได้ทันที
+assert ไม่มี e/E ใน B    ตรวจ B ดิบ เพราะ normalize จะกลบ 1e-05
+```
+
+**3 จุดที่กลับด้านจากสัญชาตญาณ:**
+
+| | |
+|---|---|
+| **unknown field ต้อง *หาย* ไม่ใช่ต้องรอด** | forward compat บอกว่าให้ข้าม · ถ้า test แดงเพราะ field หาย = เข้าใจ test ผิด **ห้ามไป "แก้" ให้มันรอด** |
+| **fixture `.extra.json` ไม่ได้ทดสอบ MQL5 เลย** | `extra="ignore"` ทำให้ pydantic ทิ้ง field ตั้งแต่ขั้นแรก → ต้อง**ฉีด** field แปลกเข้า `A` เองก่อนส่งให้ MQL5 |
+| **ไม่ต้องทำทิศ MQL5→Python แยก** | `B` คือผลผลิตของ MQL5 ที่ Python เป็นคน parse อยู่แล้ว · อย่าสร้าง tester run รอบสอง ได้เพิ่มน้อยแลกเวลาสองเท่า |
+
+**⚠️ ของใหม่ที่ยังไม่เคยทำ: MQL5 *อ่าน* ไฟล์**
+harness เดิมเขียนอย่างเดียว · ต้องใช้ `FILE_BIN` + `CharArrayToString(..., CP_UTF8)`
+**ห้ามใช้ `FILE_TXT`** (จะตีความตาม codepage เครื่อง อักษรไทยเพี้ยน) — บทเรียนเดียวกับ
+gate-02 แต่กลับด้าน
+
+**★★ test ที่สำคัญที่สุดคือ `test_stale_output_detected_when_ea_missing`**
+harness แบบนี้มี failure mode ที่ **EA ไม่ได้รันเลยแต่ test เขียว** เพราะไฟล์ `out-*.json`
+รอบก่อนยังค้างอยู่ · อาการคือ *"round-trip ผ่านมาตลอด"* ทั้งที่ codegen พังไปแล้วหลายวัน
+→ ต้องมีกลไกกัน 3 ชั้น: ลบ output เก่าก่อนรัน · `cases_processed` เทียบ manifest ·
+`git_sha` เทียบ HEAD (ชั้น 3 มีแล้วในของเดิม)
+
+---
+
 # รอบที่ 6 — `local_limits` ต่อกับ EA input
 
 **เส้นตาย: ก่อน merge SPEC-019**
