@@ -14,7 +14,7 @@
 | SPEC-004 | Codegen: schema → pydantic + MQL5 struct/serializer | Codex | 003 | **SPEC_READY** — [spec](specs/SPEC-004-codegen.md) |
 | SPEC-005 | Round-trip test harness (py ↔ mql5) | Codex | **002**, 004 | **SPEC_READY** — [spec](specs/SPEC-005-roundtrip-harness.md) |
 | SPEC-006 | **PostgreSQL** + migration + repository layer (เลื่อน TimescaleDB — [§3.1](specs/SPEC-006-database.md)) | Codex | **002**, 004 | **SPEC_READY** — [spec](specs/SPEC-006-database.md) |
-| SPEC-007 | Data ingest: MT5 history → Parquet (**6 คู่ · M1 เท่านั้นแล้ว resample** · ~10 ปี) | Codex | 002 | TODO |
+| SPEC-007 | Data ingest: MT5 history → Parquet (**6 คู่ · M1 เท่านั้นแล้ว resample** · ~10 ปี) | Codex | 002, **064** | **SPEC_READY** — [spec](specs/SPEC-007-data-ingest.md) |
 | SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | TODO |
 | SPEC-009 | CI: ruff, mypy, pytest, codegen-diff | Codex | 004 | TODO |
 | SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | **001** (แก้จาก 002 — เป็น MQL5 ล้วน ไม่ต้องรอ scaffold) | **SPEC_READY** — [spec](specs/SPEC-063-broker-time.md) |
@@ -128,6 +128,7 @@
 | ~~D6~~ | ~~BTCUSD.iux เปิดเสาร์-อาทิตย์ไหม~~ | ✅ **ปิด — ไม่เกี่ยวแล้ว** ตัด BTCUSD ออกจากชุด symbol (rev.2) ทั้ง 6 คู่ปิดสุดสัปดาห์ กฎ weekend bar เดียวใช้ได้ทุกตัว | 2026-07-27 |
 | **D7** | สเปก VPS (CPU/RAM/latency ไป IUX) | ⏳ กระทบ SPEC-032 spread model + Phase 6 | 2026-07-27 |
 | **D13** | **ติดตั้ง PostgreSQL อย่างไร** — เครื่องไม่มี Docker · ไม่มี PG · มี WSL2 · **ต้องติดตั้งซอฟต์แวร์ = เจ้าของตัดสิน** | ⏳ แนะนำ **native บน Windows** (ตรงกับ VPS ที่จะเป็น Windows เพราะ MT5 · ชิ้นส่วนน้อยสุด) · **ไม่บล็อกการเขียนโค้ด** — Codex เขียน migration + repository ได้เลย ต่อ DB จริงตอนรัน test marker `db` ([SPEC-006 §9.1](specs/SPEC-006-database.md)) | 2026-07-28 |
+| **D15** | 🔴 **historical broker→UTC mapping** — MT5 คืนเวลา broker · แปลงเป็น UTC ต้องรู้ offset **ณ ขณะนั้นในอดีต** ซึ่งเลื่อนตาม DST ปีละ 2 ครั้ง · `CBrokerTime` (SPEC-063) ตรวจได้แค่ offset **ปัจจุบัน** → ใช้แปลงข้อมูลปี 2016 = **ผิดครึ่งปีทุกปี** · SPEC-007 จึงเก็บ `time_broker` แบบ naive **ปฏิเสธที่จะเดา** | ⏳ **ต้องแก้ก่อน SPEC-032/033** · ทางเลือก: ปฏิทิน DST ของโบรกเกอร์ · หรือ infer จากขอบสัปดาห์ของข้อมูลเอง ([SPEC-007 §4.3](specs/SPEC-007-data-ingest.md)) | 2026-07-28 |
 | **D14** | **เอา TimescaleDB ไหม** | 🟡 **แนะนำ: ยังไม่เอา** — ข้อมูลย้อนหลังไป Parquet ไม่ใช่ DB · `bars` สดหลักพันแถว/เดือน · `account_state` 90 วัน ≈ 9M แถว PG เปล่ารับไหว · **เป็นประตูที่เปิดกลับได้** (`create_hypertable(migrate_data=>true)`) ([SPEC-006 §3.1](specs/SPEC-006-database.md)) | 2026-07-28 |
 | ~~D8~~ | ~~contract size ของ `XAGUSD.iux`~~ | ✅ **ปิด — ไม่เกี่ยวแล้ว** ตัด XAGUSD ออกจากชุด symbol (rev.3) | 2026-07-27 |
 
