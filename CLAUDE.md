@@ -20,7 +20,12 @@ contracts/schema/*.json    ← คนเดียว ห้ามให้ Codex
 docs/**                    ← ทั้งหมด
 AGENTS.md
 CLAUDE.md
+README.md
 ```
+
+**`tools/**` = ร่วมกัน** — Codex แก้ได้ (ต้องเพิ่ม suite เข้า harness แทบทุก ticket)
+แต่คุณต้อง **อ่าน diff ของ gate ก่อนดูผลรันเสมอ** เพราะ Codex แก้ gate แล้วรันเอง
+= self-certification · ดูกฎเต็มใน [`docs/05-collab-protocol.md`](docs/05-collab-protocol.md#tools--กฎพิเศษ-แก้-2026-07-27)
 
 ## งานประจำ
 

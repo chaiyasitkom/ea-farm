@@ -34,6 +34,8 @@
 | 12 | เปลี่ยน target-state protocol เป็น imperative order command | ข้อตัดสินใจสถาปัตยกรรมหลัก |
 | 13 | `git add -A` หรือ `git add .` | Claude ทำงานใน working tree เดียวกัน จะกวาดไฟล์ของอีกฝ่ายเข้า commit — เกิดขึ้นจริงแล้ว ดู `05-collab-protocol.md` |
 | 14 | commit/แก้ไฟล์ใน `docs/` `contracts/schema/` `AGENTS.md` `CLAUDE.md` `README.md` | Claude เป็นเจ้าของ — เห็นค้างใน `git status` ก็ปล่อยไว้ |
+| 17 | แก้ `tools/**` **โดยไม่รายงาน** | `tools/**` แก้ได้ (ต้องเพิ่ม suite ทุก ticket) **แต่ต้องลงหัวข้อ "gate changes" ใน handoff แยกจากงานหลัก** — คุณแก้ gate แล้วรัน gate เอง Claude ต้องอ่าน diff ก่อนถึงจะเชื่อผลได้ |
+| 18 | เพิ่มเป้าหมายใหม่เข้า gate ทั้งที่ยังรันไม่ได้ | เป้าที่ login ไม่ได้/ไม่มี history ทำให้ **gate แดงถาวร** → คนเลิกอ่าน gate · ต้องใส่ `Enabled = $false` + พิมพ์ `[SKIP]` ดังๆ และ **`[SKIP]` ห้ามนับเป็น pass** |
 | 15 | commit ลง `main` | ใช้ `feat/SPEC-NNN-*` เท่านั้น |
 | 16 | เขียนว่า "compile ผ่าน" ถ้าไม่ได้เห็น compiler output จริง | ไม่มี MetaEditor ในสภาพแวดล้อมของคุณ — เขียนว่า "รอ compile gate" |
 
@@ -47,7 +49,10 @@ git branch --show-current                                # เช็คก่อ
 
 ### MQL5
 - ห้าม block ใน `OnTick` เกิน 50ms — socket read ต้อง non-blocking (`SocketIsReadable()` ก่อน)
-- ใช้ `TimeCurrent()` (broker time) ตัดสินใจ ห้าม `TimeLocal()`
+- ⚠️ **แก้ 2026-07-27:** เดิมเขียนว่า "ใช้ `TimeCurrent()` ตัดสินใจ" — **ใช้ไม่ได้แล้ว**
+  `TimeCurrent()` ค้างตอนตลาดปิด (ไม่มี tick) และเป็นเวลา **broker-local ไม่ใช่ UTC**
+  → เรียกเวลาผ่าน `CBrokerTime` ตัวเดียวเท่านั้น ([SPEC-063](docs/specs/SPEC-063-broker-time.md))
+  · `grep TimeGMT()\|TimeTradeServer()\|TimeLocal()\|TimeCurrent()` ต้องเจอเฉพาะใน `BrokerTime.mqh`
 - `iClose(sym,tf,0)` = bar ปัจจุบัน **ยังไม่ปิด** — ใช้ index 1 ขึ้นไปสำหรับ signal
 - เทียบราคา/lot ด้วย tolerance เสมอ: `MathAbs(a-b) < point/2` ห้าม `==`
 - ปัด lot ด้วย `volume_step` เสมอ: `MathFloor(lot/step)*step`

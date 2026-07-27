@@ -177,9 +177,33 @@ branch ของ Codex ด้วย ผลคือ commit message อธิบ�
 
 | path | เจ้าของ | อีกฝ่ายทำได้ |
 |------|---------|--------------|
-| `docs/**` · `contracts/schema/**` · `tools/**` · `AGENTS.md` · `CLAUDE.md` · `README.md` | **Claude** | อ่าน · เสนอแก้ผ่าน implementation note |
+| `docs/**` · `contracts/schema/**` · `AGENTS.md` · `CLAUDE.md` · `README.md` | **Claude** | อ่าน · เสนอแก้ผ่าน implementation note |
 | `mt5-ea/**` · `brain/**` · `research/**` · `ops/**` · `tests/**` · `contracts/gen/**` · `.github/**` · `Makefile` | **Codex** | อ่าน · review · ห้ามแก้/commit |
+| **`tools/**` (compile gate · test harness)** | **ร่วมกัน — Codex แก้ได้ แต่ Claude ต้อง review ก่อนเชื่อผลรัน** | ดูกฎด้านล่าง |
 | `.gitignore` · `.gitattributes` · `.env.example` | Codex (Claude แก้ได้ถ้าเกี่ยวกับ protocol เช่น LF) | บอกอีกฝ่ายในรายงาน |
+
+### `tools/**` — กฎพิเศษ (แก้ 2026-07-27)
+
+> เดิมเขียนว่า `tools/**` เป็นของ Claude คนเดียว แต่ `CLAUDE.md` และ `AGENTS.md`
+> **ไม่เคยระบุไว้เลย** → กฎขัดกันเอง 3 ที่ · Codex แก้ `run-mql5-tests.ps1` โดยไม่ผิด
+> `AGENTS.md` เลย · **นี่เป็นข้อผิดพลาดของเอกสาร ไม่ใช่ของ Codex**
+
+**เหตุผลที่เปลี่ยนเป็นแก้ได้:** Codex ต้องเพิ่ม suite เข้า harness แทบทุก ticket
+ถ้าบล็อกไว้จะกลายเป็นคอขวดที่สุดท้ายจะถูกเลี่ยง — กฎที่คนเลี่ยงคือกฎที่ไม่มีอยู่จริง
+
+**เหตุผลที่ยังต้อง review:** Codex แก้ gate แล้วรัน gate เอง = **self-certification**
+ผลที่ได้เชื่อไม่ได้จนกว่าจะมีคนอ่าน diff ของ gate
+
+| กฎ | รายละเอียด |
+|----|-----------|
+| 1 | **ทุกการแก้ `tools/**` ต้องลงในหัวข้อ "gate changes" ของ handoff report แยกจากงานหลัก** |
+| 2 | **Claude อ่าน diff ของ gate ก่อนดูผลรันเสมอ** — gate ที่เปลี่ยนทำให้ผลรันก่อนหน้าใช้เทียบไม่ได้ |
+| 3 | ห้ามลด/ปิด/ข้ามการตรวจใดๆ เพื่อให้ผ่าน (ขยายจาก [AGENTS.md](../AGENTS.md) ข้อ 5 ที่ครอบแค่ risk check) |
+| 4 | เพิ่มเป้าหมาย/สภาพแวดล้อมใหม่เข้า gate ได้ **ก็ต่อเมื่อมันรันได้จริง** — เป้าที่รันไม่ได้ต้อง `Enabled = $false` + พิมพ์ `[SKIP]` ดังๆ **ห้ามปล่อยให้ gate แดงค้าง** |
+| 5 | **`[SKIP]` ห้ามนับเป็น pass** — สรุปท้ายต้องบอกว่าเป้าไหนรันจริง เป้าไหนข้าม |
+
+กฎข้อ 4–5 มาจากเหตุการณ์จริง: เพิ่มเป้า XM เข้าไปทั้งที่ยัง login ไม่ได้
+→ gate จะแดงถาวรแม้ IUX ผ่าน · **gate ที่แดงตลอดคือ gate ที่คนเลิกอ่าน** ซึ่งแย่กว่าไม่มี gate
 
 ### กฎ commit
 
