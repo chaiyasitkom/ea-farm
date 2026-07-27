@@ -28,7 +28,7 @@
 | SPEC-010 | `StateReporter.mqh` — HELLO/HEARTBEAT/BAR/STATE + backfill 300 bar | Codex | 001, 004, **063** (เพิ่ม — `bar_time` เป็นส่วนของ PK ถ้าเวลาผิดต้อง migrate ทั้งตาราง) | **SPEC_READY** — [spec](specs/SPEC-010-state-reporter.md) |
 | SPEC-011 | `OrderRouter.mqh` — target-state reconciler (hedging) ★ ยากสุด | Codex | 010 ← **ปลดล็อกแล้ว** | **SPEC_READY** (ยังต้องรอ 010 เสร็จ + `test_partial_send_resumes` ด้วย socket จริง) |
 | SPEC-012 | Intent dedupe cache + expiry handling | Codex | 011 | TODO |
-| SPEC-013 | Gateway: asyncio TCP server, auth, session registry | Codex | 006 | TODO |
+| SPEC-013 | Gateway: asyncio TCP server, auth, session registry ★ **คอขวดของ Phase 1** | Codex | 002, 004, 006, **064** | **SPEC_READY** — [spec](specs/SPEC-013-gateway.md) |
 | SPEC-014 | Persist intents/exec_reports/account_state | Codex | 013 | TODO |
 | SPEC-015 | EMA baseline strategy (พิสูจน์ท่อ ไม่ใช่ทำเงิน) | Codex | 013 | TODO |
 | SPEC-016 | Chaos test harness (kill brain, cut net, restart EA, dup intent) | Codex | 011,013 | TODO |

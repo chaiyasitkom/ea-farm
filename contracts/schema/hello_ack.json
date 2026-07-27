@@ -21,10 +21,10 @@
     "brain_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
     "reject_reason": {
       "oneOf": [
-        { "enum": ["BAD_TOKEN", "VERSION_MISMATCH", "DUPLICATE_SESSION", "ACCOUNT_NOT_REGISTERED", "MARGIN_MODE_NOT_HEDGING"] },
+        { "enum": ["BAD_TOKEN", "VERSION_MISMATCH", "DUPLICATE_SESSION", "ACCOUNT_NOT_REGISTERED", "MARGIN_MODE_NOT_HEDGING", "SYMBOL_NOT_IN_REGISTRY"] },
         { "type": "null" }
       ],
-      "description": "ต้องไม่ null เมื่อ accepted=false. MARGIN_MODE_NOT_HEDGING = gateway ปฏิเสธเพราะ account.margin_mode ≠ RETAIL_HEDGING (ADR-001)"
+      "description": "ต้องไม่ null เมื่อ accepted=false. ★ MARGIN_MODE_NOT_HEDGING และ SYMBOL_NOT_IN_REGISTRY เป็น **การตรวจซ้ำชั้นที่สอง** — EA ควร fail ที่ OnInit ไปแล้ว (ADR-001 · SPEC-064) แต่ EA เวอร์ชันเก่าหรือถูกแก้อาจข้ามไป ชั้น server จึงต้องกันเอง. DUPLICATE_SESSION ใช้เฉพาะเมื่อ session_id เดิมโดน evict ≥3 ครั้งใน 5 นาที = EA สองตัวจริง ไม่ใช่การ reconnect ปกติ (SPEC-013 §4.2)"
     },
     "initial_directive": {
       "$ref": "risk_directive.json#/$defs/directive_core",
