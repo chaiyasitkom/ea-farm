@@ -837,6 +837,53 @@ READY → 1. STATE ทันที ← ก่อน backfill ก่อนทุ�
 
 ---
 
+# รอบที่ 5.12 — SPEC-012 Intent cache
+
+📄 [spec เต็ม](specs/SPEC-012-intent-cache.md) · **SPEC_READY** · 15 test · ต้องรอ 011 + 063
+· **ตัวเล็กที่สุดในชุด** แต่มี 2 จุดที่ผิดแล้วเงินหาย
+
+## ★★ ลำดับการเช็คเปลี่ยนคำตอบที่ brain เห็น
+
+```
+1. dedupe → DUPLICATE
+2. expiry → EXPIRED
+3. guard  → REJECTED_BY_GUARD
+4. reconcile → ACCEPTED / NOOP
+```
+
+**dedupe ต้องมาก่อน expiry** — intent ที่เคยตอบไปแล้ว ถ้าส่งซ้ำหลังหมดอายุ
+คำตอบต้องเป็น `DUPLICATE` **ไม่ใช่ `EXPIRED`**
+
+ถ้าตอบ `EXPIRED` brain จะเข้าใจว่าคำสั่งไม่เคยถูกทำ ทั้งที่ทำไปแล้ว → **อาจส่งใหม่แล้วเปิดซ้ำ**
+
+## ★★ ตัดสินไม่ได้ = ปฏิเสธ ไม่ใช่ปล่อยผ่าน
+
+`valid_until` เป็น UTC → ต้องเทียบกับ **`CBrokerTime.NowUtc()` เท่านั้น**
+ห้าม `TimeCurrent()` (เวลา broker) ห้าม `TimeGMT()` (พึ่งนาฬิกาเครื่อง)
+
+`IsValid() == false` → `REJECTED_INVALID` reason `BROKER_TIME_UNAVAILABLE`
+— **เทรดโดยไม่รู้ว่าคำสั่งหมดอายุหรือยัง = เทรดด้วยข้อมูลที่อาจเก่าหลายนาที**
+
+acceptance มี `grep` ห้ามเจอ `TimeCurrent`/`TimeGMT`/`TimeLocal` ในไฟล์นี้
+
+## cache เก็บ "คำตอบ" ไม่ใช่แค่ id
+
+`(intent_id, final_status, ts)` → ตอบ `DUPLICATE` พร้อม `reason = "original_status=ACCEPTED"`
+
+เวลา debug ว่า *"ทำไม order ไม่เกิด"* ต้องแยกออกว่ารอบแรกตอบ `ACCEPTED` (ทำไปแล้ว)
+หรือ `REJECTED_BY_GUARD` (ไม่เคยทำ) — ถ้าตอบ `DUPLICATE` เปล่าๆ ข้อมูลนั้นหายไป
+
+## ห้าม over-engineer 2 อย่าง
+
+- **ห้าม persist ลงดิสก์** — SPEC-017 §4.5 พิสูจน์แล้วว่าไม่ได้ให้ความปลอดภัยเพิ่ม
+- **ห้ามทำ hash table** — ring buffer + linear scan พอที่อัตราไม่กี่ intent ต่อนาที
+  ถ้า `Pump()` p99 เกิน 20 ms เพราะตัวนี้ ค่อยรายงานตัวเลขมา
+
+**cache นี้เป็นเครื่องมือของความชัดเจน ไม่ใช่ความปลอดภัย** — brain ต้องได้คำตอบที่คงที่
+สำหรับคำถามเดิม ไม่งั้น `intents` ใน DB จะมีสองแถวที่เล่าเรื่องคนละแบบสำหรับคำสั่งเดียว
+
+---
+
 # รอบที่ 6 — `local_limits` ต่อกับ EA input
 
 **เส้นตาย: ก่อน merge SPEC-019**
