@@ -39,11 +39,11 @@
 
 | ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
 |----|-----|-------|---------|-------|
-| SPEC-019 | `LocalRiskGuard.mqh` R1–R5, R9–R12, R15, R17 | Codex | 011 | TODO |
-| SPEC-020 | Lot sizing + currency conversion (**USDJPY/USDCAD/XAUUSD** — `EURGBP` ไม่อยู่ในชุด symbol แล้ว) + **แก้ bug ลำดับ clamp ใน R1** ([ADR-002 §4](decisions/ADR-002-symbols-capital-hours.md)) | Codex | 019 | TODO |
-| SPEC-021 | R6 daily loss + R7 max DD + HWM persistence | Codex | 019 | TODO |
-| SPEC-022 | R8 margin level + R14 consecutive loss + halt persistence | Codex | 021 | TODO |
-| SPEC-023 | `SafeMode.mqh` + R13 kill file + R16 brain timeout | Codex | 019 | TODO |
+| SPEC-019 | **LocalRiskGuard กรอบ + R2·R3·R4·R5·R9·R10·R11·R12·R15·R17** (R1 อยู่ที่ 020) | Codex | 011, 012, 063, 064 | **SPEC_READY** — [spec](specs/SPEC-019-local-risk-guard.md) |
+| SPEC-020 | **R1 Lot sizing + currency conversion** (USDJPY/USDCAD/XAUUSD) + แก้ bug ลำดับ clamp | Codex | 019, 064 | **SPEC_READY** — [spec](specs/SPEC-020-lot-sizing.md) |
+| SPEC-021 | R6 daily loss + R7 max DD + HWM persistence | Codex | 019, **063** | **SPEC_READY** — [spec](specs/SPEC-021-drawdown-guard.md) |
+| SPEC-022 | R8 margin level + R14 consecutive loss + halt persistence | Codex | 019, 021, **063** | **SPEC_READY** — [spec](specs/SPEC-022-margin-and-loss-streak.md) |
+| SPEC-023 | `SafeMode.mqh` + R13 kill file + R16 brain timeout | Codex | 019, **063** | **SPEC_READY** — [spec](specs/SPEC-023-safemode.md) |
 | SPEC-060 | **MarketDataCollector** — MT5 read-only ป้อน bar ทุก symbol (G1) | Codex | 006 | TODO |
 | SPEC-061 | **P10 stale-data guard ให้ fail-closed** — collector ตาย = reject ไม่ใช่ correlation 0 (G1) | Codex | 060 | TODO |
 | SPEC-024 | Currency exposure decomposition (P3) | Codex | 014, 064 | TODO |

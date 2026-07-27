@@ -1031,6 +1031,62 @@ mql5-attest:
 
 ---
 
+# รอบที่ 7 — Phase 2 ★ Risk layer L1 (SPEC-019…023)
+
+📄 [019](specs/SPEC-019-local-risk-guard.md) · [020](specs/SPEC-020-lot-sizing.md)
+· [021](specs/SPEC-021-drawdown-guard.md) · [022](specs/SPEC-022-margin-and-loss-streak.md)
+· [023](specs/SPEC-023-safemode.md) · **~80 test รวม**
+
+> **นี่คือชั้นที่เงินหาย** — [CLAUDE.md](../CLAUDE.md) กำหนดให้ review เข้มที่สุดตรงนี้
+> **ตกข้อเดียวก็ `CHANGES_REQUIRED`**
+
+## ★★ 3 หลักการที่ใช้กับทั้ง 5 ticket
+
+**1. "ลดความเสี่ยงต้องผ่านได้เสมอ"**
+`target_volume = 0` ต้องผ่าน**ทุกสถานะ รวม HALT** · R5/R11/R17 ห้าม block คำสั่งที่ลดขนาด
+— ไม่งั้นเราจะติดอยู่ในไม้ที่ปิดไม่ได้ตอนที่อยากปิดที่สุด
+
+**2. "ประเมินไม่ได้ = ปฏิเสธ"**
+นาฬิกาเพี้ยน · อ่าน spread ไม่ได้ · `tick_value = 0` · อ่าน history ไม่ได้ ·
+อ่าน kill file ไม่ได้ → **ทุกกรณีคือ reject/halt ไม่ใช่ปล่อยผ่าน**
+
+**3. "guard ไม่ส่ง order เอง"**
+ทุกตัวเปลี่ยนแค่ `Mode()` · `OrderRouter` เป็นคนลงมือ
+· flatten = **วนปิดทุก ticket** ไม่ใช่ส่งสวน 1 ไม้ (จะกลายเป็น internal hedge ละเมิด R18)
+
+## จุดที่ผิดแล้วเงินหาย — ตัวละ 1–2 ข้อ
+
+| spec | จุด |
+|------|-----|
+| **019** | `target=0` ต้องผ่านตอน HALT · clamp **ลงเท่านั้น** · SL ผิดฝั่ง (R9b — risk-spec ไม่ได้เขียนไว้) · R17 นับ order ที่ **ส่ง** ไม่ใช่ที่สำเร็จ |
+| **020** | ลำดับ **reject-ก่อน-clamp** (bug เดิมของ risk-spec) · `tick_value` **อ่านสดห้าม cache** และ `≤ 0` = reject ห้ามใช้ค่าเก่า |
+| **021** | วัดจาก **equity ไม่ใช่ closed P/L** · halt + HWM ต้อง**รอดรีสตาร์ต** · **R7 hard ปลดเองไม่ได้** · นาฬิกาเพี้ยน = ห้ามตัดสินว่าวันใหม่ (จะล้างขาดทุนทั้งวัน) |
+| **022** | `margin = -1` (ไม่มี position) → **NORMAL ไม่ใช่ REDUCE_ONLY** (ไม่งั้นเปิดไม้แรกไม่ได้ตลอดกาล) · R14 ต้องรวม **swap + commission** · อ่าน history ไม่ได้ ≠ streak 0 |
+| **023** | อ่าน kill file ไม่ได้ = **ถือว่ามี** · ลบไฟล์แล้ว**ห้ามปลดเอง** · เช็คใน `OnTimer` **ห้าม `OnTick`** (ตลาดปิดไม่มี tick) · R16 → **REDUCE_ONLY ไม่ใช่ flatten** |
+
+## ★ `MarketSnapshot` — seam ที่ทำให้ทดสอบได้จริง
+
+guard **ห้ามเรียก `SymbolInfoDouble` / `AccountInfoDouble` ตรงๆ** ต้องผ่าน virtual class
+· เหตุผลเดียวกับ `CBrokerClockSource` ใน SPEC-063
+
+ถ้าไม่มี seam นี้จะทดสอบ *"spread 30 point ตอนเพดาน 25"* ไม่ได้เลยเพราะควบคุมตลาดจริงไม่ได้
+· **mock guard เองไม่นับ แต่ mock ตลาดคือรอยต่อที่ถูก**
+
+## R13 kill file ต้องเรียบง่ายที่สุดในระบบทั้งหมด
+
+มันคือสิ่งสุดท้ายที่เหลือเมื่อทุกอย่างพัง: brain ตาย · เน็ตหลุด · DB ล่ม ·
+dashboard เข้าไม่ได้ · คนที่ต้องกดอาจอยู่บนมือถือผ่าน remote desktop ที่กระตุก
+
+→ เหลือแค่ **"มีไฟล์นี้ไหม"** และคำตอบที่ปลอดภัยเมื่อไม่แน่ใจคือ **"ถือว่ามี"**
+· `grep` ห้ามเจอ `CWire`/`Socket`/`OnTick` ใน `SafeMode.mqh`
+
+## ★ ปิดหนี้ `local_limits` ไปในตัว
+
+SPEC-019 §3.5 เพิ่ม EA input ครบทุกกฎ → `HELLO.local_limits` ส่งค่าจริงได้
+**รอบที่ 6 ด้านล่างถูกดูดเข้ามาอยู่ในนี้แล้ว**
+
+---
+
 # รอบที่ 6 — `local_limits` ต่อกับ EA input
 
 **เส้นตาย: ก่อน merge SPEC-019**
