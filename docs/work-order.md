@@ -238,7 +238,32 @@ schema: "minimum": 0  →  validation FAIL  →  gateway ปฏิเสธ hear
 
 ---
 
-# รอบที่ 4 — `local_limits` ต่อกับ EA input
+# รอบที่ 4 — SPEC-010 StateReporter
+
+📄 [spec เต็ม](specs/SPEC-010-state-reporter.md) · **SPEC_READY** · 24 test (MQL5 19 · Python 5)
+· ต้องรอ SPEC-004 **และ** SPEC-063 merge ก่อน
+
+**★ จุดที่จะกินเวลามากที่สุด — backfill pacing**
+
+คำนวณแล้ว: `InpSendQueueMax = 256` แต่ backfill = **300 bar** และนโยบายตอนคิวเต็มคือ
+**ทิ้งตัวเก่าสุด** → enqueue รวดเดียว = **44 bar เก่าที่สุดหายเงียบ** ซึ่งคือตัวที่ brain
+ต้องใช้ warm feature window พอดี
+
+แล้วอาการที่เห็นจะเป็น *"EA reconnect ตลอดเวลา"* เพราะ heartbeat โดนเบียดออกจากคิวด้วย
+→ gateway ตัด session → reconnect → backfill เริ่มใหม่ → **วนไม่จบ**
+คนจะไปไล่หาปัญหาที่ socket ทั้งที่ต้นเหตุคือ backfill กินคิว
+
+**แก้ด้วย pacing ไม่ใช่เพิ่ม queue** — เติมได้เท่าที่ `SendQueueDepth() < queue_max/2`
+เหลืออีกครึ่งไว้ให้ heartbeat/STATE
+
+**อีก 3 จุดที่พลาดง่าย:**
+- **ห้ามส่ง shift 0** — bar ที่ยังไม่ปิด = look-ahead bias · `bar.json` บังคับ `is_final: const true`
+- **`sl`/`tp` = `0.0` → ส่ง `null`** — ทำ helper ตัวเดียว ห้ามเช็คกระจาย
+- **ownership ต้องเช็คทั้ง `magic` และ `symbol`** ไม่ใช่แค่ magic
+
+---
+
+# รอบที่ 5 — `local_limits` ต่อกับ EA input
 
 **เส้นตาย: ก่อน merge SPEC-019**
 
@@ -258,7 +283,7 @@ guard บังคับค่าจริงจาก input แต่ brain ถ
 
 | ticket | ทำไม |
 |--------|------|
-| **SPEC-011** OrderRouter | `SPEC_READY` แต่ depends on SPEC-010 ซึ่ง**ยังไม่มี spec** · และ 1.6 ต้องเสร็จก่อน merge |
+| **SPEC-011** OrderRouter | spec ปลดล็อกแล้ว แต่ต้องรอ **SPEC-010 เสร็จจริง** + ข้อ 1.6 (`test_partial_send_resumes` ด้วย socket จริง) |
 | **SPEC-019 / 020** risk layer | Claude ยังไม่เขียน spec |
 | **SPEC-064** SymbolRegistry | Claude ยังไม่เขียน spec (เพิ่งเลื่อนเป็น blocker หลังเพิ่ม XM) |
 | `contracts/schema/**` | Claude เป็นเจ้าของ — เสนอผ่าน implementation note |

@@ -25,8 +25,8 @@
 
 | ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
 |----|-----|-------|---------|-------|
-| SPEC-010 | `StateReporter.mqh` — HELLO/HEARTBEAT/BAR/STATE + backfill 300 bar | Codex | 001,004 | TODO |
-| SPEC-011 | `OrderRouter.mqh` — target-state reconciler (hedging) ★ ยากสุด | Codex | 010 | **SPEC_READY** |
+| SPEC-010 | `StateReporter.mqh` — HELLO/HEARTBEAT/BAR/STATE + backfill 300 bar | Codex | 001, 004, **063** (เพิ่ม — `bar_time` เป็นส่วนของ PK ถ้าเวลาผิดต้อง migrate ทั้งตาราง) | **SPEC_READY** — [spec](specs/SPEC-010-state-reporter.md) |
+| SPEC-011 | `OrderRouter.mqh` — target-state reconciler (hedging) ★ ยากสุด | Codex | 010 ← **ปลดล็อกแล้ว** | **SPEC_READY** (ยังต้องรอ 010 เสร็จ + `test_partial_send_resumes` ด้วย socket จริง) |
 | SPEC-012 | Intent dedupe cache + expiry handling | Codex | 011 | TODO |
 | SPEC-013 | Gateway: asyncio TCP server, auth, session registry | Codex | 006 | TODO |
 | SPEC-014 | Persist intents/exec_reports/account_state | Codex | 013 | TODO |
