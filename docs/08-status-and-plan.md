@@ -27,7 +27,7 @@
 |---|---|
 | **git remote** | ไม่มี backup · ไม่มี CI · เครื่องพังคือหายหมด |
 | **`.github/`** | ไม่มี CI ใดๆ |
-| **`pyproject.toml` · `Makefile` · `.env.example`** | ฝั่ง Python ยังเริ่มไม่ได้ |
+| **`pyproject.toml` · `tools/task.py` · `.env.example`** | ฝั่ง Python ยังเริ่มไม่ได้ |
 | **`brain/`** (นอกจาก `echo_server.py`) | gateway · risk · signal ยังไม่มี |
 | **DB** | ยังไม่มี schema จริง มีแต่ SQL ในเอกสาร |
 
@@ -141,7 +141,7 @@ GitHub Actions **รัน MQL5 test ไม่ได้** (ไม่มี MetaE
 |---|----------|-----|
 | ก | CI = Python เท่านั้น (ruff/mypy/pytest/codegen-check) · MQL5 gate รันมือบนเครื่องนี้ | ตรงกับความเป็นจริง · **แต่ regression ของ MQL5 จับได้เฉพาะตอนมีคนรัน** |
 | ข | self-hosted runner บนเครื่อง Windows นี้ | อัตโนมัติจริง · ต้องมี remote ก่อน · ตั้งครั้งเดียว |
-| ค | ไม่มี CI เลย ใช้ `make check` + gate ก่อน handoff ทุกครั้ง | ง่ายสุด · พึ่งวินัยล้วน |
+| ค | ไม่มี CI เลย ใช้ `python tools/task.py check` + gate ก่อน handoff ทุกครั้ง | ง่ายสุด · พึ่งวินัยล้วน |
 
 **ผมแนะนำ ข** — แต่ต้องมี remote (§5.1) ก่อน · **เจ้าของตัดสิน**
 

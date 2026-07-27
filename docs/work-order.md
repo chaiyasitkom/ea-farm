@@ -406,7 +406,7 @@ open(log_path, encoding="utf-16-le")     # ไม่ใช่ utf-8
 
 | # | กับดัก |
 |---|--------|
-| 1 | **determinism** — `make codegen` 2 ครั้งต้อง byte-identical · sort เอง ห้ามพึ่ง `os.listdir()` · ห้ามใส่ timestamp ในหัวไฟล์ · pin `==` |
+| 1 | **determinism** — `python tools/task.py codegen` 2 ครั้งต้อง byte-identical · sort เอง ห้ามพึ่ง `os.listdir()` · ห้ามใส่ timestamp ในหัวไฟล์ · pin `==` |
 | 2 | **`additionalProperties`** ต้องเป็น `ignore` **ห้าม `forbid`** (ยกเว้น `config_update.settings` ที่เดียว) |
 | 3 | **`null` ≠ `0` ≠ ไม่มี field** — MQL5 คืน `0.0` เมื่อไม่มี SL · schema มี `exclusiveMinimum: 0` → ส่ง `0` จะ fail · ต้องมี helper ตัวเดียว ไม่ใช่เช็คกระจาย |
 
@@ -463,6 +463,33 @@ IUX: EURUSD.iux · XAUUSD.iux      XM: EURUSD · GOLD
 
 `max_spread_points` ยัง `null` ทั้ง 6 ตัว (ยังไม่ calibrate จากสถิติจริง)
 → R5 ข้าม + WARN · `production_ready = false` · **บล็อกที่ประตูเงินจริง ไม่ใช่บล็อกตอนนี้**
+
+---
+
+# รอบที่ 0 (แทรกได้ทุกเมื่อ) — SPEC-002 scaffold
+
+📄 [spec เต็ม](specs/SPEC-002-repo-scaffold.md) · **SPEC_READY** · 9 test · **ไม่ขึ้นกับ ticket ไหนเลย**
+
+> แทรกทำได้ทันทีที่ว่าง — และ**ควรทำก่อนรอบ 3 (SPEC-004)** เพราะ codegen ต้องมี
+> runner กับ pytest config อยู่แล้ว
+
+**🔴 แก้ของที่ผมเขียนผิดไว้: ไม่ใช้ `Makefile`**
+
+ตรวจแล้ว **เครื่องนี้ไม่มี `make`** และจะไม่ติดตั้ง — VPS ที่จะ deploy จริงก็เป็น Windows
+(MT5 รันได้แค่ Windows) make จึงไม่ได้ช่วยอะไรเลย มีแต่เพิ่มขั้นตอน setup + PATH quirks
+
+→ **`tools/task.py`** เป็น runner แทน · ผมแก้ SPEC-004 · `02-contracts §6` · roadmap
+· work-order ให้ตรงกันหมดแล้ว
+
+**target ที่สำคัญที่สุดคือ `check`** = `lint + typecheck + test + codegen-check`
+
+เพราะ **G3 ยังไม่ตัดสิน + ไม่มี git remote → ตอนนี้ไม่มี CI เลย**
+`check` คือ CI ทั้งหมดที่โปรเจกต์นี้มี ณ ตอนนี้ · และเพราะพึ่งวินัยล้วน
+มันต้อง**เร็วพอที่จะรันทุกครั้ง** → `slow` / `live_terminal` / `mql5` ถูกแยกออกจาก `test` ปกติ
+
+**2 กฎที่ห้ามพลาด:**
+- `check` **ต้องรันทุก target ให้จบแล้วค่อยสรุป** ห้ามหยุดที่ตัวแรกที่แดง
+- `[SKIP]` **ห้ามนับเป็น pass** — กฎเดียวกับเป้า XM ใน MQL5 gate
 
 ---
 

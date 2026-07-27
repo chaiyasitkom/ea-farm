@@ -536,7 +536,7 @@ contracts/schema/*.json        ← Claude เป็นคนแก้ไฟล�
 ```
 
 - `contracts/gen/` เป็น **generated** — commit ลง repo แต่ห้ามแก้มือ
-- CI ต้องมี job: `make codegen && git diff --exit-code contracts/gen/` (fail ถ้าไม่ตรง)
+- CI ต้องมี job: `python tools/task.py codegen-check` (fail ถ้าไม่ตรง)
 - MQL5 generator ต้องสร้าง struct + serializer + parser ที่ทดสอบ round-trip ได้
 
 ## 7. Versioning

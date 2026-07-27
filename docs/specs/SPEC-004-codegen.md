@@ -136,19 +136,25 @@ string FarmLastParseError();      // ว่าง = ไม่มี error · ต
 | `count_map` | `string k[]; long v[];` | |
 | field ที่ไม่อยู่ใน `required` | + `bool x_present;` | แยกจาก `x_is_null` — ดู §4.4 |
 
-### 3.4 `Makefile` — มีแค่ 2 target
+### 3.4 ~~`Makefile`~~ → `tools/task.py` — **แก้แล้ว 2026-07-28**
 
-```make
-codegen:        ## regenerate contracts/gen/ จาก contracts/schema/
-	python tools/codegen.py
+> 🔴 **ฉบับแรกของ spec นี้เขียนว่าให้สร้าง `Makefile` — ใช้ไม่ได้**
+> ตรวจแล้ว **เครื่องนี้ไม่มี `make`** และจะไม่ติดตั้ง เพราะ VPS ที่จะ deploy จริง
+> ก็เป็น Windows (MT5 รันได้แค่ Windows) → make ไม่ได้ช่วยอะไรเลย
+> เหตุผลเต็มใน [SPEC-002 §3.2](SPEC-002-repo-scaffold.md)
 
-codegen-check:  ## fail ถ้า contracts/gen/ ไม่ตรงกับ schema (ใช้ใน CI)
-	python tools/codegen.py
-	git diff --exit-code contracts/gen/
+**SPEC-002 สร้าง `tools/task.py` เป็น runner** — ticket นี้แค่สร้าง `tools/codegen.py`
+แล้วให้ runner เรียก:
+
+```
+python tools/task.py codegen        # regenerate contracts/gen/
+python tools/task.py codegen-check  # codegen แล้ว git diff --exit-code contracts/gen/
 ```
 
-⚠️ SPEC-002 จะมาขยาย Makefile นี้ — **ห้ามลบ 2 target นี้** และถ้า SPEC-002 มาก่อน
-ให้เพิ่มเข้าไปไม่ใช่เขียนทับ
+| ถ้า SPEC-002 เสร็จก่อน | ต่อ target เข้า `tools/task.py` ที่มีอยู่ |
+| ถ้า SPEC-004 เสร็จก่อน | `tools/codegen.py` เรียกตรงๆ ได้ (`python tools/codegen.py`) · SPEC-002 มาห่อทีหลัง |
+
+**ห้ามสร้างไฟล์ชื่อ `Makefile`** ในทั้งสอง ticket
 
 ### 3.5 ★ `JsonCore.mqh` — tokenizer จริง (ตัวยากที่สุด)
 

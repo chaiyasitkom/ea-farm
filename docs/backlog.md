@@ -9,7 +9,7 @@
 | ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
 |----|-----|-------|---------|-------|
 | SPEC-001 | MT5 Executor skeleton + Wire (socket, JSON-lines, reconnect) | Codex | — | **SPEC_READY** |
-| SPEC-002 | Repo scaffold, `.gitignore`, `.env.example`, Makefile | Codex | — | TODO |
+| SPEC-002 | Repo scaffold, `.env.example`, **`tools/task.py`** (ไม่ใช่ Makefile — เครื่องนี้ไม่มี `make`) + local gate `check` | Codex | — | **SPEC_READY** — [spec](specs/SPEC-002-repo-scaffold.md) |
 | SPEC-003 | `contracts/schema/*.json` ทุก message type | **Claude** | — | ✅ **DONE** — 13 schema + README · [handoff](reviews/SPEC-003-schema-handoff.md) |
 | SPEC-004 | Codegen: schema → pydantic + MQL5 struct/serializer | Codex | 003 | **SPEC_READY** — [spec](specs/SPEC-004-codegen.md) |
 | SPEC-005 | Round-trip test harness (py ↔ mql5) | Codex | 004 | TODO |

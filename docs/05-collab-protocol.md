@@ -178,7 +178,7 @@ branch ของ Codex ด้วย ผลคือ commit message อธิบ�
 | path | เจ้าของ | อีกฝ่ายทำได้ |
 |------|---------|--------------|
 | `docs/**` · `contracts/schema/**` · `AGENTS.md` · `CLAUDE.md` · `README.md` | **Claude** | อ่าน · เสนอแก้ผ่าน implementation note |
-| `mt5-ea/**` · `brain/**` · `research/**` · `ops/**` · `tests/**` · `contracts/gen/**` · `.github/**` · `Makefile` | **Codex** | อ่าน · review · ห้ามแก้/commit |
+| `mt5-ea/**` · `brain/**` · `research/**` · `ops/**` · `tests/**` · `contracts/gen/**` · `.github/**` · `tools/task.py` | **Codex** | อ่าน · review · ห้ามแก้/commit |
 | **`tools/**` (compile gate · test harness)** | **ร่วมกัน — Codex แก้ได้ แต่ Claude ต้อง review ก่อนเชื่อผลรัน** | ดูกฎด้านล่าง |
 | `.gitignore` · `.gitattributes` · `.env.example` | Codex (Claude แก้ได้ถ้าเกี่ยวกับ protocol เช่น LF) | บอกอีกฝ่ายในรายงาน |
 

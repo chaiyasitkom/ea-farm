@@ -241,8 +241,8 @@ P4 คำนวณ correlation 20 วันจริง (SPEC-026) · ค่า�
 ## 6. Acceptance criteria
 
 - [ ] `contracts/symbols.json` ผ่าน `contracts/schema/symbols_registry.json`
-- [ ] `make codegen` สร้าง `symbols.py` + `FarmSymbols.mqh` ได้ · **รัน 2 ครั้ง byte-identical**
-- [ ] `make codegen-check` แดงเมื่อแก้ `symbols.json` แล้วไม่ regenerate
+- [ ] `python tools/task.py codegen` สร้าง `symbols.py` + `FarmSymbols.mqh` ได้ · **รัน 2 ครั้ง byte-identical**
+- [ ] `python tools/task.py codegen-check` แดงเมื่อแก้ `symbols.json` แล้วไม่ regenerate
 - [ ] `FarmSymbols.mqh` compile 0 error 0 warning
 - [ ] `to_canonical("XMGlobal-MT5 6", "GOLD") == "XAUUSD"` ✅ **ทั้งสองฝั่ง**
 - [ ] `to_canonical("IUXMarkets-Demo", "XAUUSD.iux") == "XAUUSD"` ✅
