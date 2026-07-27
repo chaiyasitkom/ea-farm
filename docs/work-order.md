@@ -884,6 +884,58 @@ acceptance มี `grep` ห้ามเจอ `TimeCurrent`/`TimeGMT`/`TimeLoca
 
 ---
 
+# รอบที่ 5.13 — SPEC-018 Consistency checker
+
+📄 [spec เต็ม](specs/SPEC-018-consistency-checker.md) · **SPEC_READY** · 15 test
+· ต้องรอ 014 + 064 · เป็น **exit criteria ของ Phase 1**
+· **เริ่ม checker + unit test ทั้ง 15 ได้เลยด้วยข้อมูลสังเคราะห์**
+
+## ★★ งานที่สำคัญที่สุดของเครื่องมือนี้: หา order ที่เกิดขึ้นจริงแต่เราไม่รู้
+
+[SPEC-003 handoff](reviews/SPEC-003-schema-handoff.md) เขียนเตือนไว้แล้วว่า
+`exec_report.result = TIMEOUT` **ไม่ได้แปลว่า order ไม่เข้า**
+
+```
+EA ส่ง order → โบรกเกอร์ทำสำเร็จ → เน็ตขาดก่อนตอบกลับ
+  → EA รายงาน TIMEOUT ticket=null
+  → เราไม่รู้ว่ามี position
+  → brain คิดว่า flat แล้วสั่งเปิดใหม่ = สองเท่า
+```
+
+**C1 (deal ใน MT5 ที่ไม่มี `exec_report`) คือสิ่งเดียวที่จับเคสนี้ได้**
+— และมันจะไม่โผล่ใน log ที่ไหนเลย
+
+## ★★ จับคู่ด้วย **ticket** ไม่ใช่ด้วยเวลา
+
+MT5 คืนเวลา deal เป็นเวลา broker · DB เก็บ UTC → จับคู่ด้วยเวลาจะชน [D15](backlog.md)
+และถ้ามี DST เปลี่ยนในช่วงที่ตรวจ **ทุกอย่างจะดูไม่ตรงพร้อมกันทั้งหมด**
+
+ticket เป็นเลขที่โบรกเกอร์ออกให้ **ไม่ขึ้นกับ timezone** → ใช้เป็นกุญแจ
+เวลาใช้เป็นตัวกรองหยาบเท่านั้น + **pad ±2 ชม.**
+
+⚠️ กุญแจต้องเป็น **`(broker, ticket)`** — IUX กับ XM ออก ticket ชนกันได้
+
+## ★★ "ผ่านเพราะไม่ได้ตรวจ" คือ failure mode ที่อันตรายที่สุด
+
+`history_select()` คืน false → โค้ดตีความว่า "ไม่มี deal" → ไม่มีอะไรให้ไม่ตรง →
+**รายงานเขียว** ทั้งที่ไม่เคยเทียบอะไรเลย
+
+→ edge 1 + test 10 บังคับให้ `history_select()` ล้มเหลว = **error ไม่ใช่ผ่าน**
+
+เป็นแบบเดียวกับ `test_stale_output_detected_when_ea_missing` ใน SPEC-005
+และกลไก 3 ชั้นของ backfill ใน SPEC-010
+
+**gate ทุกตัวในโปรเจกต์นี้ต้องตอบให้ได้ว่า "ถ้าฉันไม่ได้ทำงาน จะมีใครรู้ไหม"**
+
+## read-only เด็ดขาด
+
+ห้ามเขียน DB · ห้ามส่ง order · acceptance มี `grep` ห้ามเจอ
+`order_send` / `INSERT` / `UPDATE` / `DELETE`
+
+**เครื่องมือที่ "แก้ให้ตรง" อัตโนมัติ คือเครื่องมือที่ทำให้ปัญหาหายไปโดยไม่มีใครรู้ว่าเคยมี**
+
+---
+
 # รอบที่ 6 — `local_limits` ต่อกับ EA input
 
 **เส้นตาย: ก่อน merge SPEC-019**
