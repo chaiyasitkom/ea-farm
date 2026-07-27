@@ -223,7 +223,10 @@ ShutdownTerminal=1
         "test_json_unknown_type_ignored",
         "test_queue_full_drops_oldest",
         "test_partial_send_resumes",
-        "test_utf8_multibyte_not_split"
+        "test_utf8_multibyte_not_split",
+        "test_msg_id_monotonic_across_1000_calls",
+        "test_msg_id_monotonic_when_clock_frozen",
+        "test_msg_id_unique_across_10000_calls"
     )
     if (-not ($j.PSObject.Properties.Name -contains "ran_names")) {
         Write-Output "  [FAIL] result JSON has no ran_names"

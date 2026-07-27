@@ -182,13 +182,59 @@ void test_msg_id_is_ulid_26_chars()
    AssertTrue(LooksLikeUlid(msg_id), "test_msg_id_is_ulid_26_chars");
 }
 
-void test_msg_id_two_instances_not_duplicate()
+void test_msg_id_differs_between_wire_objects()
 {
    CWire wire_a;
    CWire wire_b;
    const string id_a = wire_a.TestNextMsgId();
    const string id_b = wire_b.TestNextMsgId();
-   AssertTrue(id_a != id_b, "test_msg_id_two_instances_not_duplicate");
+   AssertTrue(id_a != id_b, "test_msg_id_differs_between_wire_objects");
+}
+
+void test_msg_id_monotonic_across_1000_calls()
+{
+   CWire wire;
+   string previous = wire.TestNextMsgId();
+   bool monotonic = true;
+   for(int i = 1; i < 1000; i++)
+   {
+      const string current = wire.TestNextMsgId();
+      if(current <= previous)
+         monotonic = false;
+      previous = current;
+   }
+   AssertTrue(monotonic, "test_msg_id_monotonic_across_1000_calls");
+}
+
+void test_msg_id_monotonic_when_clock_frozen()
+{
+   CWire wire;
+   const ulong frozen_ms = 1800000000000ULL;
+   string previous = wire.TestNextMsgIdFromMs(frozen_ms);
+   bool monotonic = true;
+   for(int i = 1; i < 1000; i++)
+   {
+      const string current = wire.TestNextMsgIdFromMs(frozen_ms);
+      if(current <= previous)
+         monotonic = false;
+      previous = current;
+   }
+   AssertTrue(monotonic, "test_msg_id_monotonic_when_clock_frozen");
+}
+
+void test_msg_id_unique_across_10000_calls()
+{
+   CWire wire;
+   string previous = wire.TestNextMsgId();
+   bool unique = true;
+   for(int i = 1; i < 10000; i++)
+   {
+      const string current = wire.TestNextMsgId();
+      if(current <= previous)
+         unique = false;
+      previous = current;
+   }
+   AssertTrue(unique, "test_msg_id_unique_across_10000_calls");
 }
 
 void test_timeframe_code_matches_schema()
@@ -293,8 +339,14 @@ void RunAllTests()
    test_hello_ack_rejected_sets_failed_auth();
    RecordRan("test_msg_id_is_ulid_26_chars");
    test_msg_id_is_ulid_26_chars();
-   RecordRan("test_msg_id_two_instances_not_duplicate");
-   test_msg_id_two_instances_not_duplicate();
+   RecordRan("test_msg_id_differs_between_wire_objects");
+   test_msg_id_differs_between_wire_objects();
+   RecordRan("test_msg_id_monotonic_across_1000_calls");
+   test_msg_id_monotonic_across_1000_calls();
+   RecordRan("test_msg_id_monotonic_when_clock_frozen");
+   test_msg_id_monotonic_when_clock_frozen();
+   RecordRan("test_msg_id_unique_across_10000_calls");
+   test_msg_id_unique_across_10000_calls();
    RecordRan("test_timeframe_code_matches_schema");
    test_timeframe_code_matches_schema();
    RecordRan("test_pump_p99_us_uses_recorded_samples");

@@ -27,28 +27,30 @@ string FarmCrockford32Char(const int value)
 
 void FarmSeedUlidRandom()
 {
-   static bool seeded = false;
-   if(seeded)
-      return;
-   MathSrand((int)(GetMicrosecondCount() % 2147483647));
-   seeded = true;
+   const ulong seed = (ulong)GetMicrosecondCount()
+                      ^ (ulong)TimeLocal()
+                      ^ (ulong)ChartID()
+                      ^ (ulong)AccountInfoInteger(ACCOUNT_LOGIN);
+   MathSrand((int)(seed % 2147483647ULL));
 }
 
-string FarmGenerateUlid()
+string FarmRandomUlidSuffix()
 {
    FarmSeedUlidRandom();
+   string out = "";
+   for(int i = 0; i < 16; i++)
+      out += FarmCrockford32Char(MathRand());
+   return out;
+}
 
-   const ulong timestamp_ms = (ulong)TimeGMT() * 1000ULL + (ulong)(GetTickCount() % 1000);
-   ulong value = timestamp_ms;
+string FarmEncodeUlidTimestamp(ulong timestamp_ms)
+{
    string out = "";
    for(int i = 0; i < 10; i++)
    {
-      out = FarmCrockford32Char((int)(value % 32ULL)) + out;
-      value /= 32ULL;
+      out = FarmCrockford32Char((int)(timestamp_ms % 32ULL)) + out;
+      timestamp_ms /= 32ULL;
    }
-
-   for(int i = 0; i < 16; i++)
-      out += FarmCrockford32Char(MathRand());
    return out;
 }
 
@@ -100,6 +102,8 @@ private:
    long            m_reconnect_count;
    long            m_bytes_dropped;
    long            m_queue_drop_count;
+   ulong           m_ulid_last_ms;
+   string          m_ulid_rand_suffix;
    string          m_session_id;
    string          m_ea_version;
    string          m_strategy_id;
@@ -196,9 +200,17 @@ private:
       ArrayResize(m_inbound_bytes, 0);
    }
 
+   string NextMsgIdFromMs(ulong timestamp_ms)
+   {
+      if(timestamp_ms <= m_ulid_last_ms)
+         timestamp_ms = m_ulid_last_ms + 1ULL;
+      m_ulid_last_ms = timestamp_ms;
+      return FarmEncodeUlidTimestamp(timestamp_ms) + m_ulid_rand_suffix;
+   }
+
    string NextMsgId()
    {
-      return FarmGenerateUlid();
+      return NextMsgIdFromMs((ulong)TimeGMT() * 1000ULL);
    }
 
    bool HasPartialSend() const
@@ -446,12 +458,12 @@ private:
          "\"wire\":{"
             "\"state\":" + FarmJsonQuote(WireStateText()) + ","
             "\"send_queue_depth\":" + IntegerToString(SendQueueDepth()) + ","
-            "\"messages_sent\":" + IntegerToString((int)m_messages_sent) + ","
-            "\"messages_recv\":" + IntegerToString((int)m_messages_recv) + ","
-            "\"reconnect_count\":" + IntegerToString((int)m_reconnect_count) + ","
-            "\"bytes_dropped\":" + IntegerToString((int)m_bytes_dropped) + ","
+            "\"messages_sent\":" + IntegerToString(m_messages_sent) + ","
+            "\"messages_recv\":" + IntegerToString(m_messages_recv) + ","
+            "\"reconnect_count\":" + IntegerToString(m_reconnect_count) + ","
+            "\"bytes_dropped\":" + IntegerToString(m_bytes_dropped) + ","
             "\"seconds_since_last_inbound\":" + IntegerToString(SecondsSinceLastInbound()) + ","
-            "\"pump_p99_us\":" + IntegerToString((int)PumpP99Us()) +
+            "\"pump_p99_us\":" + IntegerToString((long)PumpP99Us()) +
          "}" +
       "}";
       const string msg = FarmMakeEnvelope("HEARTBEAT", NextMsgId(), m_session_id, TimeCurrent(), payload);
@@ -662,6 +674,8 @@ public:
       m_reconnect_count = 0;
       m_bytes_dropped = 0;
       m_queue_drop_count = 0;
+      m_ulid_last_ms = 0;
+      m_ulid_rand_suffix = FarmRandomUlidSuffix();
       m_ea_version = "1.0.0";
       m_strategy_id = "trend_v1";
       m_magic = 770001;
@@ -824,6 +838,11 @@ public:
    string TestNextMsgId()
    {
       return NextMsgId();
+   }
+
+   string TestNextMsgIdFromMs(const ulong timestamp_ms)
+   {
+      return NextMsgIdFromMs(timestamp_ms);
    }
 
    void TestRecordPumpElapsed(const ulong elapsed_us)
