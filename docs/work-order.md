@@ -331,6 +331,21 @@ open(log_path, encoding="utf-16-le")     # ไม่ใช่ utf-8
    ถ้าตั้งด้วยมือ ให้บันทึกเป็นขั้นตอน setup ในรายงาน (จะย้ายไป runbook SPEC-030b)
 2. **เทอร์มินัลต้องไม่เปิดอยู่ก่อน** — เช็คแบบเดียวกับที่คุณเพิ่งใส่ใน `run-mql5-tests.ps1`
 
+### 📄 spec เต็มออกแล้ว — [SPEC-016](specs/SPEC-016-chaos-harness.md)
+
+**§1.5 และ §1.6 คือ "ชั้น A" ของ SPEC-016** — ต้องการแค่ SPEC-001 ที่มีอยู่แล้ว
+เริ่มได้ทันทีไม่ต้องรอ ticket อื่น · 7 scenario + 6 test ของตัว harness เอง
+
+ในนั้นมีของที่ยังไม่ได้เขียนไว้ที่นี่:
+- `ScriptedServer` API เต็ม (`reject_next_hello` · `stop_acking_heartbeats` · `stop_reading_socket` …)
+- `TerminalController` API + กฎ `kill()` ต้องถูกเรียกแม้ test fail
+- **เกณฑ์เวลาที่หลวมพอไม่ให้ flake แต่ยังจับของผิด** — backoff ต้องอยู่ใน [0.7×, 1.5×]
+  และ**ต้องไม่ลดลง** · ผูกเกณฑ์กับ "พฤติกรรมผิดแบบไหนที่ต้องจับ" ไม่ใช่ตัวเลขเป๊ะ
+- **ห้ามใส่ retry ให้ test ที่ flake** — chaos test ที่ retry จนผ่านบอกอะไรไม่ได้เลย
+  และการ flake มักแปลว่าพฤติกรรมจริงไม่นิ่ง ซึ่งคือสิ่งที่เรากำลังหาอยู่พอดี
+- **log reader ต้องจดตำแหน่งเริ่มต้นก่อนแต่ละ scenario** — กับดักผลค้างแบบเดียวกับ
+  `out-*.json` ใน SPEC-005
+
 ### 💡 harness นี้ถูกใช้ซ้ำใน SPEC-010
 
 [SPEC-010 §7](specs/SPEC-010-state-reporter.md) ต้องการ Python test 5 ตัวที่ต้องมี EA จริง
