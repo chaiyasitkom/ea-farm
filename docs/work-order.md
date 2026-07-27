@@ -5,16 +5,24 @@
 
 ---
 
-## ✅ เสร็จแล้วตั้งแต่รอบก่อน — ไม่ต้องทำซ้ำ
+## ✅ เสร็จแล้ว — Claude ตรวจหลักฐานจริงแล้ว ไม่ต้องทำซ้ำ
 
-| งาน | หลักฐาน |
-|-----|---------|
-| `FILE_UTF8` → `FILE_BIN` + `CP_UTF8` | ไม่มี `FILE_UTF8` เหลือใน `TestWire.mq5` |
-| `ran_names` + harness ตรวจเทียบ 11 ชื่อ | `run-mql5-tests.ps1` มี `$requiredNames` |
-| `if(total < 0)` guard | 3 จุดใน `Wire.mqh` |
-| **❷ `PERIOD_H1`** | `FarmTimeframeCode()` ใช้ 2 จุด · `EnumToString` เหลือ **0** · `session_id` ใช้ code แล้ว |
-| **XM `Enabled` flag** | มีใน `run-mql5-tests.ps1` แล้ว |
-| `local_limits` ชื่อ field + `magic` | ตรง `common.json` ครบ 7 field |
+ตรวจเมื่อ 2026-07-28 · commit `543386e` `56bc78f` `7e1729e` `77386fc`
+
+| งาน | หลักฐานที่ตรวจ |
+|-----|----------------|
+| `FILE_UTF8` → `FILE_BIN` + `CP_UTF8` | ไม่มี `FILE_UTF8` เหลือ |
+| `ran_names` + harness ตรวจเทียบ 11 ชื่อ | `$requiredNames` ใน ps1 |
+| `if(total < 0)` guard | 3 จุด |
+| **❷ `PERIOD_H1`** | `EnumToString` เหลือ **0** · `FarmTimeframeCode()` 2 จุด |
+| **1.1 ULID monotonic** | `NextMsgIdFromMs()` มี clamp `ts <= last → last+1` · ใช้ `TimeGMT()*1000` ไม่ปลอม sub-second · `m_ulid_rand_suffix` สุ่มครั้งเดียวต่อ instance ✅ **ตรงตามที่สั่งทุกข้อ** |
+| **1.2 ULID seed** | ผสม `GetMicrosecondCount ^ TimeLocal ^ ChartID ^ ACCOUNT_LOGIN` ✅ |
+| **1.3 test ULID** | เพิ่ม 3 ตัวครบ + **เปลี่ยนชื่อตัวที่อ่อนเป็น `test_msg_id_differs_between_wire_objects` ตามที่ขอ** ✅ |
+| **1.4 `(int)` cast** | `grep` ไม่เหลือ cast เลย ✅ |
+| **XM skip** | `[SKIP] $targetName -- reason:` + ติดตาม `$ranTargets` / `$skippedTargets` ✅ |
+| **ผล gate** | อ่านจาก `ea-farm-IUX-TestWire-result.json` โดยตรง — `git_sha=77386fc…` **ตรงกับ HEAD ไม่ใช่ผลค้าง** · `status:PASS total:47 passed:47 failed:0` · `ran_names` 23 ชื่อ ✅ |
+
+**`NextMsgIdFromMs(ulong)` แยกออกมาเป็น seam ให้ test ป้อน ms คงที่ได้ — ดีกว่าที่ spec ขอ**
 
 ---
 
@@ -144,7 +152,7 @@ schema: "minimum": 0  →  validation FAIL  →  gateway ปฏิเสธ hear
 
 **ไม่รับเป็นหนี้** — ของที่แก้ 4 บรรทัดแล้วจบ ไม่ควรอยู่ในทะเบียนหนี้
 
-## 1.5 🔴 chaos suite ต้อง EA-driven จริง
+## 1.5 🔴 chaos suite ต้อง EA-driven จริง — **ตัดสินแล้ว: ห้ามใช้ Strategy Tester**
 
 ค้างมาตั้งแต่ [gate-02 ข้อ 4](reviews/SPEC-001-compile-gate-02.md)
 ตอนนี้เป็น Python client 5 ตัวคุยกับ `echo_server.py` — **ไม่มี EA อยู่ในลูป**
@@ -160,7 +168,86 @@ schema: "minimum": 0  →  validation FAIL  →  gateway ปฏิเสธ hear
 | `test_heartbeat_gap_triggers_reconnect` | ❌ (`test_heartbeat_ack` คนละเรื่อง) |
 | `test_no_heartbeat_loss_over_1h` | ❌ |
 
-**test ที่ไม่มี EA จริง พิสูจน์ reconnect/backoff ไม่ได้เลย** — วัดได้แค่ว่า server ตอบถูก
+### ❌ ข้อเสนอ "รัน FarmExecutor ผ่าน Strategy Tester" — ไม่รับ
+
+**เหตุผลที่ตัดสินได้เลยโดยไม่ต้องทดลอง: Strategy Tester ใช้เวลาจำลอง**
+
+chaos test ทั้ง 6 ตัวเป็นเรื่อง **wall-clock timing ล้วนๆ**:
+
+| test | สิ่งที่วัด | ใน tester จะเป็น |
+|------|-----------|-----------------|
+| `test_backoff_schedule_matches_spec` | 1,2,4,8,16,30 วินาที**จริง** | เวลาจำลอง — ผ่านไปในพริบตา |
+| `test_bad_token_waits_60s` | รอ 60 วินาที**จริง** | จบทันที ไม่ได้พิสูจน์ว่าไม่ hammer server |
+| `test_heartbeat_gap_triggers_reconnect` | ขาด ack 3 ครั้ง × 2 วินาที | เวลาจำลอง |
+| `test_no_heartbeat_loss_over_1h` | 1 ชั่วโมง**จริง** | 1 ชม.จำลองผ่านไปเป็นมิลลิวินาที |
+
+`OnTimer` ใน tester เดินตาม **modeled time** ไม่ใช่นาฬิกาจริง
+→ วัด "รอ 60 วินาที" เทียบกับ server ที่อยู่ในเวลาจริง = **คนละแกนเวลา วัดไม่ได้เลย**
+
+แม้ socket จะใช้ได้ใน tester (ซึ่งยังไม่ยืนยัน — ดูหมายเหตุล่าง) ผลที่ได้ก็ยังไม่มีความหมาย
+
+> ถ้าจะยืนยันเรื่อง socket ใน tester ให้เขียน probe 20 บรรทัดแบบเดียวกับ
+> `tools/probe/TesterProbe.mq5` แล้วรายงานผล — **แต่ไม่ต้องทำ เพราะเหตุผลเรื่องเวลาปิดประตูไปแล้ว**
+
+### ✅ ที่ต้องทำแทน: รัน `FarmExecutor` บน **live chart** ผ่าน `[StartUp]`
+
+```ini
+[StartUp]
+Expert=FarmExecutor
+Symbol=EURUSD.iux
+Period=H1
+ExpertParameters=farm-chaos.set
+```
+```
+terminal64.exe /config:<ini>
+```
+
+เทอร์มินัลเปิดขึ้นมาแล้วแนบ EA เข้าชาร์ตใน **โหมดจริง** — นาฬิกาเป็นเวลาจริง
+· EA เป็น timer-driven จึงทำงานได้แม้ตลาดปิด (ไม่ต้องรอ tick) **ทดสอบเสาร์-อาทิตย์ได้**
+
+### สถาปัตยกรรม harness ที่ต้องการ
+
+| หลัก | รายละเอียด |
+|------|-----------|
+| ใครสั่ง | **Python (pytest fixture)** launch เทอร์มินัลผ่าน `subprocess` — **ไม่ต้องเพิ่ม PowerShell** |
+| อายุเทอร์มินัล | **เปิดครั้งเดียวทั้ง suite** (session fixture) · startup ~15–20 วินาที ต่อ test ไม่ไหว |
+| ขับสถานการณ์จากไหน | **ฝั่ง server ทั้งหมด** — EA ตัวเดิม token เดิม แต่ `echo_server.py` เปลี่ยนพฤติกรรม |
+| สังเกตผลจากไหน | (ก) socket ฝั่ง server เห็น connect/disconnect พร้อม timestamp · (ข) log ของ EA |
+
+**ทุก 6 test ขับจากฝั่ง server ได้หมด — ไม่ต้องรีสตาร์ท EA เลย:**
+
+| test | `echo_server.py` ทำอะไร |
+|------|------------------------|
+| `test_bad_token_waits_60s` | ตอบ `HELLO_ACK accepted:false reason:BAD_TOKEN` → จับเวลาว่า connect ครั้งถัดไปห่าง ≥ 60s |
+| `test_duplicate_session_rejected` | ตอบ `DUPLICATE_SESSION` |
+| `test_ea_reconnects_after_server_kill` | accept แล้วปิด socket ทิ้ง |
+| `test_backoff_schedule_matches_spec` | ปิดทุกครั้งที่ต่อ → บันทึกช่วงห่างของ connect → เทียบ 1,2,4,8,16,30 **± jitter 20%** |
+| `test_heartbeat_gap_triggers_reconnect` | accept ปกติ แต่ **หยุดส่ง `HEARTBEAT_ACK`** → ต้อง reconnect หลังขาด 3 ครั้ง |
+| `test_no_heartbeat_loss_over_1h` | ตอบปกติ 1 ชม. → นับ heartbeat ที่ได้ ต้องไม่ขาดช่วง |
+
+### แยก fast / slow — **`test_no_heartbeat_loss_over_1h` ห้ามอยู่ใน gate ปกติ**
+
+| ชุด | เวลา | รันเมื่อไร |
+|-----|------|-----------|
+| fast (5 test) | ~3 นาที | ทุกครั้ง |
+| slow (`..._over_1h`) | 1 ชั่วโมง | mark `@pytest.mark.slow` · รันมือ/รายคืน |
+
+gate ที่ใช้เวลา 1 ชม.ทุกครั้ง = gate ที่ไม่มีใครรัน
+
+### ต้องเช็คก่อนเริ่ม (2 ข้อ)
+
+1. **socket whitelist** — MT5 บล็อก `SocketConnect` ถ้า host/port ไม่อยู่ใน allow list
+   (Tools → Options → Expert Advisors) · [SPEC-001 §5 edge 10](specs/SPEC-001-mt5-executor.md)
+   ระบุไว้แล้ว · **ยืนยันว่า `127.0.0.1` ตั้งไว้แล้วในเทอร์มินัล IUX** ก่อนเขียน test
+   ถ้าตั้งด้วยมือ ให้บันทึกเป็นขั้นตอน setup ในรายงาน (จะย้ายไป runbook SPEC-030b)
+2. **เทอร์มินัลต้องไม่เปิดอยู่ก่อน** — เช็คแบบเดียวกับที่คุณเพิ่งใส่ใน `run-mql5-tests.ps1`
+
+### 💡 harness นี้ถูกใช้ซ้ำใน SPEC-010
+
+[SPEC-010 §7](specs/SPEC-010-state-reporter.md) ต้องการ Python test 5 ตัวที่ต้องมี EA จริง
+เหมือนกัน (`test_backfill_300_bars_all_received_in_order`,
+`test_heartbeat_uninterrupted_during_backfill`) — **ออกแบบให้ reuse ได้ตั้งแต่แรก**
+อย่าทำเฉพาะกิจสำหรับ chaos
 
 ## 1.6 🟠 `test_partial_send_resumes` ด้วย socket จริง
 
