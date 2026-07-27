@@ -18,7 +18,7 @@
 | SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | TODO |
 | SPEC-009 | CI: ruff, mypy, pytest, codegen-diff | Codex | 004 | TODO |
 | SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | **001** (แก้จาก 002 — เป็น MQL5 ล้วน ไม่ต้องรอ scaffold) | **SPEC_READY** — [spec](specs/SPEC-063-broker-time.md) |
-| SPEC-064 | **SymbolRegistry** — `(broker, raw)` → canonical + base/quote currency (G7) | Codex | 006 | TODO |
+| SPEC-064 | **SymbolRegistry** — `(broker, raw)` → canonical + base/quote + risk profile ต่อ symbol (G7) · 🔴 **ยกระดับเป็นขาดไม่ได้** หลังเพิ่ม XM: `GOLD` → `XAUUSD` เดาด้วย string rule ไม่ได้ ([ADR-003](decisions/ADR-003-multi-broker.md)) | Codex | 006 | TODO ← **ต้องเสร็จก่อน SPEC-024/025** |
 | SPEC-065 | **MQL5 test harness** — test ต้องเป็น **EA ไม่ใช่ Script** (`OnInit`+`ExpertRemove`) เพราะ Script รัน headless ไม่ได้ · เขียนผลเป็น JSON + git sha ให้ CI ตรวจได้ (G9, [07](07-compile-gate.md)) | Codex | 001 | TODO |
 
 ## Phase 1 — Execution Plane
@@ -121,6 +121,9 @@
 | ~~D3~~ | ~~netting หรือ hedging account — กระทบ `OrderRouter` logic โดยตรง~~ | ✅ **ตัดสินแล้ว: hedging** → [ADR-001](decisions/ADR-001-hedging-account.md) · SPEC-011 เขียนครบแล้ว | 2026-07-26 |
 | ~~D4~~ | ~~ชุด symbol และ timeframe หลัก~~ | ✅ **ปิดแล้ว** → [ADR-002](decisions/ADR-002-symbols-capital-hours.md) rev.4 · **6 คู่** `EURUSD` `USDJPY` `GBPUSD` `AUDUSD` `USDCAD` `XAUUSD` × M1/M5/M10/M15/M30/H1/H4 · ingest ดึง **M1 อย่างเดียวแล้ว resample** · `USDCNY` ตัดทิ้ง · `XAGUSD` ตัดออก | 2026-07-27 |
 | ~~D5~~ | ~~ทุนต่อบัญชี~~ | ✅ **ปิดแล้ว: demo-first** ([ADR-002](decisions/ADR-002-symbols-capital-hours.md) rev.5) · IUX ไม่มีบัญชี cent → $30 standard เทรดไม่ได้เลยทุกทาง (ตัวถูกสุด `USDJPY` ยังต้อง ~$383) · Phase 0–2 ไม่ต้องใช้เงินจริง roadmap วางให้ live เริ่มปลาย Phase 2 อยู่แล้ว → **ไม่ทำให้ช้าลง** · ตั้ง demo balance $3,000 ให้ lot math ทำงานเหมือนจริง · ทุน live ตัดสินตอนจบ Phase 2 (~$2,200 ครบ 6 คู่) | 2026-07-27 |
+| **D10** | 🔴 **hedge ข้ามบัญชี/ข้ามโบรกเกอร์ไม่มีใครกัน** — R18 กันแค่ระดับ (magic, symbol) ในบัญชีเดียว · long `EURUSD` ที่ XM + short `EURUSD.iux` ที่ IUX = P3 net เป็น 0 มองว่าปลอดภัย แต่จ่าย spread+swap 2 ขาเพื่อ exposure สุทธิ 0 · เสนอ **P12 `no_cross_account_hedge`** ([ADR-003 §4](decisions/ADR-003-multi-broker.md)) | ⏳ **ต้องปิดก่อน SPEC-025** · เจ้าของต้องตัดสินก่อน: "แยกบัญชี = อนุญาตให้สวนกัน" หรือ "ห้ามสวนกันทั้งฟาร์ม" | 2026-07-27 |
+| **D11** | 🔴 **XM login ไม่ผ่าน** — `'1301856021': authorization on XMGlobal-MT5 6 failed (Invalid account)` · ทุก server ตอบ `no demo/preliminary groups` = สร้าง demo ในเทอร์มินัลไม่ได้ ต้องสมัครผ่านเว็บ · **XM ยังใช้งานไม่ได้เลยจนกว่าจะแก้** | ⏳ บล็อกการใช้ XM ทั้งหมด · **ไม่บล็อกงาน IUX** | 2026-07-27 |
+| **D12** | **contract spec จริงของ XM** (`SYMBOL_TRADE_CONTRACT_SIZE` · `VOLUME_MIN` · `VOLUME_STEP`) — ถ้าเป็นบัญชี **Micro** อาจพลิก D5 ให้ $30 ใช้ได้ | ⏳ อ่านไม่ได้จนกว่า D11 ผ่าน · **ห้ามวางแผนบนการเดา** ([ADR-003 §5](decisions/ADR-003-multi-broker.md)) | 2026-07-27 |
 | **D9** | 🔴 **P3/P4 ไม่ระบุหน่วยของ exposure** — เพดานเป็น `% ของ farm equity` แต่ decomposition ให้ผลเป็น notional เทียบกันไม่ได้ · ตีความแบบ notional จะ **reject ทุกไม้ที่ทุนระดับไหนก็ตาม** (แม้ $100k ก็ได้เพดาน 0.02 lot) · เสนอนิยามเป็น **risk-normalized** ([03-risk-spec §P3](03-risk-spec.md)) | ⏳ **ต้องยืนยันก่อน SPEC-024** — เปลี่ยนความหมายของกฎ risk ไม่ใช่แค่ปรับตัวเลข | 2026-07-27 |
 | ~~D6~~ | ~~BTCUSD.iux เปิดเสาร์-อาทิตย์ไหม~~ | ✅ **ปิด — ไม่เกี่ยวแล้ว** ตัด BTCUSD ออกจากชุด symbol (rev.2) ทั้ง 6 คู่ปิดสุดสัปดาห์ กฎ weekend bar เดียวใช้ได้ทุกตัว | 2026-07-27 |
 | **D7** | สเปก VPS (CPU/RAM/latency ไป IUX) | ⏳ กระทบ SPEC-032 spread model + Phase 6 | 2026-07-27 |
@@ -136,8 +139,10 @@
 | Git | 2.51.1.windows.1 · branch หลัก `main` |
 | Line ending | LF บังคับผ่าน `.gitattributes` (ยกเว้น `.bat/.cmd/.ps1`) |
 | Remote | ยังไม่มี — local only |
-| **โบรกเกอร์** | **IUX Markets** · บัญชี `IUXMarkets-Demo` · hedging mode ([ADR-001](decisions/ADR-001-hedging-account.md)) |
-| **Terminal** | `IUX Markets MT5 Terminal3` เท่านั้น — `C:\Program Files\MetaTrader 5` ไม่มีบัญชี/history รัน tester ไม่ได้ |
+| **โบรกเกอร์** | **2 ราย** ([ADR-003](decisions/ADR-003-multi-broker.md)) — **IUX Markets** `IUXMarkets-Demo` ✅ ใช้ได้ · **XM Global** `XMGlobal-MT5 6` 🔴 login ไม่ผ่าน (D11) |
+| **Terminal IUX** | `…\Terminal\A45801173FBAFA01B9AFF0EEDE7938E3` — `C:\Program Files\MetaTrader 5` ไม่มีบัญชี/history รัน tester ไม่ได้ |
+| **Terminal XM** | `…\Terminal\BB16F565FAAA6B23A20C26C49416FF05` · build 6063 · **ไม่มี history ใช้ได้เลย** (stub 15 KB) |
+| **ชื่อ symbol** | ⚠️ **ไม่ตรงกันข้ามโบรกเกอร์** — IUX `EURUSD.iux` / `XAUUSD.iux` · XM `EURUSD` / **`GOLD`** → ต้องมี SymbolRegistry (SPEC-064) ห้ามตัด suffix ด้วย string rule |
 | **Symbol** | **6 คู่ (ปิดแล้ว)** `EURUSD` · `USDJPY` · `GBPUSD` · `AUDUSD` · `USDCAD` · `XAUUSD` — suffix `.iux` บังคับ |
 | **Timeframe** | M1 · M5 · M10 · M15 · M30 · H1 · H4 — MT5 เก็บแค่ M1 ที่เหลือ derive |
 | **M1 history** | EURUSD/XAUUSD 2016–2026 · อื่นๆ มีแล้ว · **`USDJPY` ยังไม่ได้ดาวน์โหลด** (มี tick ไม่มี bar) |

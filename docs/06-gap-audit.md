@@ -123,6 +123,22 @@ bar timestamp alignment, และ **backtest/live parity** (SPEC-033) ซึ่
 ใช้ suffix `.iux` ทุกตัว — `EURUSD.iux` · `XAUUSD.iux` · `BTCUSD.iux` ครบ 15 symbol
 เจอตอนตั้ง Strategy Tester harness (tester abort ถ้าใส่ `EURUSD` เปล่าๆ)
 
+### 🔴 ยกระดับเป็น BLOCKER (2026-07-27 รอบ 2) — เพิ่ม XM เป็นโบรกเกอร์ที่สอง
+
+[ADR-003](decisions/ADR-003-multi-broker.md) เพิ่ม XM Global เข้ามา ทำให้ปัญหานี้**เกิดขึ้นจริงข้ามโบรกเกอร์แล้ว**
+
+```
+EUR/USD  →  IUX: "EURUSD.iux"   XM: "EURUSD"
+ทองคำ    →  IUX: "XAUUSD.iux"   XM: "GOLD"     ← ไม่ใช่แค่ suffix ต่าง ชื่อคนละตัวเลย
+```
+
+`GOLD` → `XAUUSD` **เดาด้วย string rule ไม่ได้** — การตัด suffix ที่เคยคิดว่าพอ ใช้ไม่ได้แล้ว
+→ SPEC-064 ต้องเป็น **ตาราง mapping ที่คนกรอก + fail-closed** (เจอ raw symbol ที่ไม่มีในตาราง
+= ปฏิเสธการเทรด symbol นั้น ห้ามเดา)
+
+**เลื่อนความสำคัญ:** เดิม MEDIUM "แก้ก่อน Phase 3" → **ต้องเสร็จก่อน SPEC-024/025**
+เพราะ P3/P4 aggregate ข้ามโบรกเกอร์ไม่ได้เลยถ้าไม่มี canonical name
+
 | | |
 |---|---|
 | **ต้องทำ** | SPEC-064 SymbolRegistry — map `(broker, raw_symbol) → canonical` + base/quote currency + asset class |
