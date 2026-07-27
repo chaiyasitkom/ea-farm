@@ -120,7 +120,8 @@
 | ~~D2~~ | ~~โบรกเกอร์/สเปก VPS — กระทบ spread model ใน backtest (SPEC-032)~~ | ✅ **ยืนยันแล้ว: IUX Markets** → [ADR-002](decisions/ADR-002-symbols-capital-hours.md) · history M1 ลึกกว่าที่เคยบันทึก (EURUSD/XAUUSD 2016–2026 · BTCUSD 2018–2026) — ข้อกำหนด ≥5 ปี ผ่านครบ · **ยังไม่รู้สเปก VPS** | 2026-07-27 |
 | ~~D3~~ | ~~netting หรือ hedging account — กระทบ `OrderRouter` logic โดยตรง~~ | ✅ **ตัดสินแล้ว: hedging** → [ADR-001](decisions/ADR-001-hedging-account.md) · SPEC-011 เขียนครบแล้ว | 2026-07-26 |
 | ~~D4~~ | ~~ชุด symbol และ timeframe หลัก~~ | ✅ **ปิดแล้ว** → [ADR-002](decisions/ADR-002-symbols-capital-hours.md) rev.4 · **6 คู่** `EURUSD` `USDJPY` `GBPUSD` `AUDUSD` `USDCAD` `XAUUSD` × M1/M5/M10/M15/M30/H1/H4 · ingest ดึง **M1 อย่างเดียวแล้ว resample** · `USDCNY` ตัดทิ้ง · `XAGUSD` ตัดออก | 2026-07-27 |
-| **D5** | ทุนต่อบัญชี | 🟡 **จำนวนเงินปิดแล้ว: $30 × ≥2 บัญชี** · เหลือยืนยัน **บัญชีเป็น cent ไหม** — cent ที่ $30 ✅ ผ่านครบ 6 คู่ lot 0.02–0.07 มี granularity จริง · standard ที่ $30 ❌ reject ทุกไม้ (ขาด 48× สำหรับทอง) ([ADR-002 §3](decisions/ADR-002-symbols-capital-hours.md)) · **ไม่บล็อก SPEC-020/025 อีกแล้ว** — equity เป็นพารามิเตอร์ของ test | 2026-07-27 |
+| ~~D5~~ | ~~ทุนต่อบัญชี~~ | ✅ **ปิดแล้ว: demo-first** ([ADR-002](decisions/ADR-002-symbols-capital-hours.md) rev.5) · IUX ไม่มีบัญชี cent → $30 standard เทรดไม่ได้เลยทุกทาง (ตัวถูกสุด `USDJPY` ยังต้อง ~$383) · Phase 0–2 ไม่ต้องใช้เงินจริง roadmap วางให้ live เริ่มปลาย Phase 2 อยู่แล้ว → **ไม่ทำให้ช้าลง** · ตั้ง demo balance $3,000 ให้ lot math ทำงานเหมือนจริง · ทุน live ตัดสินตอนจบ Phase 2 (~$2,200 ครบ 6 คู่) | 2026-07-27 |
+| **D9** | 🔴 **P3/P4 ไม่ระบุหน่วยของ exposure** — เพดานเป็น `% ของ farm equity` แต่ decomposition ให้ผลเป็น notional เทียบกันไม่ได้ · ตีความแบบ notional จะ **reject ทุกไม้ที่ทุนระดับไหนก็ตาม** (แม้ $100k ก็ได้เพดาน 0.02 lot) · เสนอนิยามเป็น **risk-normalized** ([03-risk-spec §P3](03-risk-spec.md)) | ⏳ **ต้องยืนยันก่อน SPEC-024** — เปลี่ยนความหมายของกฎ risk ไม่ใช่แค่ปรับตัวเลข | 2026-07-27 |
 | ~~D6~~ | ~~BTCUSD.iux เปิดเสาร์-อาทิตย์ไหม~~ | ✅ **ปิด — ไม่เกี่ยวแล้ว** ตัด BTCUSD ออกจากชุด symbol (rev.2) ทั้ง 6 คู่ปิดสุดสัปดาห์ กฎ weekend bar เดียวใช้ได้ทุกตัว | 2026-07-27 |
 | **D7** | สเปก VPS (CPU/RAM/latency ไป IUX) | ⏳ กระทบ SPEC-032 spread model + Phase 6 | 2026-07-27 |
 | ~~D8~~ | ~~contract size ของ `XAGUSD.iux`~~ | ✅ **ปิด — ไม่เกี่ยวแล้ว** ตัด XAGUSD ออกจากชุด symbol (rev.3) | 2026-07-27 |
@@ -140,4 +141,4 @@
 | **Symbol** | **6 คู่ (ปิดแล้ว)** `EURUSD` · `USDJPY` · `GBPUSD` · `AUDUSD` · `USDCAD` · `XAUUSD` — suffix `.iux` บังคับ |
 | **Timeframe** | M1 · M5 · M10 · M15 · M30 · H1 · H4 — MT5 เก็บแค่ M1 ที่เหลือ derive |
 | **M1 history** | EURUSD/XAUUSD 2016–2026 · อื่นๆ มีแล้ว · **`USDJPY` ยังไม่ได้ดาวน์โหลด** (มี tick ไม่มี bar) |
-| **บัญชี** | **≥ 2 บัญชี · $30/บัญชี** · ประเภทบัญชี = 🟡 ต้องเป็น **cent** ดู D5 |
+| **บัญชี** | **demo-first** — IUX ไม่มีบัญชี cent · $30 standard เทรดไม่ได้ · ตั้ง demo balance **$3,000** · ทุน live ตัดสินตอนจบ Phase 2 (D5) |
