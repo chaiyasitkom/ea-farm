@@ -17,7 +17,7 @@
 | 0.1 | `git init`, layout, `.gitignore`, `.env.example` | Codex | repo structure ตาม README |
 | 0.2 | เขียน `contracts/schema/*.json` ทุก message type | **Claude** | 10 schema files |
 | 0.3 | Codegen: JSON Schema → pydantic + MQL5 struct | Codex | `python tools/task.py codegen` ทำงาน + round-trip test ผ่าน |
-| 0.4 | Postgres + TimescaleDB ขึ้น (Docker Compose สำหรับ dev), migration | Codex | `python tools/task.py db-up`, alembic migration |
+| 0.4 | **PostgreSQL** + migration + repository layer (เลื่อน TimescaleDB — [SPEC-006 §3.1](specs/SPEC-006-database.md) · ไม่มี Docker บนเครื่อง) | Codex | `python tools/task.py db-up`, alembic migration |
 | 0.5 | Data ingest: ดึง **M1 ย้อนหลัง ~10 ปี ของ 6 คู่** → Parquet แล้ว resample เป็น M5/M10/M15/M30/H1/H4 ([ADR-002](decisions/ADR-002-symbols-capital-hours.md)) | Codex | `research/ingest/`, data quality report |
 | 0.6 | Data quality gate: หา gap, spike, duplicate, weekend bar | Codex | report + fail ถ้าคุณภาพไม่ผ่าน |
 | 0.7 | CI: ruff, mypy, pytest, codegen-diff check | Codex | GitHub Actions เขียว |

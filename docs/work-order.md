@@ -527,6 +527,45 @@ harness แบบนี้มี failure mode ที่ **EA ไม่ได้�
 
 ---
 
+# รอบที่ 5.6 — SPEC-006 Database
+
+📄 [spec เต็ม](specs/SPEC-006-database.md) · **SPEC_READY** · 16 test (marker `db`)
+· **เขียนได้เลยโดยไม่ต้องรอ D13** (ติดตั้ง PG จริงค่อยทำตอนรัน test)
+
+**🔴 สภาพเครื่องจริง:** ไม่มี Docker · ไม่มี PostgreSQL · มี WSL2
+→ [roadmap](04-roadmap.md) ที่เขียนว่า "Docker Compose" ทำตามตรงๆ ไม่ได้
+(บทเรียนเดียวกับ `make`)
+
+**ตัดสิน: ยังไม่ใช้ TimescaleDB** — ปริมาณจริงไม่ต้องการ:
+
+| เดิมคิดว่า | ความจริง |
+|-----------|----------|
+| ข้อมูล 10 ปี × 6 คู่ M1 ~22M แถว ต้องใช้ hypertable | **ไม่เข้า DB เลย** — SPEC-007 เก็บลง **Parquet** |
+| `bars` ใน DB เยอะ | เฉพาะ bar **สด**จาก EA = หลักพันแถว/เดือน |
+| `account_state` 103k/วัน | เก็บ 90 วัน ≈ 9M แถว — **PG เปล่ารับไหวสบาย** |
+
+เป็น**ประตูที่เปิดกลับได้** (`create_hypertable(migrate_data => true)`)
+แต่ห้ามใช้ฟีเจอร์ที่ผูกกับ Timescale ในระหว่างนี้ (acceptance มี `grep` ตรวจ)
+
+## ★★ หัวใจของ ticket นี้: append-only ต้องบังคับที่ **DB** ไม่ใช่ Python
+
+`intents` / `exec_reports` คือหลักฐานว่า *"ตอนนั้นระบบตัดสินใจอะไร และเกิดอะไรขึ้นจริง"*
+วันที่พอร์ตเสียหายแล้วต้องหาสาเหตุ สองตารางนี้คือสิ่งเดียวที่ตอบได้
+
+**ถ้าบังคับใน Python มันไม่ใช่การบังคับ** — เป็นแค่ข้อตกลง เขียน query ตรงๆ ก็ข้ามได้
+→ ต้องเป็น **trigger** ที่ปฏิเสธ `UPDATE`/`DELETE` โดยยอมเฉพาะเติม `ack_status` **ครั้งเดียว**
+· spec §5.1 ให้ SQL ของ trigger ไว้ครบแล้ว
+
+**test 4–8 คือหัวใจ** — `UPDATE intents` ต้องโดนปฏิเสธ **จาก DB ไม่ใช่จาก Python**
+· และข้อ 8 (`ack update ห้ามแก้คอลัมน์อื่นไปด้วย`) คือช่องโหว่ที่คนมองข้าม
+
+**อีก 3 จุด:**
+- ทุกคอลัมน์เวลา `TIMESTAMPTZ` + **UTC เท่านั้น** — ตรวจด้วย query จาก `information_schema` ไม่ใช่ตาดู
+- `bars.symbol` เก็บ **raw** (`EURUSD.iux` / `GOLD`) คู่กับ `broker` — ถ้าเก็บ canonical แล้ววันหนึ่ง mapping เปลี่ยน ข้อมูลเก่าจะตีความไม่ได้อีก
+- `insert_bar` ซ้ำ → `ON CONFLICT DO NOTHING` **แต่ต้องนับ** · `insert_intent` ซ้ำ → **error** (คนละนโยบายโดยตั้งใจ — intent ซ้ำ = dedupe พัง ต้องเห็น)
+
+---
+
 # รอบที่ 6 — `local_limits` ต่อกับ EA input
 
 **เส้นตาย: ก่อน merge SPEC-019**

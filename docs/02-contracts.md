@@ -456,7 +456,10 @@ daily loss, DD, magic) — ค่าเหล่านั้นมาจาก E
 
 ---
 
-## 5. Database Schema (Postgres + TimescaleDB)
+## 5. Database Schema (PostgreSQL)
+
+> ⏸ **TimescaleDB เลื่อนออกไปก่อน** — ปริมาณจริงไม่ต้องการ (ข้อมูลย้อนหลังไป Parquet
+> ไม่ใช่ DB) และเครื่องไม่มี Docker · เหตุผลเต็ม + ทางกลับใน [SPEC-006 §3.1](specs/SPEC-006-database.md)
 
 ```sql
 -- hypertable: ข้อมูลราคา
@@ -466,7 +469,7 @@ CREATE TABLE bars (
   tick_volume BIGINT, spread_avg INT, spread_max INT, broker TEXT NOT NULL,
   PRIMARY KEY (broker, symbol, timeframe, bar_time)
 );
-SELECT create_hypertable('bars','bar_time');
+-- SELECT create_hypertable(...) -- ⏸ เลื่อนไปก่อน ดู SPEC-006 §3.1
 
 -- append-only audit trail: ทุกการตัดสินใจ
 CREATE TABLE intents (
@@ -497,7 +500,7 @@ CREATE TABLE account_state (      -- hypertable
   foreign_position_count INT NOT NULL DEFAULT 0,   -- ไม้ที่ไม่ใช่ของ EA (R19)
   internal_hedge_detected BOOLEAN NOT NULL DEFAULT false  -- anomaly (R18)
 );
-SELECT create_hypertable('account_state','ts');
+-- SELECT create_hypertable(...) -- ⏸ เลื่อนไปก่อน ดู SPEC-006 §3.1
 
 -- ควร alert เมื่อ query นี้คืนแถว: สองเงื่อนไขนี้ไม่ควรเกิดบนบัญชีในฟาร์ม
 -- SELECT * FROM account_state

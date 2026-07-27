@@ -13,7 +13,7 @@
 | SPEC-003 | `contracts/schema/*.json` ทุก message type | **Claude** | — | ✅ **DONE** — 13 schema + README · [handoff](reviews/SPEC-003-schema-handoff.md) |
 | SPEC-004 | Codegen: schema → pydantic + MQL5 struct/serializer | Codex | 003 | **SPEC_READY** — [spec](specs/SPEC-004-codegen.md) |
 | SPEC-005 | Round-trip test harness (py ↔ mql5) | Codex | **002**, 004 | **SPEC_READY** — [spec](specs/SPEC-005-roundtrip-harness.md) |
-| SPEC-006 | Postgres + TimescaleDB, migration, repository layer | Codex | 003 | TODO |
+| SPEC-006 | **PostgreSQL** + migration + repository layer (เลื่อน TimescaleDB — [§3.1](specs/SPEC-006-database.md)) | Codex | **002**, 004 | **SPEC_READY** — [spec](specs/SPEC-006-database.md) |
 | SPEC-007 | Data ingest: MT5 history → Parquet (**6 คู่ · M1 เท่านั้นแล้ว resample** · ~10 ปี) | Codex | 002 | TODO |
 | SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | TODO |
 | SPEC-009 | CI: ruff, mypy, pytest, codegen-diff | Codex | 004 | TODO |
@@ -127,6 +127,8 @@
 | **D9** | 🔴 **P3/P4 ไม่ระบุหน่วยของ exposure** — เพดานเป็น `% ของ farm equity` แต่ decomposition ให้ผลเป็น notional เทียบกันไม่ได้ · ตีความแบบ notional จะ **reject ทุกไม้ที่ทุนระดับไหนก็ตาม** (แม้ $100k ก็ได้เพดาน 0.02 lot) · เสนอนิยามเป็น **risk-normalized** ([03-risk-spec §P3](03-risk-spec.md)) | ⏳ **ต้องยืนยันก่อน SPEC-024** — เปลี่ยนความหมายของกฎ risk ไม่ใช่แค่ปรับตัวเลข | 2026-07-27 |
 | ~~D6~~ | ~~BTCUSD.iux เปิดเสาร์-อาทิตย์ไหม~~ | ✅ **ปิด — ไม่เกี่ยวแล้ว** ตัด BTCUSD ออกจากชุด symbol (rev.2) ทั้ง 6 คู่ปิดสุดสัปดาห์ กฎ weekend bar เดียวใช้ได้ทุกตัว | 2026-07-27 |
 | **D7** | สเปก VPS (CPU/RAM/latency ไป IUX) | ⏳ กระทบ SPEC-032 spread model + Phase 6 | 2026-07-27 |
+| **D13** | **ติดตั้ง PostgreSQL อย่างไร** — เครื่องไม่มี Docker · ไม่มี PG · มี WSL2 · **ต้องติดตั้งซอฟต์แวร์ = เจ้าของตัดสิน** | ⏳ แนะนำ **native บน Windows** (ตรงกับ VPS ที่จะเป็น Windows เพราะ MT5 · ชิ้นส่วนน้อยสุด) · **ไม่บล็อกการเขียนโค้ด** — Codex เขียน migration + repository ได้เลย ต่อ DB จริงตอนรัน test marker `db` ([SPEC-006 §9.1](specs/SPEC-006-database.md)) | 2026-07-28 |
+| **D14** | **เอา TimescaleDB ไหม** | 🟡 **แนะนำ: ยังไม่เอา** — ข้อมูลย้อนหลังไป Parquet ไม่ใช่ DB · `bars` สดหลักพันแถว/เดือน · `account_state` 90 วัน ≈ 9M แถว PG เปล่ารับไหว · **เป็นประตูที่เปิดกลับได้** (`create_hypertable(migrate_data=>true)`) ([SPEC-006 §3.1](specs/SPEC-006-database.md)) | 2026-07-28 |
 | ~~D8~~ | ~~contract size ของ `XAGUSD.iux`~~ | ✅ **ปิด — ไม่เกี่ยวแล้ว** ตัด XAGUSD ออกจากชุด symbol (rev.3) | 2026-07-27 |
 
 ---
