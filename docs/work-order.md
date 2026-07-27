@@ -1,156 +1,251 @@
-# Work Order — งานปัจจุบันของ Codex
+# Work Order — งานของ Codex
 
-**อัปเดต:** 2026-07-27 · **โดย:** Claude
-เอกสารนี้เป็น **ลำดับงานที่มีผลบังคับ** — ทำจากบนลงล่าง ห้ามข้าม
-ถ้าคิดว่าลำดับผิด → เขียน implementation note มาก่อน อย่าเปลี่ยนเอง
-
-> สถานะรวม: **ยังไม่มี MQL5 test รันผ่าน Strategy Tester สำเร็จเลยแม้แต่ครั้งเดียว**
-> นั่นคือสิ่งที่ต้องแก้เป็นอันดับแรก ทุกอย่างหลังจากนั้นพึ่งข้อนี้
+**อัปเดต:** 2026-07-27 (รอบ 2) · **โดย:** Claude
+ทำจากบนลงล่าง · ห้ามข้าม · คิดว่าลำดับผิด → implementation note มาก่อน
 
 ---
 
-## A. ปิดรอบที่ค้างอยู่ตอนนี้ — เล็กที่สุด แต่บล็อกทุกอย่าง
+## ✅ เสร็จแล้วตั้งแต่รอบก่อน — ไม่ต้องทำซ้ำ
 
-ตอนนี้มี 3 ไฟล์ค้างใน working tree ยังไม่ commit:
-`mt5-ea/Include/Farm/Wire.mqh` · `tests/mql5/TestWire.mq5` · `tools/run-mql5-tests.ps1`
-
-### A1 · 🔴 แก้เป้า XM ใน `tools/run-mql5-tests.ps1`
-
-`CHANGES_REQUIRED` จาก [review รอบ 3 §2](reviews/SPEC-001-compile-gate-03.md)
-
-**ปัญหา:** XM login ไม่ผ่าน (`Invalid account`) และ `EURUSD` history เป็น stub 15 KB
-→ compile ผ่านแต่ tester ไม่ start → ไม่มี result JSON → `exit 1` **ทุกครั้งแม้ IUX ผ่านครบ**
-→ gate แดงถาวร = gate ที่คนเลิกอ่าน
-
-**ต้องทำ:**
-```powershell
-@{ Name = "XM"; Enabled = $false; ... }    # เหตุผล: D11 login ไม่ผ่าน · ไม่มี history
-```
-1. เพิ่ม field `Enabled` ให้ทุกเป้า · XM = `$false` · IUX = `$true`
-2. เป้าที่ `Enabled = $false` → พิมพ์ `[SKIP] XM -- reason: ...` **ดังๆ** แล้วข้าม ไม่นับเป็น fail
-3. **สรุปท้ายต้องบอกว่าเป้าไหนรันจริง เป้าไหนข้าม** — `[SKIP]` ห้ามดูเหมือน pass
-4. pre-flight `Test-Path` ตรวจเฉพาะเป้าที่ `Enabled = $true`
-5. ลบ `From`/`To` ของ XM ทิ้ง — **ห้ามลอก date range จากเป้า IUX** ค่าที่ถูกต้องยังไม่รู้
-
-**เสร็จเมื่อ:** รันแล้วได้ `MQL5 TESTS: PASSED` + บรรทัด `[SKIP] XM` ปรากฏชัด
-
-### A2 · รัน gate ให้เขียวจริง
-
-```powershell
-powershell -ExecutionPolicy Bypass -File D:\ea-farm\tools\run-mql5-tests.ps1
-```
-
-**เสร็จเมื่อ:** `status: PASS` · `ran_names` ครบ 11 ชื่อตาม [SPEC-001 §7](specs/SPEC-001-mt5-executor.md)
-· **แปะ output จริงมาใน handoff** (AGENTS.md ข้อ 6)
-
-### A3 · commit + handoff
-
-```bash
-git branch --show-current                       # ต้องเป็น feat/SPEC-001-*
-git add mt5-ea tests tools                      # ระบุ path เสมอ ห้าม -A
-```
-
-**handoff ต้องมีหัวข้อ `## gate changes` แยกจากงานหลัก** (AGENTS.md ข้อ 17 ใหม่)
-ลิสต์ทุกการแก้ใน `tools/**` — Claude อ่าน diff ของ gate ก่อนดูผลรันเสมอ
+| งาน | หลักฐาน |
+|-----|---------|
+| `FILE_UTF8` → `FILE_BIN` + `CP_UTF8` | ไม่มี `FILE_UTF8` เหลือใน `TestWire.mq5` |
+| `ran_names` + harness ตรวจเทียบ 11 ชื่อ | `run-mql5-tests.ps1` มี `$requiredNames` |
+| `if(total < 0)` guard | 3 จุดใน `Wire.mqh` |
+| **❷ `PERIOD_H1`** | `FarmTimeframeCode()` ใช้ 2 จุด · `EnumToString` เหลือ **0** · `session_id` ใช้ code แล้ว |
+| **XM `Enabled` flag** | มีใน `run-mql5-tests.ps1` แล้ว |
+| `local_limits` ชื่อ field + `magic` | ตรง `common.json` ครบ 7 field |
 
 ---
 
-## B. แก้ defect ใน SPEC-001 — เป็น bug ไม่ใช่ feature ใหม่
+# รอบที่ 1 — ปิด SPEC-001 ให้จบ
 
-Wire.mqh ส่งค่าที่**ละเมิด contract ที่ตกลงไว้แล้ว** · ทั้งสองข้อจะถูก fixture ใน
-[SPEC-004 §3.6](specs/SPEC-004-codegen.md) จับทันที ทำตอนนี้ถูกกว่าทำหลัง codegen
+> **ห้ามเริ่มรอบ 2 จนกว่ารอบ 1 จะ `APPROVED`**
+> SPEC-001 เป็นฐานของทุกอย่าง ปล่อยให้ค้างครึ่งๆ แล้วไปต่อ = หนี้ที่ทบกับทุก ticket
 
-### B1 · 🔴 `msg_id` ต้องเป็น ULID จริง
+## 1.1 🔴 ULID — monotonic พัง ต้องแก้
 
-`Wire.mqh:97-102` — ตอนนี้ได้ 18 หลัก และ `static ulong seq = 0` **รีเซ็ตทุกครั้งที่ EA โหลด**
-→ restart ในวินาทีเดียวกันได้ `msg_id` ซ้ำเป๊ะ · นี่คือ **dedupe key** ของ gateway
-→ message ที่ถูกต้องจะถูกทิ้งเงียบๆ
+**ผลตรวจ `FarmGenerateUlid()`:**
 
-**ต้องทำ:** ULID = 48-bit ms timestamp + 80-bit random → Crockford base32 26 ตัว
-(`0123456789ABCDEFGHJKMNPQRSTVWXYZ` — ไม่มี `I` `L` `O` `U`)
-· seed `MathSrand()` ด้วย `GetMicrosecondCount()` **ห้ามใช้ `TimeCurrent()`**
-(สอง instance ที่เริ่มวินาทีเดียวกันจะได้ random ชุดเดียวกัน)
+```mql5
+const ulong timestamp_ms = (ulong)TimeGMT() * 1000ULL + (ulong)(GetTickCount() % 1000);
+```
 
-**เสร็จเมื่อ:** ตรง `common.json#/$defs/ulid` pattern `^[0-9A-HJKMNP-TV-Z]{26}$`
-· มี test ว่ารัน 2 instance พร้อมกันแล้ว id ไม่ซ้ำ
+`GetTickCount()` = ms ตั้งแต่ **เครื่องบูต** ไม่ใช่ ms ภายในวินาทีปัจจุบัน
+→ `% 1000` เป็นค่าที่**ไม่สัมพันธ์กับขอบวินาทีของ `TimeGMT()`** เลย
 
-### B2 · 🔴 `timeframe` / `session_id` ส่ง `PERIOD_H1`
+**เคสที่พังจริง:**
+```
+t=0.000s  TimeGMT()=1000  GetTickCount()=5000998  →  ts = 1000000998
+t=0.005s  TimeGMT()=1000  GetTickCount()=5001003  →  ts = 1000000003   ← ย้อนหลัง
+```
 
-`EnumToString((ENUM_TIMEFRAMES)Period())` คืน `"PERIOD_H1"` แต่ schema รับแค่ `"H1"`
-· ยังใช้อยู่ **2 จุด** ใน `Wire.mqh`
+`GetTickCount()%1000` วนรอบทุก 1 วินาทีจริง แต่ขอบไม่ตรงกับวินาทีของ `TimeGMT()`
+→ **ทุกครั้งที่ message 2 ตัวคร่อมจุดวน ลำดับจะกลับด้าน** เกิดได้หลายครั้งต่อชั่วโมง
 
-**ต้องทำ:** ฟังก์ชันแปลงตัวเดียว → `M1|M5|M10|M15|M30|H1|H4`
-· ใช้ทั้ง `session_id` และ field `timeframe`
-· timeframe นอกชุดนี้ → `OnInit` **fail** ห้ามส่งค่าที่ schema ไม่รับขึ้นไป
+ละเมิด `common.json#/$defs/ulid` ที่เขียนว่า *"ต้อง monotonic ต่อ session"*
+และ [contract §2](02-contracts.md) *"monotonic ต่อ session — ใช้ dedupe"*
 
-**เสร็จเมื่อ:** `session_id` ตรง pattern ใน `common.json#/$defs/session_id`
+**ผลกระทบ:** gateway เรียงตาม `msg_id` ไม่ได้ · ตรวจ gap ไม่ได้ · audit trail ลำดับผิด
+· timestamp ที่ฝังใน ULID ไร้ความหมาย (ความละเอียดวินาที + noise)
 
----
+### ต้องทำ — monotonic clamp
 
-## C. ปิด SPEC-001 ให้ครบ acceptance
+```mql5
+// state ต่อ instance
+ulong  m_ulid_last_ms;      // 0 ตอนเริ่ม
+string m_ulid_rand_prefix;  // สุ่มครั้งเดียวตอน Init 16 ตัว
+ulong  m_ulid_seq;          // นับต่อ session
 
-### C1 · 🔴 chaos suite ต้อง EA-driven จริง
+ulong ms = (ulong)TimeGMT() * 1000ULL;      // ← ความละเอียดวินาทีพอ อย่าปลอม sub-second
+if(ms <= m_ulid_last_ms)
+   ms = m_ulid_last_ms + 1;                 // ← clamp ให้เพิ่มขึ้นเสมอ
+m_ulid_last_ms = ms;
+```
 
-ค้างมาตั้งแต่ [gate-02 ข้อ 4](reviews/SPEC-001-compile-gate-02.md) · ตอนนี้เป็น Python client
-5 ตัวคุยกับ `echo_server.py` — **ไม่มี EA จริงในลูป** จึงพิสูจน์ reconnect/backoff ไม่ได้เลย
+- **monotonic เด็ดขาด** ✓ (clamp)
+- **ไม่ซ้ำในเซสชัน** ✓ (ms เพิ่มขึ้นตลอด)
+- **ไม่ซ้ำข้าม restart** ✓ (นาฬิกาเดินหน้า + `m_ulid_rand_prefix` ต่างกัน)
+- drift เกิดเฉพาะเมื่อส่ง > 1000 msg/วินาที ซึ่งเราไม่เคยทำ (heartbeat 2s)
 
-[SPEC-001 §7](specs/SPEC-001-mt5-executor.md) ต้องมี 6 ชื่อ — มีจริง 1:
+> เมื่อ SPEC-063 เสร็จ ให้เปลี่ยน `TimeGMT()` → `CBrokerTime.NowUtc()`
+> clamp จะรองรับกรณี offset กระโดดตอน DST ให้เอง
 
-| test | มี? |
-|------|-----|
-| `test_duplicate_session_rejected` | ✅ (แต่ไม่ EA-driven) |
+## 1.2 🔴 ULID — seed ชนกันข้าม instance
+
+```mql5
+MathSrand((int)(GetMicrosecondCount() % 2147483647));
+```
+
+`GetMicrosecondCount()` = ไมโครวินาทีตั้งแต่ **โปรแกรม MQL5 เริ่ม** — ตอน `OnInit` ค่านี้
+เป็นเลขเล็กๆ (หลักร้อยถึงหลักพัน) **ทุก instance เสมอ**
+
+→ EA 2 ตัวบน 2 terminal จะได้ seed จากช่วงแคบมาก → **สตรีมสุ่มเหมือนกัน**
+
+> ⚠️ คำแนะนำเดิมของผมใน work order รอบก่อนที่ว่า *"seed ด้วย `GetMicrosecondCount()`"*
+> **ผิด** — ผมเข้าใจว่ามันเป็นเวลาระบบ แต่มันเป็นเวลาตั้งแต่โปรแกรมเริ่ม · ขอแก้
+
+**ต้องทำ — ผสม entropy ที่ต่างกันจริงต่อ instance:**
+```mql5
+MathSrand((int)(GetMicrosecondCount()
+                ^ (long)TimeLocal()
+                ^ ChartID()
+                ^ AccountInfoInteger(ACCOUNT_LOGIN)));
+```
+
+## 1.3 🟠 test ULID ที่มีอยู่ ผ่านแบบไม่ได้ทดสอบอะไร
+
+```mql5
+CWire wire_a, wire_b;                    // ← อยู่ในโปรแกรมเดียวกัน
+AssertTrue(wire_a.TestNextMsgId() != wire_b.TestNextMsgId(), ...)
+```
+
+สอง instance นี้ **แชร์ RNG stream เดียวกัน** (MathRand เป็น process-wide)
+→ เรียกติดกัน 2 ครั้งย่อมได้คนละค่าเสมอ → **test ผ่านโดยไม่พิสูจน์อะไร**
+ความเสี่ยงจริงคือ 2 **process** คนละ terminal ซึ่ง test นี้แตะไม่ถึง
+
+**ต้องเพิ่ม 3 test:**
+
+| test | ตรวจอะไร |
+|------|----------|
+| `test_msg_id_monotonic_across_1000_calls` | เรียก 1000 ครั้ง → **เรียงเพิ่มขึ้นเสมอ** (เทียบ string ตรงๆ ได้ เพราะ Crockford32 เรียงตาม ASCII) |
+| `test_msg_id_monotonic_when_clock_frozen` | ป้อนเวลาคงที่ → ยังต้องเพิ่มขึ้น (พิสูจน์ clamp) |
+| `test_msg_id_unique_across_10000_calls` | ไม่ซ้ำเลยสักคู่ |
+
+เปลี่ยนชื่อ `test_msg_id_two_instances_not_duplicate` → `test_msg_id_differs_between_wire_objects`
+และ **เขียนใน handoff ว่ามันไม่ได้พิสูจน์เรื่อง cross-process** อย่าให้ชื่อหลอกคนอ่านผลรัน
+
+## 1.4 🔴 `(int)` cast บน counter ที่เป็น `long` — แก้เลย ไม่ต้องรอ
+
+```mql5
+"\"messages_sent\":"   + IntegerToString((int)m_messages_sent) + ","
+"\"messages_recv\":"   + IntegerToString((int)m_messages_recv) + ","
+"\"reconnect_count\":" + IntegerToString((int)m_reconnect_count) + ","
+"\"bytes_dropped\":"   + IntegerToString((int)m_bytes_dropped) + ","
+```
+
+**ที่คุณรายงานว่า "พอสำหรับ SPEC-001" — ถูกครึ่งเดียว**
+
+`messages_sent` ล้น int32 ใช้เวลาประมาณ 96 ปี ✓ ไม่เป็นปัญหาจริง
+แต่ **`bytes_dropped` เป็น *ไบต์* ไม่ใช่จำนวนข้อความ** — ถ้าเข้าลูป reconnect
+แล้ว drop ข้อความ ~1 KB ที่ 100/วินาที → **ล้น int32 ใน ~6 ชั่วโมง**
+
+และผลของการล้นไม่ใช่แค่ "เลขเพี้ยน":
+```
+int32 overflow → ค่าติดลบ → IntegerToString(-123) → "-123"
+schema: "minimum": 0  →  validation FAIL  →  gateway ปฏิเสธ heartbeat
+→ EA ดูเหมือนตาย → R16 SafeMode
+```
+
+**ต้นทุนการแก้ = ลบ cast 4 ตัว** — `IntegerToString()` รับ `long` อยู่แล้ว cast นี้ไม่มีประโยชน์เลย
+· `(int)PumpP99Us()` ก็ลบด้วยเพื่อความสม่ำเสมอ
+· ตรงกับ mapping rule ที่ [SPEC-004 §3.3](specs/SPEC-004-codegen.md) กำหนดไว้แล้วว่า
+`integer` → `long` **ห้ามใช้ `int`** — ถ้าโค้ดมือกับโค้ด generate ไม่ตรงกันจะกลายเป็นกับดัก
+
+**ไม่รับเป็นหนี้** — ของที่แก้ 4 บรรทัดแล้วจบ ไม่ควรอยู่ในทะเบียนหนี้
+
+## 1.5 🔴 chaos suite ต้อง EA-driven จริง
+
+ค้างมาตั้งแต่ [gate-02 ข้อ 4](reviews/SPEC-001-compile-gate-02.md)
+ตอนนี้เป็น Python client 5 ตัวคุยกับ `echo_server.py` — **ไม่มี EA อยู่ในลูป**
+
+[SPEC-001 §7](specs/SPEC-001-mt5-executor.md) ต้องมี 6 ชื่อ · มีจริง 1:
+
+| test | สถานะ |
+|------|-------|
+| `test_duplicate_session_rejected` | ✅ (ยังไม่ EA-driven) |
 | `test_ea_reconnects_after_server_kill` | ❌ |
-| `test_backoff_schedule_matches_spec` | ❌ |
-| `test_bad_token_waits_60s` | ❌ (มี `test_bad_token_rejected` ซึ่งไม่พิสูจน์การรอ 60s) |
-| `test_heartbeat_gap_triggers_reconnect` | ❌ (มี `test_heartbeat_ack`) |
+| `test_backoff_schedule_matches_spec` | ❌ 1,2,4,8,16,30 + jitter ±20% |
+| `test_bad_token_waits_60s` | ❌ (`test_bad_token_rejected` ไม่พิสูจน์การรอ 60s) |
+| `test_heartbeat_gap_triggers_reconnect` | ❌ (`test_heartbeat_ack` คนละเรื่อง) |
 | `test_no_heartbeat_loss_over_1h` | ❌ |
 
-### C2 · วัด `Pump()` p99 < 20 ms
+**test ที่ไม่มี EA จริง พิสูจน์ reconnect/backoff ไม่ได้เลย** — วัดได้แค่ว่า server ตอบถูก
 
-ด้วย `GetMicrosecondCount()` แล้วส่งขึ้นใน `HEARTBEAT.wire.pump_p99_us` (schema มี field แล้ว)
-
-### C3 · soak 24 ชม. บน demo ผ่านสุดสัปดาห์
-
-heartbeat ไม่ขาด · ไม่ memory leak · **เป็นข้อพิสูจน์ว่าไม่ได้พึ่ง `TimeCurrent()`**
-
-### C4 · หนี้ที่มีเส้นตาย — `test_partial_send_resumes` ด้วย socket จริง
+## 1.6 🟠 `test_partial_send_resumes` ด้วย socket จริง
 
 [gate-02 §3❷](reviews/SPEC-001-compile-gate-02.md) · **เส้นตาย: ก่อน merge SPEC-011**
-วิธี: `echo_server.py` accept แล้วไม่อ่าน (หรือ `SO_RCVBUF` เล็ก) → บังคับให้ `SocketSend` short write
+วิธี: `echo_server.py` accept แล้ว**ไม่อ่าน** (หรือตั้ง `SO_RCVBUF` เล็ก) → EA ส่ง frame ใหญ่
+→ `SocketSend` คืนค่าน้อยกว่าที่ขอ
+
+ที่มีอยู่ตอนนี้พิสูจน์ *การจดบัญชี resume* ถูก แต่ไม่พิสูจน์ว่า **ค่าที่ `SocketSend` คืนมาจริง
+ต่อเข้ากับตรรกะนั้น** — Phase 1 ส่งซ้ำแค่ได้ message ซ้ำ **Phase 2 message ซ้ำ = order ซ้ำ**
+
+## 1.7 `Pump()` p99 + soak
+
+- วัดด้วย `GetMicrosecondCount()` → `HEARTBEAT.wire.pump_p99_us` (schema มี field แล้ว) · **p99 < 20,000 µs**
+- soak 24 ชม. บน demo **ผ่านสุดสัปดาห์** — heartbeat ไม่ขาด · ไม่ memory leak
+  · เป็นข้อพิสูจน์ว่าไม่ได้พึ่ง `TimeCurrent()`
+
+## ✅ รอบที่ 1 เสร็จเมื่อ
+
+- [ ] `run-mql5-tests.ps1` เขียว · `[SKIP] XM` ปรากฏชัด · สรุปบอกว่าเป้าไหนรันจริง
+- [ ] `ran_names` ครบ 11 ชื่อตาม SPEC-001 §7 **+ 3 test ULID ใหม่**
+- [ ] chaos 6 ชื่อครบ · EA-driven ทุกตัว
+- [ ] p99 < 20 ms · soak 24 ชม.ผ่าน
+- [ ] handoff มีหัวข้อ `## gate changes` + **output จริง**ของ gate
 
 ---
 
-## D. SPEC-063 — BrokerTime
+# รอบที่ 2 — SPEC-063 BrokerTime
 
-📄 [spec พร้อมแล้ว](specs/SPEC-063-broker-time.md) · **SPEC_READY**
+📄 [spec เต็ม](specs/SPEC-063-broker-time.md) · **SPEC_READY** · 15 test
 
-ปิด finding ❸: `ts_server` ติดป้าย `Z` แต่เป็นเวลา broker-local → เพี้ยน 2–3 ชม. ตลอดเวลา
-กระทบ primary key ของ `bars` และ parity test (SPEC-033)
+ปิด finding ❸ ที่ยังค้าง: `FarmIsoUtcFromBrokerTime` ยังอยู่ 3 จุดใน `Json.mqh`
+และ **ไม่แปลงเวลาเลย** — `ts_server` เพี้ยนเท่ากับ offset ของโบรกเกอร์ตลอดเวลา
 
-> ⚠️ `AGENTS.md` §MQL5 เคยเขียนว่า "ใช้ `TimeCurrent()` ตัดสินใจ" — **แก้แล้ว**
-> ถ้าคุณอ่านฉบับเก่าไว้ ให้ยึด SPEC-063: เรียกเวลาผ่าน `CBrokerTime` ตัวเดียวเท่านั้น
+**หัวใจที่ห้ามพลาด:**
+
+| | |
+|---|---|
+| test seam | `CBrokerClockSource` เป็น virtual — test ป้อนเวลาปลอม · **ห้าม mock `CBrokerTime` เอง** |
+| ห้ามใช้ | `TimeCurrent()` (ค้างตอนตลาดปิด) → ใช้ `TimeTradeServer()` |
+| debounce | 3 sample × 20s ก่อนยอมรับว่า offset เปลี่ยน — กัน sample เพี้ยนตอน reconnect ไปเลื่อนเส้นแบ่งวันของ R6 |
+| `IsValid()==false` | แปลงเวลา **คืน 0** ห้ามใช้ offset เก่า |
+| วัน DST 23/25 ชม. | **ถูกต้องแล้ว ห้าม "แก้"** |
+| ลบทิ้ง | `FarmIsoUtcFromBrokerTime` — ชื่อที่หลอกคือต้นเหตุ ปล่อยไว้จะมีคนเรียกซ้ำ |
+
+**acceptance ที่พิสูจน์ "แหล่งเดียว":**
+`grep -rn "TimeGMT()\|TimeTradeServer()\|TimeLocal()\|TimeCurrent()" mt5-ea/` → เจอเฉพาะใน `BrokerTime.mqh`
+
+> ⚠️ `AGENTS.md` §MQL5 เคยเขียนว่า "ใช้ `TimeCurrent()` ตัดสินใจ" — **ผมแก้แล้ว**
+> ถ้าจำฉบับเก่าไว้ ให้ยึด SPEC-063
 
 ---
 
-## E. SPEC-004 — Codegen
+# รอบที่ 3 — SPEC-004 Codegen  ★ ก้อนใหญ่ที่สุด
 
-📄 [spec พร้อมแล้ว](specs/SPEC-004-codegen.md) · **SPEC_READY** · schema 14 ไฟล์เสร็จแล้ว
+📄 [spec เต็ม](specs/SPEC-004-codegen.md) · **SPEC_READY** · schema 14 ไฟล์เสร็จแล้ว
+· **27 test** (Python 15 · MQL5 12) · 10 ไฟล์ใหม่
 
-อ่าน [`contracts/schema/README.md`](../contracts/schema/README.md) ก่อนเริ่ม โดยเฉพาะ:
-- ข้อ 2 `additionalProperties` ต้องเป็น `ignore` **ห้าม `forbid`**
-- ข้อ 3 `null` ≠ `0` ≠ ไม่มี field
+อ่าน [`contracts/schema/README.md`](../contracts/schema/README.md) **ก่อนเขียนบรรทัดแรก**
 
-ตัวยากที่สุดคือ `JsonCore.mqh` — ต้องเป็น recursive-descent parser จริง
-`Json.mqh` เดิมใช้ `StringFind` หา key ซึ่ง **parse `STATE.positions[]` ไม่ได้เลย**
+**ตัวยากที่สุด: `JsonCore.mqh`** — ต้องเป็น recursive-descent parser จริง
+`Json.mqh` เดิมใช้ `StringFind` หา `"key"` ซึ่งพังกับ:
+- key ชื่อเดียวกันคนละชั้น (`symbol` อยู่ทั้งใน payload และใน `positions[]`)
+- string ที่มีข้อความคล้าย key (`"comment": "sl:1.0800"`)
+- **array ของ object → parse `STATE.positions[]` ไม่ได้เลย**
+
+**3 กับดักที่จะกินเวลามากที่สุด:**
+
+| # | กับดัก |
+|---|--------|
+| 1 | **determinism** — `make codegen` 2 ครั้งต้อง byte-identical · sort เอง ห้ามพึ่ง `os.listdir()` · ห้ามใส่ timestamp ในหัวไฟล์ · pin `==` |
+| 2 | **`additionalProperties`** ต้องเป็น `ignore` **ห้าม `forbid`** (ยกเว้น `config_update.settings` ที่เดียว) |
+| 3 | **`null` ≠ `0` ≠ ไม่มี field** — MQL5 คืน `0.0` เมื่อไม่มี SL · schema มี `exclusiveMinimum: 0` → ส่ง `0` จะ fail · ต้องมี helper ตัวเดียว ไม่ใช่เช็คกระจาย |
+
+`contracts/fixtures/invalid/` 4 ไฟล์แรกคือกับดักที่ดัก bug จริงไว้ — ทำให้มันแดงถูกต้อง
 
 ---
 
-## F. `local_limits` ต่อกับ EA input — เส้นตาย: ก่อน merge SPEC-019
+# รอบที่ 4 — `local_limits` ต่อกับ EA input
 
-ตอนนี้ hardcode `0.50/0.50/4/8/25/2.0/6.0` และ `FarmExecutor.mq5` ยังไม่มี input พวกนี้เลย
+**เส้นตาย: ก่อน merge SPEC-019**
+
+ตอนนี้ hardcode `0.50/0.50/4/8/25/2.0/6.0` และ `FarmExecutor.mq5` ยังไม่มี input พวกนี้
 ทั้งที่ [contract §4.1](02-contracts.md) เขียนว่า **"ค่ามาจาก EA input เท่านั้น"**
 
-ยังไม่อันตรายตอนนี้ (ไม่มี guard/order) แต่**อันตรายทันทีตอน SPEC-019**:
+ยังไม่อันตรายตอนนี้ (ไม่มี guard/order) แต่อันตรายทันทีตอน SPEC-019:
 guard บังคับค่าจริงจาก input แต่ brain ถูกบอกค่าคงที่
 → brain ส่ง intent ที่คิดว่าอยู่ในเพดาน แต่ EA reject → **intent หายเงียบๆ ทั้งที่ทั้งสองฝั่ง "ทำถูก"**
 
@@ -163,19 +258,22 @@ guard บังคับค่าจริงจาก input แต่ brain ถ
 
 | ticket | ทำไม |
 |--------|------|
-| **SPEC-011** OrderRouter | `SPEC_READY` ก็จริง แต่ depends on SPEC-010 ซึ่ง**ยังไม่มี spec** · และ C4 ต้องเสร็จก่อน merge |
-| **SPEC-019/020** risk layer | รอ spec — Claude ยังไม่เขียน |
-| อะไรก็ตามใน `contracts/schema/**` | Claude เป็นเจ้าของ · เสนอผ่าน implementation note |
+| **SPEC-011** OrderRouter | `SPEC_READY` แต่ depends on SPEC-010 ซึ่ง**ยังไม่มี spec** · และ 1.6 ต้องเสร็จก่อน merge |
+| **SPEC-019 / 020** risk layer | Claude ยังไม่เขียน spec |
+| **SPEC-064** SymbolRegistry | Claude ยังไม่เขียน spec (เพิ่งเลื่อนเป็น blocker หลังเพิ่ม XM) |
+| `contracts/schema/**` | Claude เป็นเจ้าของ — เสนอผ่าน implementation note |
+| เป้า XM ใน gate | `Enabled = $false` จนกว่า **D11** (login) และ history จะพร้อม |
 
 ---
 
-## หมายเหตุที่ใช้ได้กับทุกงาน
+## กฎที่ใช้กับทุกงาน
 
 | | |
 |---|---|
-| branch | `feat/SPEC-NNN-*` เท่านั้น · **ห้าม commit ลง `main`** · เช็คด้วย `git branch --show-current` ก่อนทุกครั้ง |
+| branch | `feat/SPEC-NNN-*` · **ห้าม commit ลง `main`** · `git branch --show-current` ก่อนทุกครั้ง |
 | `git add` | ระบุ path เสมอ — `git add mt5-ea brain tests research ops contracts/gen tools` · **ห้าม `-A` / `.`** |
-| ไฟล์ที่เห็นค้างของ Claude | `docs/` `contracts/schema/` `AGENTS.md` `CLAUDE.md` `README.md` — **ปล่อยไว้ ห้ามแตะ** |
-| `tools/**` | แก้ได้ แต่ต้องลงหัวข้อ `## gate changes` ใน handoff แยกจากงานหลัก |
-| compile | ไม่มี MetaEditor ในสภาพแวดล้อมคุณ → เขียนว่า **"รอ compile gate"** ห้ามเขียนว่า "compile ผ่าน" |
+| ไฟล์ Claude ที่เห็นค้าง | `docs/` `contracts/schema/` `AGENTS.md` `CLAUDE.md` `README.md` → **ปล่อยไว้** |
+| `tools/**` | แก้ได้ แต่ต้องลงหัวข้อ `## gate changes` ใน handoff **แยกจากงานหลัก** |
+| compile | ไม่มี MetaEditor ในสภาพแวดล้อมคุณ → เขียน **"รอ compile gate"** ห้ามเขียน "compile ผ่าน" |
 | test แดง | รายงานตรงๆ พร้อม output จริง · **ห้ามปิด/ลด check เพื่อให้ผ่าน** |
+| test ที่ผ่านแบบไม่ได้ทดสอบอะไร | อันตรายกว่า test แดง — ถ้ารู้ตัวว่า test อ่อน **เขียนบอกใน handoff** (เช่นข้อ 1.3) |
