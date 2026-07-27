@@ -173,18 +173,19 @@ Backtest spec บอกว่าจำลอง swap แต่ไม่ระบ
 
 ### ~~Q2 — R12 `friday_close_before` = ปิดทุกอย่างก่อนตลาดปิดศุกร์ เอาไหม?~~
 
-✅ **ตอบแล้ว 2026-07-27: เปิดใช้ — ยกเว้น `BTCUSD.iux`** → [ADR-002](decisions/ADR-002-symbols-capital-hours.md)
+✅ **ตอบแล้ว 2026-07-27: เปิดใช้ทุก symbol** → [ADR-002](decisions/ADR-002-symbols-capital-hours.md)
 
-สมเหตุสมผล: BTC ไม่มี "ตลาดปิดศุกร์" จึงไม่มี weekend gap ให้กัน
-FX กับทองยังปิดตามเดิม (conservative) — ทำเป็น per-strategy config ได้ใน Phase 5
+เดิมตอบว่า "ยกเว้น `BTCUSD.iux`" (เพราะ BTC ไม่มีตลาดปิดศุกร์ จึงไม่มี weekend gap ให้กัน)
+แต่ rev.2 **ตัด BTCUSD ออกจากชุด symbol** → ข้อยกเว้นหมดความหมาย
+ทั้ง 7 คู่ที่เหลือปิดสุดสัปดาห์ → R12 ใช้เหมือนกันหมด (conservative) ทำเป็น per-strategy config ได้ใน Phase 5
 
 ### ~~Q3 — D2 โบรกเกอร์ · D4 symbol/timeframe · D5 จำนวนบัญชี/ทุน~~ → ปิด 2 ใน 3
 
 | | สถานะ 2026-07-27 |
 |---|---|
 | **D2** | ✅ IUX Markets · M1 history 2016–2026 (EURUSD/XAUUSD), 2018–2026 (BTC) — **แต่ยังไม่รู้สเปก VPS** (แยกเป็น D7) |
-| **D4** | ✅ 3 symbol × 7 timeframe — ปลดล็อก SPEC-007 · แต่**เพิ่มงาน**: 3 asset class ทำให้ R5/R10/R11 ต้องเป็นตารางต่อ symbol |
-| **D5** | 🔴 **ยังไม่ปิด และกลายเป็น BLOCKER** — บัญชี ≥2 ✅ แต่ทุน $10 ทำให้ R1 reject ทุก intent (คำนวณใน ADR-002 §3) · บล็อก SPEC-020 + SPEC-025 |
+| **D4** | 🟡 **8 คู่ × 7 timeframe — 7 คู่ใช้ได้ `USDCNY` ไม่มีในโบรกเกอร์** · ปลดล็อก SPEC-007 (ต้องดาวน์โหลด `USDJPY` ก่อน) · **เพิ่มงาน:** R5/R10/R11 ต้องเป็นตารางต่อ symbol · ทุกคู่มี USD → USD เป็นคอขวดของ P3 · เดิมพันอิสระจริง ~4 ก้อนไม่ใช่ 7 → P4 bind บ่อยกว่า P3 และ P5 = 3 หลวมเกิน |
+| **D5** | 🔴 **ยังไม่ปิด และกลายเป็น BLOCKER** — บัญชี ≥2 ✅ แต่ทุน $10 ทำให้ R1 reject ทุก intent ทั้ง 7 คู่ (คำนวณใน ADR-002 §3) · ตัวที่บังคับทุน = `XAGUSD` ~$4,300 · บล็อก SPEC-020 + SPEC-025 |
 
 **ผลพลอยได้จากการคำนวณ D5:** เจอ bug ในสูตร R1 ของ `03-risk-spec.md` เอง —
 `clamp` ก่อนเช็ค `volume_min` ทำให้ guard เป็น dead code และเปิดไม้เกิน R1 ได้แบบเงียบ
