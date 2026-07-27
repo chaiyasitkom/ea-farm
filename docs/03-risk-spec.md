@@ -34,14 +34,14 @@ L0  BROKER       ── leverage, margin call, stop out (ควบคุมไ�
 | R3a | `max_net_volume_per_symbol` — เพดาน \|owned_net\| ต่อ symbol | 0.50 | clamp ลง + รายงาน |
 | R3b | `max_tickets_per_symbol` — **anti-bug guard ไม่ใช่กฎ risk** | 4 | block + `ERROR severity:ERROR` (เกินนี้ = logic พัง) |
 | R4 | `max_total_tickets` — นับ ticket ที่เป็นเจ้าของทั้งบัญชี | 8 | reject |
-| R5 | `max_spread_points` — spread ปัจจุบันเกิน = ไม่เข้าใหม่ | 25 pt (majors) | เลื่อนออกไป ถ้าเกิน `valid_until` = expire |
+| R5 | `max_spread_points` — spread ปัจจุบันเกิน = ไม่เข้าใหม่ | **ต่อ symbol** ดู §Per-symbol | เลื่อนออกไป ถ้าเกิน `valid_until` = expire |
 | R6 | `daily_loss_pct` — วัดจาก equity ตอน 00:00 broker time | 2.0% | **HALT บัญชีนี้ถึงสิ้นวัน** + ปิด position ทั้งหมด |
 | R7 | `max_dd_pct` — วัดจาก equity high-water mark | 6.0% soft / 10.0% hard | soft → REDUCE_ONLY · hard → HALT + flatten |
 | R8 | `min_margin_level_pct` | 300% | REDUCE_ONLY ทันที |
 | R9 | `require_sl` — ห้ามเปิด position โดยไม่มี SL | true | reject intent |
-| R10 | `max_sl_distance_pct` — SL ห้ามกว้างเกิน (กัน model เพี้ยน) | 3.0% ของราคา | reject |
-| R11 | `trading_hours` — เวลาที่อนุญาต (broker time) | Mon 01:00 – Fri 20:00 | ไม่เข้าใหม่ |
-| R12 | `friday_close_before` — ปิดทุกอย่างก่อนปิดตลาด | 20:00 Fri | flatten |
+| R10 | `max_sl_distance_pct` — SL ห้ามกว้างเกิน (กัน model เพี้ยน) | **ต่อ symbol** ดู §Per-symbol | reject |
+| R11 | `trading_hours` — เวลาที่อนุญาต (broker time) | **ต่อ symbol** ดู §Per-symbol | ไม่เข้าใหม่ |
+| R12 | `friday_close_before` — ปิดทุกอย่างก่อนปิดตลาด | 20:00 Fri · **ยกเว้น BTCUSD** ([ADR-002](decisions/ADR-002-symbols-capital-hours.md)) | flatten |
 | R13 | `kill_file` — ถ้าพบไฟล์ `Common\Files\farm_kill.txt` | เปิดใช้ | HALT + flatten ทันที ทุก terminal |
 | R14 | `consecutive_loss_halt` — ขาดทุนติดกัน N ไม้ | 5 | HALT 4 ชั่วโมง |
 | R15 | `max_slippage_points` — ถ้าเกิน ยกเลิกไม่ retry | 15 | log + alert |
@@ -73,13 +73,57 @@ sl_distance_pts = |entry_price − sl_price| / point
 value_per_point = tick_value × (point / tick_size)      // ต่อ 1 lot
 raw_lot         = risk_money / (sl_distance_pts × value_per_point)
 lot             = floor(raw_lot / volume_step) × volume_step
-lot             = clamp(lot, volume_min, min(volume_max, max_lot_per_order))
-if lot < volume_min → reject intent (เสี่ยงน้อยเกินกว่าจะเทรดได้)
+
+if lot < volume_min → reject intent                      // ★ ต้องอยู่ก่อน clamp
+      reason = "RISK_TOO_SMALL_FOR_MIN_LOT"
+      รายงาน equity, risk_money, raw_lot, volume_min ใน EXEC_REPORT
+
+lot             = min(lot, volume_max, max_lot_per_order)   // clamp ลงเท่านั้น
 ```
+
+### ★ ลำดับสองบรรทัดสุดท้ายห้ามสลับ — เคยเป็น bug ในสเปกนี้เอง
+
+เดิมเขียนว่า `clamp(lot, volume_min, …)` **ก่อน** เช็ค `lot < volume_min`
+`clamp` ยก `lot` ขึ้นถึง `volume_min` เสมอ → บรรทัดเช็คกลายเป็น dead code
+→ intent ที่ควร reject จะถูกเปิดที่ `volume_min` **โดยเสี่ยงเกิน R1 เท่าไรก็ได้ อย่างเงียบสนิท**
+
+> ตัวอย่างจริง: equity $10, R1 = 0.35% → risk_money = $0.035
+> EURUSD SL 20 pip ควรได้ `raw_lot` = 0.000175 → ต้อง **reject**
+> แต่ bug จะเปิด 0.01 lot = เสี่ยงจริง $2.00 = **20% ของบัญชี (57 เท่าของ R1)**
+
+**หลักการ:** clamp **ลง**ได้เสมอ (ปลอดภัยขึ้น) · clamp **ขึ้น**ห้ามเด็ดขาด (เสี่ยงเกินที่สั่ง)
+ดู [ADR-002](decisions/ADR-002-symbols-capital-hours.md) §4
 
 ⚠️ **ห้ามใช้ `tick_value` ตรงๆ กับคู่ที่ quote currency ≠ account currency**
 ต้องแปลงผ่าน conversion rate — Codex ต้องเขียน unit test สำหรับ XAUUSD, USDJPY, EURGBP
 บนบัญชี USD ให้ครบทั้ง 3 เคส
+
+⚠️ **ห้าม hardcode `volume_min` / `tick_value` / `tick_size` / `point` / `contract_size`**
+ค่าเหล่านี้ต่างกันคนละ order of magnitude ระหว่าง EURUSD / XAUUSD / BTCUSD
+และโบรกเกอร์เปลี่ยนได้โดยไม่บอก → อ่านจาก `SymbolInfoDouble()` ตอน runtime เท่านั้น
+
+---
+
+## Per-symbol risk profile (R5 · R10 · R11)
+
+ตั้งแต่ [ADR-002](decisions/ADR-002-symbols-capital-hours.md) ระบบเทรด 3 asset class
+ค่าเดียวใช้ไม่ได้ — หลวมเกินกับตัวหนึ่งและเข้มเกินกับอีกตัวพร้อมกัน
+
+| symbol | R5 `max_spread_points` | R10 `max_sl_distance_pct` | R11 `trading_hours` (broker time) | R12 friday flatten |
+|--------|------------------------|---------------------------|-----------------------------------|--------------------|
+| `EURUSD.iux` | 25 | 0.5% | Mon 01:00 – Fri 20:00 | ✅ ใช้ |
+| `XAUUSD.iux` | TBD¹ | 1.5% | Mon 01:00 – Fri 20:00 หักช่วงพักรายวัน¹ | ✅ ใช้ |
+| `BTCUSD.iux` | TBD¹ | 5.0% | 24/7¹ | ❌ **ยกเว้น** |
+
+¹ ค่าที่ยังไม่เติม **ห้ามเดา** — ต้องอ่านจากโบรกเกอร์จริงตอน `OnInit`
+(`SYMBOL_SESSION_QUOTE` / `SYMBOL_SESSION_TRADE` ผ่าน `SymbolInfoSessionTrade()`)
+แล้วเก็บใน SymbolRegistry (SPEC-064) · spread ให้เก็บสถิติจริง 1 สัปดาห์ก่อนตั้งเพดาน
+
+### BTC เทรดเสาร์-อาทิตย์ → กระทบ 3 จุดที่ต้องระวัง
+
+1. **R6/R7** — equity ขยับตอน FX ปิด · HWM ต้องอัปเดตต่อเนื่อง ห้ามหยุดตามปฏิทิน FX
+2. **R16 / P11** — brain ต้องรันเสาร์-อาทิตย์ ไม่งั้น EA เข้า SafeMode ค้าง 2 วัน
+3. **SPEC-008** — weekend bar ของ BTC คือข้อมูล**ถูกต้อง** ห้าม flag เป็น error
 
 ---
 

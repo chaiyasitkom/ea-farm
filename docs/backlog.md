@@ -117,10 +117,12 @@
 | # | เรื่อง | สถานะ | บันทึกเมื่อ |
 |---|-------|-------|------------|
 | ~~D1~~ | ~~Path โปรเจกต์มีอักษรไทย + เว้นวรรค — MQL5 compiler, venv, git บน Windows มีปัญหา encoding~~ | ✅ **แก้แล้ว** — ย้าย repo มา `D:\ea-farm` + `git init -b main` + `.gitattributes` บังคับ LF | 2026-07-26 |
-| D2 | โบรกเกอร์/สเปก VPS — กระทบ spread model ใน backtest (SPEC-032) | 🟡 **พบหลักฐาน: IUX Markets** (บัญชี `IUXMarkets-Demo` ใน MT5 บนเครื่องนี้ · 15 symbol · EURUSD.iux H1 history 2025.01.01–2026.06.19) — รอเจ้าของยืนยันว่าใช้รายนี้จริงและมีสเปก VPS ไหม | 2026-07-27 |
+| ~~D2~~ | ~~โบรกเกอร์/สเปก VPS — กระทบ spread model ใน backtest (SPEC-032)~~ | ✅ **ยืนยันแล้ว: IUX Markets** → [ADR-002](decisions/ADR-002-symbols-capital-hours.md) · history M1 ลึกกว่าที่เคยบันทึก (EURUSD/XAUUSD 2016–2026 · BTCUSD 2018–2026) — ข้อกำหนด ≥5 ปี ผ่านครบ · **ยังไม่รู้สเปก VPS** | 2026-07-27 |
 | ~~D3~~ | ~~netting หรือ hedging account — กระทบ `OrderRouter` logic โดยตรง~~ | ✅ **ตัดสินแล้ว: hedging** → [ADR-001](decisions/ADR-001-hedging-account.md) · SPEC-011 เขียนครบแล้ว | 2026-07-26 |
-| D4 | ยังไม่กำหนดชุด symbol และ timeframe หลัก | ⏳ ต้องรู้ก่อน SPEC-007 (default: EURUSD H1 สำหรับ dev) | 2026-07-26 |
-| D5 | ยังไม่กำหนดจำนวนบัญชี/ทุนต่อบัญชีเป้าหมาย — กระทบ P1–P6 threshold | ⏳ ต้องรู้ก่อน SPEC-025 | 2026-07-26 |
+| ~~D4~~ | ~~ยังไม่กำหนดชุด symbol และ timeframe หลัก~~ | ✅ **ตัดสินแล้ว** → [ADR-002](decisions/ADR-002-symbols-capital-hours.md) · `EURUSD.iux` `XAUUSD.iux` `BTCUSD.iux` × M1/M5/M10/M15/M30/H1/H4 · ingest ดึง **M1 อย่างเดียวแล้ว resample** | 2026-07-27 |
+| **D5** | ทุนต่อบัญชี — กระทบ P1–P6 threshold | 🔴 **BLOCKER** — บัญชี ≥2 ✅ แต่ทุน **$10 ทำให้ R1 reject ทุก intent ทั้ง 3 symbol** (คำนวณใน [ADR-002](decisions/ADR-002-symbols-capital-hours.md) §3) · ต้องเลือก **A** บัญชี cent · **B** เพิ่มทุน ~$600–4,300 · **C** demo อย่างเดียว — **บล็อก SPEC-020 + SPEC-025** | 2026-07-27 |
+| **D6** | BTCUSD.iux เปิดเสาร์-อาทิตย์ไหม | ⏳ ต้องรู้ก่อน SPEC-008 (weekend bar เป็นข้อมูลถูกหรือผิด) · ตรวจได้จาก M1 ในไฟล์ `.hcc` ปี 2025 | 2026-07-27 |
+| **D7** | สเปก VPS (CPU/RAM/latency ไป IUX) | ⏳ กระทบ SPEC-032 spread model + Phase 6 | 2026-07-27 |
 
 ---
 
@@ -132,3 +134,9 @@
 | Git | 2.51.1.windows.1 · branch หลัก `main` |
 | Line ending | LF บังคับผ่าน `.gitattributes` (ยกเว้น `.bat/.cmd/.ps1`) |
 | Remote | ยังไม่มี — local only |
+| **โบรกเกอร์** | **IUX Markets** · บัญชี `IUXMarkets-Demo` · hedging mode ([ADR-001](decisions/ADR-001-hedging-account.md)) |
+| **Terminal** | `IUX Markets MT5 Terminal3` เท่านั้น — `C:\Program Files\MetaTrader 5` ไม่มีบัญชี/history รัน tester ไม่ได้ |
+| **Symbol** | `EURUSD.iux` · `XAUUSD.iux` · `BTCUSD.iux` (suffix `.iux` บังคับ) |
+| **Timeframe** | M1 · M5 · M10 · M15 · M30 · H1 · H4 — MT5 เก็บแค่ M1 ที่เหลือ derive |
+| **M1 history** | EURUSD/XAUUSD 2016–2026 · BTCUSD 2018–2026 |
+| **บัญชี** | ≥ 2 บัญชี · ทุนต่อบัญชี = 🔴 **ยังไม่สรุป** ดู D5 |

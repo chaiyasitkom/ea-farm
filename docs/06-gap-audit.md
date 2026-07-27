@@ -171,17 +171,21 @@ Backtest spec บอกว่าจำลอง swap แต่ไม่ระบ
 **สาเหตุราก:** `05-collab-protocol.md` ไม่มีกฎเรื่องทำงานพร้อมกันใน working tree เดียว
 → เพิ่ม §ทำงานพร้อมกัน + ตารางแยกโซนความเป็นเจ้าของไฟล์ + ห้าม `git add -A` ทั้งสองฝ่าย
 
-### Q2 — R12 `friday_close_before` = ปิดทุกอย่างก่อนตลาดปิดศุกร์ เอาไหม?
+### ~~Q2 — R12 `friday_close_before` = ปิดทุกอย่างก่อนตลาดปิดศุกร์ เอาไหม?~~
 
-default ที่ผมตั้งไว้คือปิดหมด ซึ่ง**ฆ่ากลยุทธ์ swing ที่ถือหลายวันทิ้งทั้งหมด**
-- ปิด = ไม่มี weekend gap risk แต่จ่าย spread เข้า-ออกทุกสัปดาห์ และตัดกำไรที่วิ่งอยู่
-- ไม่ปิด = ถือข้ามได้ แต่รับ gap ที่ SL ไม่ช่วย (ราคาเปิดกระโดดข้าม SL)
+✅ **ตอบแล้ว 2026-07-27: เปิดใช้ — ยกเว้น `BTCUSD.iux`** → [ADR-002](decisions/ADR-002-symbols-capital-hours.md)
 
-ถ้ายังไม่แน่ใจ: เก็บ default = ปิด (conservative) แล้วทำเป็น per-strategy config ใน Phase 5
+สมเหตุสมผล: BTC ไม่มี "ตลาดปิดศุกร์" จึงไม่มี weekend gap ให้กัน
+FX กับทองยังปิดตามเดิม (conservative) — ทำเป็น per-strategy config ได้ใน Phase 5
 
-### Q3 — D2 โบรกเกอร์ · D4 symbol/timeframe · D5 จำนวนบัญชี/ทุน
+### ~~Q3 — D2 โบรกเกอร์ · D4 symbol/timeframe · D5 จำนวนบัญชี/ทุน~~ → ปิด 2 ใน 3
 
-ยังค้างจากรอบก่อน ไม่บล็อก 3 ticket แรก แต่:
-- **D4 ต้องรู้ก่อน SPEC-007** (ingest ต้องรู้ว่าดึงคู่ไหน) — ใกล้ที่สุด
-- **D2 ต้องรู้ก่อน SPEC-032** (spread/swap model)
-- **D5 ต้องรู้ก่อน SPEC-025** (threshold P1–P6)
+| | สถานะ 2026-07-27 |
+|---|---|
+| **D2** | ✅ IUX Markets · M1 history 2016–2026 (EURUSD/XAUUSD), 2018–2026 (BTC) — **แต่ยังไม่รู้สเปก VPS** (แยกเป็น D7) |
+| **D4** | ✅ 3 symbol × 7 timeframe — ปลดล็อก SPEC-007 · แต่**เพิ่มงาน**: 3 asset class ทำให้ R5/R10/R11 ต้องเป็นตารางต่อ symbol |
+| **D5** | 🔴 **ยังไม่ปิด และกลายเป็น BLOCKER** — บัญชี ≥2 ✅ แต่ทุน $10 ทำให้ R1 reject ทุก intent (คำนวณใน ADR-002 §3) · บล็อก SPEC-020 + SPEC-025 |
+
+**ผลพลอยได้จากการคำนวณ D5:** เจอ bug ในสูตร R1 ของ `03-risk-spec.md` เอง —
+`clamp` ก่อนเช็ค `volume_min` ทำให้ guard เป็น dead code และเปิดไม้เกิน R1 ได้แบบเงียบ
+แก้แล้วใน [risk-spec §สูตรคำนวณ lot](03-risk-spec.md) · [ADR-002](decisions/ADR-002-symbols-capital-hours.md) §4
