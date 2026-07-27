@@ -13,13 +13,13 @@
 #   6. parse the JSON the EA wrote into Common\Files and check git_sha == HEAD
 #
 # HARD-WON FACTS (do not "simplify" these away):
-#   * Compiling needs no account, but the STRATEGY TESTER does. Only the IUX
-#     Terminal3 install has one (IUXMarkets-Demo). The vanilla
-#     "C:\Program Files\MetaTrader 5" data folder has no account and no history,
-#     so the tester cannot run there.
-#   * Symbols on this broker carry a ".iux" suffix (EURUSD.iux, XAUUSD.iux).
-#   * EURUSD.iux H1 history exists 2025.01.01 .. 2026.06.19 -- the tester date
-#     range must sit inside that or the run aborts.
+#   * Compiling needs no account, but the STRATEGY TESTER does. Keep terminal
+#     data folders explicit because each broker install has separate accounts,
+#     symbols, and history.
+#   * IUX symbols carry a ".iux" suffix (EURUSD.iux, XAUUSD.iux). XM symbols do
+#     not in this local terminal data folder (EURUSD, GOLD).
+#   * Tester date ranges must sit inside locally available history or the run
+#     aborts.
 #   * .set string values must be plain "Name=value". The "||||N" optimization
 #     suffix used for numeric params becomes PART OF THE STRING and produced
 #     FileOpen error 5004 (invalid filename).
@@ -32,61 +32,101 @@
 $ErrorActionPreference = 'Stop'
 
 $Repo       = "D:\ea-farm"
-$Data       = "C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\A45801173FBAFA01B9AFF0EEDE7938E3"
-$Terminal   = "C:\Program Files\IUX Markets MT5 Terminal3\terminal64.exe"
-$MetaEditor = "C:\Program Files\IUX Markets MT5 Terminal3\metaeditor64.exe"
 $Common     = "C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\Common\Files"
 $WorkDir    = Join-Path $env:TEMP "ea-farm-compile"
+
+$Targets = @(
+    @{
+        Name = "IUX"
+        Enabled = $true
+        SkipReason = ""
+        Data = "C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\A45801173FBAFA01B9AFF0EEDE7938E3"
+        Terminal = "C:\Program Files\IUX Markets MT5 Terminal3\terminal64.exe"
+        MetaEditor = "C:\Program Files\IUX Markets MT5 Terminal3\metaeditor64.exe"
+        Symbol = "EURUSD.iux"
+        From = "2026.06.02"
+        To = "2026.06.19"
+    },
+    @{
+        Name = "XM"
+        Enabled = $false
+        SkipReason = "D11 login invalid and local EURUSD history is not usable for tester gate yet"
+        Data = "C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\BB16F565FAAA6B23A20C26C49416FF05"
+        Terminal = "C:\Program Files\XM Global MT5\terminal64.exe"
+        MetaEditor = "C:\Program Files\XM Global MT5\MetaEditor64.exe"
+        Symbol = "EURUSD"
+    }
+)
 
 # suite name -> source path (relative to repo)
 $Suites = @(
     @{ Name = "TestWire"; Source = "tests\mql5\TestWire.mq5" }
 )
 
-$TesterSymbol = "EURUSD.iux"
-$TesterFrom   = "2026.06.02"
-$TesterTo     = "2026.06.19"
-
-foreach ($p in @($Terminal, $MetaEditor, $Data)) {
-    if (-not (Test-Path $p)) { Write-Output "FATAL: not found -> $p"; exit 2 }
+foreach ($t in $Targets) {
+    if (-not $t.Enabled) { continue }
+    foreach ($p in @($t.Terminal, $t.MetaEditor, $t.Data)) {
+        if (-not (Test-Path $p)) { Write-Output "FATAL: not found -> $($t.Name): $p"; exit 2 }
+    }
 }
 if (-not (Test-Path $WorkDir)) { New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null }
 
 Push-Location $Repo
 $sha = (& git rev-parse HEAD).Trim()
-$dirty = (& git status --porcelain -- mt5-ea tests | Measure-Object).Count
+$dirty = (& git status --porcelain -- mt5-ea tests tools | Measure-Object).Count
 Pop-Location
 
 Write-Output "MQL5 TEST RUN -- HEAD=$($sha.Substring(0,7))"
-if ($dirty -gt 0) { Write-Output "WARNING: $dirty uncommitted change(s) under mt5-ea/ or tests/ -- git_sha will not describe what actually ran" }
+if ($dirty -gt 0) { Write-Output "WARNING: $dirty uncommitted change(s) under mt5-ea/, tests/, or tools/ -- git_sha will not describe what actually ran" }
 Write-Output ""
 
-# ---- 1. deploy includes -------------------------------------------------
-$incDst = Join-Path $Data "MQL5\Include\Farm"
-if (-not (Test-Path $incDst)) { New-Item -ItemType Directory -Path $incDst -Force | Out-Null }
-Copy-Item (Join-Path $Repo "mt5-ea\Include\Farm\*.mqh") $incDst -Force
-Write-Output "[deploy] Include\Farm -> $incDst"
-
-$expDst = Join-Path $Data "MQL5\Experts\FarmTests"
-if (-not (Test-Path $expDst)) { New-Item -ItemType Directory -Path $expDst -Force | Out-Null }
-
-$setDir = Join-Path $Data "MQL5\Profiles\Tester"
-if (-not (Test-Path $setDir)) { New-Item -ItemType Directory -Path $setDir -Force | Out-Null }
-
 $anyFail = $false
+$ranTargets = @()
+$skippedTargets = @()
+
+foreach ($t in $Targets) {
+    $targetName = $t.Name
+    if (-not $t.Enabled) {
+        $reason = $t.SkipReason
+        Write-Output "[SKIP] $targetName -- reason: $reason"
+        $skippedTargets += "$targetName ($reason)"
+        continue
+    }
+
+    $ranTargets += $targetName
+    $Data = $t.Data
+    $Terminal = $t.Terminal
+    $MetaEditor = $t.MetaEditor
+    $TesterSymbol = $t.Symbol
+    $TesterFrom = $t.From
+    $TesterTo = $t.To
+
+    Write-Output "=== target: $targetName symbol=$TesterSymbol data=$Data"
+
+    # ---- 1. deploy includes ---------------------------------------------
+    $incDst = Join-Path $Data "MQL5\Include\Farm"
+    if (-not (Test-Path $incDst)) { New-Item -ItemType Directory -Path $incDst -Force | Out-Null }
+    Copy-Item (Join-Path $Repo "mt5-ea\Include\Farm\*.mqh") $incDst -Force
+    Write-Output "[deploy] Include\Farm -> $incDst"
+
+    $expDst = Join-Path $Data "MQL5\Experts\FarmTests"
+    if (-not (Test-Path $expDst)) { New-Item -ItemType Directory -Path $expDst -Force | Out-Null }
+
+    $setDir = Join-Path $Data "MQL5\Profiles\Tester"
+    if (-not (Test-Path $setDir)) { New-Item -ItemType Directory -Path $setDir -Force | Out-Null }
 
 foreach ($s in $Suites) {
     $name = $s.Name
     $src  = Join-Path $Repo $s.Source
     Write-Output ""
-    Write-Output "=== $name"
+    Write-Output "--- $targetName / $name"
 
     if (-not (Test-Path $src)) { Write-Output "  [FAIL] source not found: $src"; $anyFail = $true; continue }
 
     Copy-Item $src (Join-Path $expDst "$name.mq5") -Force
 
     # ---- 2. compile in the data folder ---------------------------------
-    $clog = Join-Path $WorkDir "$name-tester.log"
+    $clog = Join-Path $WorkDir "$targetName-$name-tester.log"
     $a = @("/compile:$expDst\$name.mq5", "/inc:$Data\MQL5", "/log:$clog")
     Start-Process -FilePath $MetaEditor -ArgumentList $a -Wait -NoNewWindow | Out-Null
 
@@ -105,8 +145,8 @@ foreach ($s in $Suites) {
     }
 
     # ---- 3. inject inputs ----------------------------------------------
-    $resultFile = "ea-farm-$name-result.json"
-    $setName    = "farm-$name.set"
+    $resultFile = "ea-farm-$targetName-$name-result.json"
+    $setName    = "farm-$targetName-$name.set"
     # plain Name=value -- see header note about the ||||N trap
     @(
         "InpTestGitSha=$sha",
@@ -114,7 +154,7 @@ foreach ($s in $Suites) {
     ) -join "`r`n" | Out-File -FilePath (Join-Path $setDir $setName) -Encoding ascii
 
     # ---- 4. run the tester ---------------------------------------------
-    $ini = Join-Path $WorkDir "tester-$name.ini"
+    $ini = Join-Path $WorkDir "tester-$targetName-$name.ini"
     @"
 [Tester]
 Expert=FarmTests\$name
@@ -134,6 +174,15 @@ ShutdownTerminal=1
 
     $resPath = Join-Path $Common $resultFile
     $t0 = Get-Date
+    $runningTerminal = Get-Process terminal64 -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -eq $Terminal } |
+        Select-Object -First 1
+    if ($runningTerminal) {
+        Write-Output "  [FAIL] $targetName terminal is already running (pid=$($runningTerminal.Id)); close it before headless tester run"
+        $anyFail = $true
+        continue
+    }
+
     $sw = [Diagnostics.Stopwatch]::StartNew()
     Start-Process -FilePath $Terminal -ArgumentList "/config:$ini" -Wait | Out-Null
     $sw.Stop()
@@ -163,6 +212,30 @@ ShutdownTerminal=1
     }
 
     Write-Output "  status=$($j.status) total=$($j.total) passed=$($j.passed) failed=$($j.failed)"
+    $requiredNames = @(
+        "test_framing_multiple_in_one_read",
+        "test_framing_split_across_reads",
+        "test_framing_crlf_tolerance",
+        "test_framing_empty_line_skipped",
+        "test_framing_oversize_frame_rejected",
+        "test_json_parse_malformed_skips_line",
+        "test_json_unknown_field_ignored",
+        "test_json_unknown_type_ignored",
+        "test_queue_full_drops_oldest",
+        "test_partial_send_resumes",
+        "test_utf8_multibyte_not_split"
+    )
+    if (-not ($j.PSObject.Properties.Name -contains "ran_names")) {
+        Write-Output "  [FAIL] result JSON has no ran_names"
+        $anyFail = $true
+    } else {
+        foreach ($required in $requiredNames) {
+            if ($j.ran_names -notcontains $required) {
+                Write-Output "  [FAIL] required test did not run: $required"
+                $anyFail = $true
+            }
+        }
+    }
     if ($j.failed -gt 0) {
         foreach ($f in $j.failed_names) { Write-Output "    FAILED: $f" }
         $anyFail = $true
@@ -170,7 +243,12 @@ ShutdownTerminal=1
     if ($j.status -ne "PASS") { $anyFail = $true }
 }
 
+    Write-Output ""
+}
+
 Write-Output ""
+Write-Output "Targets run: $($ranTargets -join ', ')"
+Write-Output "Targets skipped: $($skippedTargets -join ', ')"
 if ($anyFail) { Write-Output "MQL5 TESTS: FAILED"; exit 1 }
 Write-Output "MQL5 TESTS: PASSED"
 exit 0

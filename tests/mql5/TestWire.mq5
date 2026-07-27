@@ -9,7 +9,15 @@ input string InpTestResultFile = "ea-farm-TestWire-result.json";
 
 int    g_total = 0;
 int    g_failed = 0;
+string g_ran_names[];
 string g_failed_names[];
+
+void RecordRan(const string name)
+{
+   const int count = ArraySize(g_ran_names);
+   ArrayResize(g_ran_names, count + 1);
+   g_ran_names[count] = name;
+}
 
 void RecordFailure(const string name)
 {
@@ -187,6 +195,11 @@ void test_utf8_multibyte_not_split()
    const string frame = "{\"type\":\"INTENT\",\"payload\":{\"comment\":\"ไทย\"}}\n";
    uchar data[];
    const int total = StringToCharArray(frame, data, 0, WHOLE_ARRAY, CP_UTF8) - 1;
+   if(total < 0)
+   {
+      AssertTrue(false, "test_utf8_multibyte_not_split encode");
+      return;
+   }
 
    for(int i = 0; i < total; i++)
    {
@@ -202,50 +215,91 @@ void test_utf8_multibyte_not_split()
 
 void RunAllTests()
 {
+   RecordRan("test_framing_multiple_in_one_read");
    test_framing_multiple_in_one_read();
+   RecordRan("test_framing_split_across_reads");
    test_framing_split_across_reads();
+   RecordRan("test_framing_crlf_tolerance");
    test_framing_crlf_tolerance();
+   RecordRan("test_framing_empty_line_skipped");
    test_framing_empty_line_skipped();
+   RecordRan("test_framing_oversize_frame_rejected");
    test_framing_oversize_frame_rejected();
+   RecordRan("test_json_unknown_field_ignored");
    test_json_unknown_field_ignored();
+   RecordRan("test_json_unknown_type_ignored");
    test_json_unknown_type_ignored();
+   RecordRan("test_json_parse_malformed_skips_line");
    test_json_parse_malformed_skips_line();
+   RecordRan("test_receive_application_message_queued");
    test_receive_application_message_queued();
+   RecordRan("test_hello_ack_accepted_sets_ready");
    test_hello_ack_accepted_sets_ready();
+   RecordRan("test_hello_ack_rejected_sets_failed_auth");
    test_hello_ack_rejected_sets_failed_auth();
+   RecordRan("test_queue_full_drops_oldest");
    test_queue_full_drops_oldest();
+   RecordRan("test_send_before_ready_queues");
    test_send_before_ready_queues();
+   RecordRan("test_partial_send_resumes");
    test_partial_send_resumes();
+   RecordRan("test_utf8_multibyte_drop_counts_bytes");
    test_utf8_multibyte_drop_counts_bytes();
+   RecordRan("test_utf8_multibyte_not_split");
    test_utf8_multibyte_not_split();
+}
+
+bool WriteUtf8File(const string filename, const string content)
+{
+   uchar bytes[];
+   int n = StringToCharArray(content, bytes, 0, WHOLE_ARRAY, CP_UTF8);
+   if(n < 0)
+      return false;
+   if(n > 0 && bytes[n - 1] == 0)
+      n--;
+
+   const int handle = FileOpen(filename, FILE_WRITE | FILE_BIN | FILE_COMMON);
+   if(handle == INVALID_HANDLE)
+   {
+      Print("FAIL could_not_write_result_file err=", GetLastError(), " file=", filename);
+      return false;
+   }
+
+   const uint written = FileWriteArray(handle, bytes, 0, n);
+   FileClose(handle);
+   return (written == (uint)n);
+}
+
+string JsonStringArray(string &items[])
+{
+   string out = "[";
+   for(int i = 0; i < ArraySize(items); i++)
+   {
+      if(i > 0)
+         out += ",";
+      out += FarmJsonQuote(items[i]);
+   }
+   out += "]";
+   return out;
 }
 
 void WriteJsonResult()
 {
-   const int handle = FileOpen(InpTestResultFile, FILE_WRITE | FILE_TXT | FILE_COMMON | FILE_UTF8);
-   if(handle == INVALID_HANDLE)
-   {
-      Print("FAIL could_not_write_result_file err=", GetLastError(), " file=", InpTestResultFile);
-      return;
-   }
+   string json = "{";
+   json += "\"suite\":\"TestWire\",";
+   json += "\"git_sha\":" + FarmJsonQuote(InpTestGitSha) + ",";
+   json += "\"status\":" + FarmJsonQuote(g_failed == 0 ? "PASS" : "FAIL") + ",";
+   json += "\"started_at\":" + FarmJsonQuote(TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS)) + ",";
+   json += "\"total\":" + IntegerToString(g_total) + ",";
+   json += "\"passed\":" + IntegerToString(g_total - g_failed) + ",";
+   json += "\"failed\":" + IntegerToString(g_failed) + ",";
+   json += "\"ran_names\":" + JsonStringArray(g_ran_names) + ",";
+   json += "\"failed_names\":" + JsonStringArray(g_failed_names);
+   json += "}";
 
-   FileWriteString(handle, "{");
-   FileWriteString(handle, "\"suite\":\"TestWire\",");
-   FileWriteString(handle, "\"git_sha\":" + FarmJsonQuote(InpTestGitSha) + ",");
-   FileWriteString(handle, "\"status\":" + FarmJsonQuote(g_failed == 0 ? "PASS" : "FAIL") + ",");
-   FileWriteString(handle, "\"total\":" + IntegerToString(g_total) + ",");
-   FileWriteString(handle, "\"passed\":" + IntegerToString(g_total - g_failed) + ",");
-   FileWriteString(handle, "\"failed\":" + IntegerToString(g_failed) + ",");
-   FileWriteString(handle, "\"failed_names\":[");
-   for(int i = 0; i < ArraySize(g_failed_names); i++)
-   {
-      if(i > 0)
-         FileWriteString(handle, ",");
-      FileWriteString(handle, FarmJsonQuote(g_failed_names[i]));
-   }
-   FileWriteString(handle, "]");
-   FileWriteString(handle, "}");
-   FileClose(handle);
+   if(!WriteUtf8File(InpTestResultFile, json))
+      return;
+
    Print("TEST_RESULT_JSON file=", InpTestResultFile, " common_files=true status=", (g_failed == 0 ? "PASS" : "FAIL"));
 }
 

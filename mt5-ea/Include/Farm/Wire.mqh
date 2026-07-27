@@ -164,6 +164,8 @@ private:
 
       uchar data[];
       const int total = StringToCharArray(frame, data, 0, WHOLE_ARRAY, CP_UTF8) - 1;
+      if(total < 0)
+         return false;
       if(total <= 0)
          return true;
 
@@ -306,7 +308,9 @@ private:
 
       const string limits = "{"
          "\"max_lot_per_order\":0.50,"
-         "\"max_positions\":3,"
+         "\"max_net_volume_per_symbol\":0.50,"
+         "\"max_tickets_per_symbol\":4,"
+         "\"max_total_tickets\":8,"
          "\"max_spread_points\":25,"
          "\"daily_loss_pct\":2.0,"
          "\"max_dd_pct\":6.0"
@@ -320,6 +324,7 @@ private:
          "\"symbol\":" + symbol_json + ","
          "\"timeframe\":" + FarmJsonQuote(EnumToString((ENUM_TIMEFRAMES)Period())) + ","
          "\"strategy_id\":" + FarmJsonQuote(m_strategy_id) + ","
+         "\"magic\":" + IntegerToString(m_magic) + ","
          "\"local_limits\":" + limits +
       "}";
    }
@@ -472,7 +477,7 @@ private:
       ArrayResize(frame, frame_len);
       for(int i = 0; i < frame_len; i++)
          frame[i] = m_inbound_bytes[i];
-      out_line = CharArrayToString(frame, 0, frame_len, CP_UTF8);
+      out_line = (frame_len == 0 ? "" : CharArrayToString(frame, 0, frame_len, CP_UTF8));
 
       const int remaining = size - newline - 1;
       uchar rest[];
@@ -704,6 +709,8 @@ public:
    {
       uchar data[];
       const int total = StringToCharArray(chunk, data, 0, WHOLE_ARRAY, CP_UTF8) - 1;
+      if(total < 0)
+         return;
       if(total > 0)
          AppendInboundBytes(data, total);
    }
@@ -746,6 +753,8 @@ public:
 
       uchar data[];
       const int total = StringToCharArray(frame, data, 0, WHOLE_ARRAY, CP_UTF8) - 1;
+      if(total < 0)
+         return;
       const int sent = (sent_bytes < 0 ? 0 : (sent_bytes > total ? total : sent_bytes));
       ArrayResize(m_partial_send_bytes, total - sent);
       for(int i = sent; i < total; i++)
