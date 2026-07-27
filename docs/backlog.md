@@ -32,7 +32,7 @@
 | SPEC-014 | Persist intents/exec_reports/account_state/bars | Codex | **006**, 013 | **SPEC_READY** — [spec](specs/SPEC-014-persistence.md) |
 | SPEC-015 | EMA baseline strategy (พิสูจน์ท่อ ไม่ใช่ทำเงิน) | Codex | 013 | TODO |
 | SPEC-016 | Chaos test harness + scenario — **ชั้น A (wire) ต้องการแค่ 001** · ชั้น B (intent) ต้องการ 011+013 | Codex | **001** (A) · 011,013 (B) | **SPEC_READY** — [spec](specs/SPEC-016-chaos-harness.md) ← **ปลดล็อก work-order รอบ 1** |
-| SPEC-017 | Position reconciliation ตอน `OnInit` | Codex | 011 | TODO |
+| SPEC-017 | Position reconciliation ตอน `OnInit` | Codex | **010**, 011, **063** | **SPEC_READY** — [spec](specs/SPEC-017-reconciliation.md) |
 | SPEC-018 | DB ↔ MT5 history consistency checker | Codex | 014 | TODO |
 
 ## Phase 2 — Risk Layer ★
