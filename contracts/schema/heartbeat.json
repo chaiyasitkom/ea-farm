@@ -30,7 +30,13 @@
         "reconnect_count":   { "type": "integer", "minimum": 0, "description": "เพิ่มขึ้นเรื่อยๆ = ท่อไม่นิ่ง ต้อง alert" },
         "bytes_dropped":     { "type": "integer", "minimum": 0, "description": "> 0 = queue เต็มจนต้อง drop ตัวเก่าสุด = ข้อมูลหาย ต้อง alert" },
         "seconds_since_last_inbound": { "type": "integer", "minimum": 0, "description": "ใช้กับ R16 brain timeout" },
-        "pump_p99_us": { "type": "integer", "minimum": 0, "description": "optional — Pump() p99 หน่วยไมโครวินาที ต้อง < 20000 ตาม SPEC-001 §6" }
+        "pump_p99_us": { "type": "integer", "minimum": 0, "description": "optional — Pump() p99 หน่วยไมโครวินาที ต้อง < 20000 ตาม SPEC-001 §6" },
+        "broker_utc_offset_sec": {
+          "type": ["integer", "null"],
+          "minimum": -43200,
+          "maximum": 50400,
+          "description": "optional (SPEC-063) — offset ที่ CBrokerTime ตรวจได้ · ส่งทุก heartbeat เพื่อให้ brain เห็น DST เปลี่ยนทันทีไม่ต้องรอ HELLO ใหม่ · null = IsValid()=false ซึ่งแปลว่า EA ห้ามเทรด. ★ brain ต้องอ่านค่านี้ **ห้ามเดา offset เอง** (G6 — แหล่งความจริงเดียว)"
+        }
       }
     }
   }

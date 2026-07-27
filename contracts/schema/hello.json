@@ -31,6 +31,9 @@
       "maximum": 2147483647,
       "description": "POSITION_MAGIC ที่ EA เป็นเจ้าของ — ownership ทั้งหมดตัดสินจาก (magic, symbol) ตาม ADR-001"
     },
-    "local_limits":   { "$ref": "common.json#/$defs/local_limits" }
-  }
+    "local_limits":   { "$ref": "common.json#/$defs/local_limits" },
+    "broker_time":    { "$ref": "common.json#/$defs/broker_time_info" }
+  },
+
+  "$comment": "broker_time เป็น optional (ไม่อยู่ใน required) เพราะเพิ่มมาทีหลังใน SPEC-063 — ตาม §7 การเพิ่ม optional field ไม่ breaking ไม่ต้อง bump v. เมื่อ SPEC-063 merge แล้วให้ย้ายเข้า required ในการ bump ครั้งถัดไป"
 }

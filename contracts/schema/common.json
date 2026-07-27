@@ -163,6 +163,34 @@
       }
     },
 
+    "broker_time_info": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "ผลการตรวจ timezone ของ broker จาก CBrokerTime (SPEC-063) — **EA เป็นผู้ตรวจแหล่งเดียว brain ห้ามคำนวณเอง** (ปิดช่องว่าง G6)",
+      "required": ["utc_offset_sec", "detected_at", "source"],
+      "properties": {
+        "utc_offset_sec": {
+          "type": "integer",
+          "minimum": -43200,
+          "maximum": 50400,
+          "description": "broker − UTC เป็นวินาที · บวก = broker เร็วกว่า UTC (เช่น +10800 = GMT+3) · ปัดเป็นทวีคูณของ 900 แล้ว"
+        },
+        "detected_at": { "$ref": "common.json#/$defs/ts_utc" },
+        "source": {
+          "enum": ["INFERRED_SERVER_MINUS_GMT", "PLATFORM_API"],
+          "description": "INFERRED_SERVER_MINUS_GMT = TimeTradeServer() − TimeGMT() แล้วปัด (วิธีมาตรฐาน) · PLATFORM_API สงวนไว้ถ้าอนาคตมี API ตรงๆ — ห้ามใช้จนกว่าจะได้อนุมัติ (SPEC-063 Q1)"
+        },
+        "local_gmt_offset_sec": {
+          "type": ["integer", "null"],
+          "description": "TimeGMTOffset() ของ **เครื่อง VPS ไม่ใช่ของ broker** — ส่งขึ้นมาเพื่อ diagnose นาฬิกา VPS ผิด ห้ามใช้คำนวณเวลา broker"
+        },
+        "local_dst_sec": {
+          "type": ["integer", "null"],
+          "description": "TimeDaylightSavings() ของเครื่อง VPS — diagnostic เท่านั้น เหตุผลเดียวกับ local_gmt_offset_sec"
+        }
+      }
+    },
+
     "local_limits": {
       "type": "object",
       "additionalProperties": true,

@@ -55,6 +55,16 @@
 
 **ห้ามใช้ `ts_sent` ตัดสินใจเทรดเด็ดขาด** — clock drift ทำให้ผลลัพธ์เพี้ยน
 
+> ⚠️ **`ts_server` ต้องเป็น UTC จริง ไม่ใช่เวลา broker ที่เติม `Z`**
+> `TimeCurrent()` / `TimeTradeServer()` คืนเวลา **broker-local** (ปกติ GMT+2/+3)
+> ต้องหัก offset ก่อนเสมอ ผ่าน `CBrokerTime` ตัวเดียว → [SPEC-063](specs/SPEC-063-broker-time.md)
+>
+> **invariant ที่ต้องเป็นจริงเสมอ: `ts_sent ≥ ts_server`**
+> ถ้ากลับกัน = ไม่ได้หัก offset (เป็น bug ที่มีอยู่จริงตอนนี้ ดู [G6](06-gap-audit.md#g6))
+>
+> `HELLO.broker_time` และ `HEARTBEAT.wire.broker_utc_offset_sec` พา offset ที่ EA ตรวจได้
+> ขึ้นมาให้ brain — **brain ห้ามเดา offset เอง** ไม่งั้นจะมีสองแหล่งความจริงที่ไม่ตรงกัน
+
 ---
 
 ## 3. Message Types

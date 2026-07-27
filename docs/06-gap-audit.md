@@ -94,6 +94,16 @@ bar timestamp alignment, และ **backtest/live parity** (SPEC-033) ซึ่
 |---|---|
 | **ต้องทำ** | SPEC-063 BrokerTime — เขียนเป็น module เดียวที่ทุกที่ต้องเรียก ห้ามคำนวณเวลาเอง |
 | **Phase** | ต้องเสร็จก่อน SPEC-021 (daily loss) |
+| **สถานะ** | ✅ **spec เขียนแล้ว 2026-07-27** → [SPEC-063](specs/SPEC-063-broker-time.md) · SPEC_READY |
+
+**ยืนยันแล้วว่าช่องว่างนี้เกิดขึ้นจริงในโค้ด** (ไม่ใช่แค่ความเสี่ยงทางทฤษฎี):
+`Json.mqh:64-70` `FarmIsoUtcFromBrokerTime()` **ไม่แปลงเวลาเลย** แค่ฟอร์แมต `datetime`
+ที่รับมาแล้วเติม `Z` → `ts_server` เพี้ยนเท่ากับ offset ของโบรกเกอร์ (2–3 ชม.) ตลอดเวลา
+และ `ts_sent` (ใช้ `TimeGMT()` ถูก) จะดู**เก่ากว่า** `ts_server` → latency ที่คำนวณได้เป็นค่าลบ
+
+**วิธีพิสูจน์ว่าปิดช่องว่างแล้วจริง** (acceptance ใน SPEC-063 §6):
+`grep -rn "TimeGMT()\|TimeTradeServer()\|TimeLocal()" mt5-ea/` ต้องเจอ**เฉพาะใน
+`BrokerTime.mqh`** — ที่อื่นเรียกเวลาเองไม่ได้เลย นั่นคือนิยามของ "แหล่งความจริงเดียว"
 
 ---
 

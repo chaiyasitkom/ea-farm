@@ -17,7 +17,7 @@
 | SPEC-007 | Data ingest: MT5 history → Parquet (**6 คู่ · M1 เท่านั้นแล้ว resample** · ~10 ปี) | Codex | 002 | TODO |
 | SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | TODO |
 | SPEC-009 | CI: ruff, mypy, pytest, codegen-diff | Codex | 004 | TODO |
-| SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | 002 | TODO |
+| SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | **001** (แก้จาก 002 — เป็น MQL5 ล้วน ไม่ต้องรอ scaffold) | **SPEC_READY** — [spec](specs/SPEC-063-broker-time.md) |
 | SPEC-064 | **SymbolRegistry** — `(broker, raw)` → canonical + base/quote currency (G7) | Codex | 006 | TODO |
 | SPEC-065 | **MQL5 test harness** — test ต้องเป็น **EA ไม่ใช่ Script** (`OnInit`+`ExpertRemove`) เพราะ Script รัน headless ไม่ได้ · เขียนผลเป็น JSON + git sha ให้ CI ตรวจได้ (G9, [07](07-compile-gate.md)) | Codex | 001 | TODO |
 
