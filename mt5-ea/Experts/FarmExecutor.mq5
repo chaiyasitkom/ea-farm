@@ -53,6 +53,13 @@ int OnInit()
       return INIT_FAILED;
    }
 
+   const string timeframe = FarmTimeframeCode((ENUM_TIMEFRAMES)Period());
+   if(StringLen(timeframe) == 0)
+   {
+      g_log.Fatal("unsupported_timeframe actual=" + EnumToString((ENUM_TIMEFRAMES)Period()));
+      return INIT_FAILED;
+   }
+
    const long order_mode = SymbolInfoInteger(_Symbol, SYMBOL_ORDER_MODE);
    g_closeby_supported = ((order_mode & SYMBOL_ORDER_CLOSEBY) == SYMBOL_ORDER_CLOSEBY);
    g_log.Info("symbol_closeby_supported=" + (g_closeby_supported ? "true" : "false"));

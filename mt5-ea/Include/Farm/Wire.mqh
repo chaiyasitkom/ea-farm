@@ -9,6 +9,7 @@
 #define FARM_WIRE_HELLO_ACK_TIMEOUT_SEC 5
 #define FARM_WIRE_FAILED_AUTH_RETRY_SEC 60
 #define FARM_WIRE_HEARTBEAT_MISS_LIMIT 3
+#define FARM_ULID_ALPHABET "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
 enum ENUM_WIRE_STATE {
    WIRE_DISCONNECTED,
@@ -18,6 +19,57 @@ enum ENUM_WIRE_STATE {
    WIRE_READY,
    WIRE_FAILED_AUTH
 };
+
+string FarmCrockford32Char(const int value)
+{
+   return StringSubstr(FARM_ULID_ALPHABET, (value & 31), 1);
+}
+
+void FarmSeedUlidRandom()
+{
+   static bool seeded = false;
+   if(seeded)
+      return;
+   MathSrand((int)(GetMicrosecondCount() % 2147483647));
+   seeded = true;
+}
+
+string FarmGenerateUlid()
+{
+   FarmSeedUlidRandom();
+
+   const ulong timestamp_ms = (ulong)TimeGMT() * 1000ULL + (ulong)(GetTickCount() % 1000);
+   ulong value = timestamp_ms;
+   string out = "";
+   for(int i = 0; i < 10; i++)
+   {
+      out = FarmCrockford32Char((int)(value % 32ULL)) + out;
+      value /= 32ULL;
+   }
+
+   for(int i = 0; i < 16; i++)
+      out += FarmCrockford32Char(MathRand());
+   return out;
+}
+
+string FarmTimeframeCode(const ENUM_TIMEFRAMES timeframe)
+{
+   if(timeframe == PERIOD_M1)
+      return "M1";
+   if(timeframe == PERIOD_M5)
+      return "M5";
+   if(timeframe == PERIOD_M10)
+      return "M10";
+   if(timeframe == PERIOD_M15)
+      return "M15";
+   if(timeframe == PERIOD_M30)
+      return "M30";
+   if(timeframe == PERIOD_H1)
+      return "H1";
+   if(timeframe == PERIOD_H4)
+      return "H4";
+   return "";
+}
 
 class CWire {
 private:
@@ -96,9 +148,7 @@ private:
 
    string NextMsgId()
    {
-      static ulong seq = 0;
-      seq++;
-      return StringFormat("%I64u%08u", (ulong)TimeCurrent(), (uint)(seq % 100000000));
+      return FarmGenerateUlid();
    }
 
    bool HasPartialSend() const
@@ -273,7 +323,8 @@ private:
    {
       const string symbol = Symbol();
       const long login = AccountInfoInteger(ACCOUNT_LOGIN);
-      const string session = StringFormat("acct-%I64d-%s-%s", login, symbol, EnumToString((ENUM_TIMEFRAMES)Period()));
+      const string timeframe = FarmTimeframeCode((ENUM_TIMEFRAMES)Period());
+      const string session = StringFormat("acct-%I64d-%s-%s", login, symbol, timeframe);
       m_session_id = session;
 
       const string account = "{"
@@ -322,7 +373,7 @@ private:
          "\"terminal_build\":" + IntegerToString((int)TerminalInfoInteger(TERMINAL_BUILD)) + ","
          "\"account\":" + account + ","
          "\"symbol\":" + symbol_json + ","
-         "\"timeframe\":" + FarmJsonQuote(EnumToString((ENUM_TIMEFRAMES)Period())) + ","
+         "\"timeframe\":" + FarmJsonQuote(timeframe) + ","
          "\"strategy_id\":" + FarmJsonQuote(m_strategy_id) + ","
          "\"magic\":" + IntegerToString(m_magic) + ","
          "\"local_limits\":" + limits +
@@ -700,6 +751,11 @@ public:
    }
 
 #ifdef FARM_TEST
+   string TestNextMsgId()
+   {
+      return NextMsgId();
+   }
+
    bool TestPopFrame(string &out_line)
    {
       return PopFrame(out_line);

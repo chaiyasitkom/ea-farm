@@ -152,6 +152,52 @@ void test_hello_ack_rejected_sets_failed_auth()
    AssertTrue(wire.State() == WIRE_FAILED_AUTH, "test_hello_ack_rejected_sets_failed_auth");
 }
 
+bool IsUlidChar(const ushort ch)
+{
+   const string alphabet = FARM_ULID_ALPHABET;
+   for(int i = 0; i < StringLen(alphabet); i++)
+   {
+      if(ch == StringGetCharacter(alphabet, i))
+         return true;
+   }
+   return false;
+}
+
+bool LooksLikeUlid(const string value)
+{
+   if(StringLen(value) != 26)
+      return false;
+   for(int i = 0; i < StringLen(value); i++)
+   {
+      if(!IsUlidChar(StringGetCharacter(value, i)))
+         return false;
+   }
+   return true;
+}
+
+void test_msg_id_is_ulid_26_chars()
+{
+   CWire wire;
+   const string msg_id = wire.TestNextMsgId();
+   AssertTrue(LooksLikeUlid(msg_id), "test_msg_id_is_ulid_26_chars");
+}
+
+void test_msg_id_two_instances_not_duplicate()
+{
+   CWire wire_a;
+   CWire wire_b;
+   const string id_a = wire_a.TestNextMsgId();
+   const string id_b = wire_b.TestNextMsgId();
+   AssertTrue(id_a != id_b, "test_msg_id_two_instances_not_duplicate");
+}
+
+void test_timeframe_code_matches_schema()
+{
+   AssertEqualString(FarmTimeframeCode(PERIOD_H1), "H1", "test_timeframe_code_matches_schema h1");
+   AssertEqualString(FarmTimeframeCode(PERIOD_M15), "M15", "test_timeframe_code_matches_schema m15");
+   AssertEqualString(FarmTimeframeCode(PERIOD_D1), "", "test_timeframe_code_matches_schema unsupported");
+}
+
 void test_queue_full_drops_oldest()
 {
    CWire wire;
@@ -237,6 +283,12 @@ void RunAllTests()
    test_hello_ack_accepted_sets_ready();
    RecordRan("test_hello_ack_rejected_sets_failed_auth");
    test_hello_ack_rejected_sets_failed_auth();
+   RecordRan("test_msg_id_is_ulid_26_chars");
+   test_msg_id_is_ulid_26_chars();
+   RecordRan("test_msg_id_two_instances_not_duplicate");
+   test_msg_id_two_instances_not_duplicate();
+   RecordRan("test_timeframe_code_matches_schema");
+   test_timeframe_code_matches_schema();
    RecordRan("test_queue_full_drops_oldest");
    test_queue_full_drops_oldest();
    RecordRan("test_send_before_ready_queues");
