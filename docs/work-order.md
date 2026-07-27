@@ -936,6 +936,50 @@ ticket เป็นเลขที่โบรกเกอร์ออกให�
 
 ---
 
+# รอบที่ 5.14 — SPEC-015 EMA baseline
+
+📄 [spec เต็ม](specs/SPEC-015-ema-baseline.md) · **SPEC_READY** · 20 test
+· **เริ่ม `sizing.py` + test 1–6 ได้เลย** (ฟังก์ชันบริสุทธิ์)
+· **ปิด Phase 1 — spec ครบทั้ง phase แล้ว**
+
+## ★★ ต้องเป็นฟังก์ชันบริสุทธิ์ — SPEC-033 จะเอาไปเทียบ
+
+SPEC-033 (backtest ↔ live parity) จะรัน **กลยุทธ์ตัวนี้ทั้งสองทาง** แล้วเทียบว่า signal
+ตรงกัน ≥ 99% · ถ้าไม่ตรง = **backtest ทั้งระบบเชื่อไม่ได้**
+
+→ ห้ามพึ่ง `datetime.now()` · `random` · ลำดับที่ message มาถึง · สถานะนอก `ctx`
+· acceptance มี `grep` ห้ามเจอ `datetime.now|time.time|random.`
+
+**ถ้าข้อนี้พลาด เราจะไม่มีวันรู้ว่า backtest เชื่อได้ไหม — และจะไปรู้ตอนเอาเงินจริงลง**
+
+## ★★ สูตร lot ต้องตรงกับ R1 **รวมลำดับที่แก้แล้ว**
+
+```
+lot = floor(raw_lot / volume_step) × volume_step
+if lot < volume_min → ไม่ส่ง INTENT           ← ★ ก่อน clamp
+lot = min(lot, volume_max, max_lot_per_order) ← clamp ลงเท่านั้น
+```
+
+**ห้ามสลับ 2 บรรทัดสุดท้าย** — เป็น bug ที่เคยอยู่ใน risk-spec เอง
+([ADR-002 §4](decisions/ADR-002-symbols-capital-hours.md)) · **ห้ามให้มันกลับมาทางฝั่ง Python**
+
+⚠️ `raw_lot < volume_min` → ไม่ส่ง INTENT · **นี่คือสถานะปกติที่ทุน $30** — ห้ามตกใจ ห้าม "แก้"
+
+กลไกตรวจสอบตัวเองที่ได้ฟรี: ถ้า `INTENT_ACK.volume_clamped_to` ไม่ null **บ่อยผิดปกติ**
+แปลว่าสองฝั่งคำนวณไม่ตรงกัน → **นับและ log**
+
+## จุดที่ห้ามพลาด
+
+- **ห้าม optimize / tune parameter** — ผลกำไรไม่ใช่เกณฑ์วัดของ ticket นี้เลย
+- **`target_volume ≠ 0` ต้องมี `sl_price` เสมอ** (R9) · ATR คำนวณไม่ได้ → **ไม่ส่ง** ไม่ใช่ส่งโดยไม่มี SL
+- **ห้ามส่ง INTENT ก่อนได้ `STATE` ตัวแรก** (SPEC-017 §4.2)
+- **ต้องปิดได้ด้วย env** + log WARN ทุกครั้งที่สตาร์ตว่าเป็น baseline
+  — *กลยุทธ์ชั่วคราวที่ไม่มีใครถอดออกคือกลยุทธ์ถาวร*
+- หลาย session ของ canonical เดียวกัน (XM + IUX) → ตัดสินใจแยกกัน
+  **exposure เป็นสองเท่าโดยตั้งใจ** · P3/P4 เป็นคนคุม ไม่ใช่ strategy
+
+---
+
 # รอบที่ 6 — `local_limits` ต่อกับ EA input
 
 **เส้นตาย: ก่อน merge SPEC-019**
