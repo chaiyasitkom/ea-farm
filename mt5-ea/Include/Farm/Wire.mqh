@@ -720,6 +720,10 @@ private:
       }
 
       EnterState(WIRE_CONNECTED);
+      ResetLastError();
+      if(!SocketTimeouts(m_socket, m_connect_timeout_ms, m_connect_timeout_ms))
+         m_log.Warn(StringFormat("socket_timeouts_failed err=%d", GetLastError()));
+      m_log.Info(StringFormat("socket_connected host=%s port=%d", m_host, m_port));
       m_reconnect_count++;
       SendHello();
    }
