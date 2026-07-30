@@ -403,7 +403,7 @@ void WriteJsonResult()
    json += "\"suite\":\"TestWire\",";
    json += "\"git_sha\":" + FarmJsonQuote(InpTestGitSha) + ",";
    json += "\"status\":" + FarmJsonQuote(g_failed == 0 ? "PASS" : "FAIL") + ",";
-   json += "\"started_at\":" + FarmJsonQuote(TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS)) + ",";
+   json += "\"started_at\":" + FarmJsonQuote("tester") + ",";
    json += "\"total\":" + IntegerToString(g_total) + ",";
    json += "\"passed\":" + IntegerToString(g_total - g_failed) + ",";
    json += "\"failed\":" + IntegerToString(g_failed) + ",";

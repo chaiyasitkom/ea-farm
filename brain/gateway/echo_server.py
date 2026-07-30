@@ -48,8 +48,24 @@ class EchoGateway:
     host: str = "127.0.0.1"
     port: int = 9101
     heartbeat_ack: bool = True
+    event_log_path: str | None = None
+    force_hello_reject: str | None = None
+    close_on_accept: bool = False
+    close_after_hello: bool = False
     sessions: set[str] = field(default_factory=set)
     server: asyncio.AbstractServer | None = None
+
+    def log_event(self, event: str, **fields: Any) -> None:
+        if self.event_log_path is None:
+            return
+        record = {
+            "event": event,
+            "wall_time": utc_now(),
+            "monotonic": time.monotonic(),
+            **fields,
+        }
+        with open(self.event_log_path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record, separators=(",", ":")) + "\n")
 
     async def start(self) -> None:
         self.server = await asyncio.start_server(self.handle_client, self.host, self.port)
@@ -64,12 +80,21 @@ class EchoGateway:
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         session_id = ""
+        peer = writer.get_extra_info("peername")
+        self.log_event("connect", peer=str(peer))
+        if self.close_on_accept:
+            self.log_event("close_on_accept", peer=str(peer))
+            writer.close()
+            await writer.wait_closed()
+            return
         try:
             while True:
                 raw = await asyncio.wait_for(reader.readline(), timeout=30.0)
                 if raw == b"":
+                    self.log_event("client_closed", session_id=session_id)
                     return
                 if len(raw) > MAX_FRAME_BYTES:
+                    self.log_event("frame_too_large", session_id=session_id, size=len(raw))
                     writer.write(envelope("ERROR", session_id, {
                         "code": "PROTOCOL_FRAME_TOO_LARGE",
                         "severity": "ERROR",
@@ -87,14 +112,19 @@ class EchoGateway:
 
                 message_type = message.get("type")
                 session_id = str(message.get("session_id") or session_id)
+                self.log_event("message", session_id=session_id, type=str(message_type))
                 payload = message.get("payload")
                 if not isinstance(payload, dict):
                     payload = {}
 
                 if message_type == "HELLO":
                     await self._handle_hello(writer, session_id, payload)
+                    if self.close_after_hello:
+                        self.log_event("close_after_hello", session_id=session_id)
+                        return
                 elif message_type == "HEARTBEAT" and self.heartbeat_ack:
                     seq = payload.get("seq", 0)
+                    self.log_event("heartbeat", session_id=session_id, seq=seq, ack=True)
                     writer.write(envelope("HEARTBEAT_ACK", session_id, {
                         "seq": seq,
                         "server_time": utc_now(),
@@ -107,6 +137,7 @@ class EchoGateway:
         finally:
             if session_id:
                 self.sessions.discard(session_id)
+            self.log_event("disconnect", session_id=session_id)
             writer.close()
             await writer.wait_closed()
 
@@ -116,7 +147,10 @@ class EchoGateway:
         accepted = True
         reason: str | None = None
 
-        if payload.get("token") != self.token:
+        if self.force_hello_reject:
+            accepted = False
+            reason = self.force_hello_reject
+        elif payload.get("token") != self.token:
             accepted = False
             reason = "BAD_TOKEN"
         elif session_id in self.sessions:
@@ -126,6 +160,7 @@ class EchoGateway:
         if accepted:
             self.sessions.add(session_id)
 
+        self.log_event("hello_ack", session_id=session_id, accepted=accepted, reason=reason)
         writer.write(envelope("HELLO_ACK", session_id, {
             "accepted": accepted,
             "server_time": utc_now(),
@@ -158,6 +193,10 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=9101)
     parser.add_argument("--no-heartbeat-ack", action="store_true")
+    parser.add_argument("--event-log")
+    parser.add_argument("--force-hello-reject", choices=["BAD_TOKEN", "DUPLICATE_SESSION"])
+    parser.add_argument("--close-on-accept", action="store_true")
+    parser.add_argument("--close-after-hello", action="store_true")
     args = parser.parse_args()
 
     token = os.environ.get("FARM_TOKEN", "")
@@ -169,6 +208,10 @@ def main() -> None:
         host=args.host,
         port=args.port,
         heartbeat_ack=not args.no_heartbeat_ack,
+        event_log_path=args.event_log,
+        force_hello_reject=args.force_hello_reject,
+        close_on_accept=args.close_on_accept,
+        close_after_hello=args.close_after_hello,
     )
     asyncio.run(run_until_signal(gateway))
 

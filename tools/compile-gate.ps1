@@ -21,7 +21,8 @@ $LogDir     = Join-Path $env:TEMP "ea-farm-compile"
 
 $Targets = @(
     "$Repo\mt5-ea\Experts\FarmExecutor.mq5",
-    "$Repo\tests\mql5\TestWire.mq5"
+    "$Repo\tests\mql5\TestWire.mq5",
+    "$Repo\tests\mql5\TestBrokerTime.mq5"
 )
 
 if (-not (Test-Path $MetaEditor)) { Write-Output "FATAL: MetaEditor not found at $MetaEditor"; exit 2 }

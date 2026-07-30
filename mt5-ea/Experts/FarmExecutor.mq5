@@ -16,6 +16,7 @@ input int    InpSendQueueMax     = 256;
 input bool   InpVerboseLog       = false;
 
 CWire       g_wire;
+CBrokerTime g_broker_time;
 CFarmLogger g_log;
 bool        g_closeby_supported = false;
 
@@ -64,7 +65,15 @@ int OnInit()
    g_closeby_supported = ((order_mode & SYMBOL_ORDER_CLOSEBY) == SYMBOL_ORDER_CLOSEBY);
    g_log.Info("symbol_closeby_supported=" + (g_closeby_supported ? "true" : "false"));
 
+   if(!g_broker_time.Init())
+   {
+      g_log.Fatal("broker_time_init_failed " + g_broker_time.DiagnosticLine());
+      return INIT_FAILED;
+   }
+   g_log.Info(g_broker_time.DiagnosticLine());
+
    g_wire.ConfigureRuntime(InpHeartbeatSec, InpSendQueueMax, InpStrategyId, InpMagic, InpVerboseLog);
+   g_wire.UseBrokerTime(GetPointer(g_broker_time));
    if(!g_wire.Init(InpBrainHost, InpBrainPort, InpBrainToken, 3000))
       return INIT_FAILED;
 
@@ -80,6 +89,13 @@ void OnDeinit(const int reason)
 
 void OnTimer()
 {
+   if(g_broker_time.Refresh())
+   {
+      const string detail = g_broker_time.DiagnosticLine();
+      g_log.Warn("broker_utc_offset_changed " + detail);
+      g_wire.SendErrorReport("WARN", "BROKER_UTC_OFFSET_CHANGED", detail, false);
+   }
+
    g_wire.Pump();
 
    string msg;
