@@ -97,10 +97,49 @@
 |----|-----|-------|---------|-------|
 | SPEC-051 | Allocation config (declarative YAML) | Codex | 025 | TODO |
 | SPEC-052 | Multi-terminal deploy automation | Codex | 051 | TODO |
-| SPEC-053 | NSSM services, auto-restart, log rotation | Codex | 052 | TODO |
+| SPEC-053 | NSSM services, auto-restart, log rotation · ★ **+ auto-start ตอนบูต** (ดู §R1 ด้านล่าง) | Codex | 052 | TODO |
 | SPEC-054 | Multi-VPS: VPN, TLS, session isolation | Codex | 053 | TODO |
 | SPEC-055 | Backup/restore (DB, artifacts, config) | Codex | 053 | TODO |
 | SPEC-056 | Runbook | **Claude** | 053 | TODO |
+
+### §R1 ★ ข้อกำหนด: เปิดเครื่อง + มีเน็ต → ระบบขึ้นเองทั้งหมด
+
+**สั่งโดยเจ้าของ 2026-07-31** · เข้าขอบเขต **SPEC-053** (Phase 6) — บันทึกไว้ที่นี่เพื่อไม่ให้หล่น
+
+```
+เครื่องบูต → รอเน็ตพร้อม → PostgreSQL → gateway → dashboard → alert sender
+           → watchdog → MT5 terminal ทุกตัว → EA attach
+```
+
+| ต้องมี | เหตุผล |
+|--------|--------|
+| ทุก service ขึ้นเอง **ไม่ต้องมีคนกด** | นี่คือข้อกำหนดหลัก · VPS รีบูตเองได้ทุกเมื่อ (Windows Update · ไฟดับ) |
+| **รอเน็ตจริงก่อน** ไม่ใช่แค่รอ service `Network` | Windows บอกว่าเน็ตพร้อมก่อนที่ DNS/route จะใช้ได้จริง → ให้ probe จริง (ping broker / resolve host) แล้วค่อยเริ่ม |
+| ลำดับ dependency ถูกต้อง | gateway ที่ขึ้นก่อน DB จะ crash loop |
+| **watchdog ขึ้นเป็นตัวแรก** ไม่ใช่ตัวสุดท้าย | ถ้าตัวอื่นขึ้นไม่สำเร็จ ต้องมีคนแจ้ง ([SPEC-062 §4.7](specs/SPEC-062-watchdog.md) มี Scheduled Task `At startup` อยู่แล้ว) |
+| **แจ้ง Telegram ทุกครั้งที่ระบบขึ้นจากการบูต** | การบูตที่ไม่ได้ตั้งใจ = สัญญาณว่ามีอะไรผิด · ห้ามให้ระบบกลับมาเงียบๆ |
+
+#### ★★ จุดที่ต้องแยกให้ขาด — "ระบบขึ้นเอง" ≠ "กลับไปเทรดเองทันที"
+
+ผมทำตามข้อกำหนดนี้เต็มที่ **แต่ขอบันทึกความเสี่ยงหนึ่งข้อไว้ให้ชัด:**
+ถ้าเครื่องรีบูตเพราะ**มีอะไรพัง** การกลับมาเทรดอัตโนมัติจะกลบปัญหานั้น
+และถ้าพังซ้ำจะกลายเป็น boot loop ที่เปิด-ปิด position รัวๆ
+
+**ทางที่ได้ทั้งสองอย่าง — ไม่ต้องมีคนกดในกรณีปกติ:**
+
+| กลไก | มีอยู่แล้วที่ |
+|------|--------------|
+| EA ทำ reconciliation ตอน `OnInit` ก่อนเทรด | [SPEC-017](specs/SPEC-017-reconciliation.md) — *"รายงานความจริง อย่าลงมือ"* |
+| กลับมาแล้วเจอ kill file → ยัง HALT | [SPEC-023 §4.2](specs/SPEC-023-safemode.md) — ลบไฟล์อย่างเดียวไม่ปลด |
+| halt state persist ข้ามรีสตาร์ต | [risk-spec R6/R14](03-risk-spec.md) |
+
+**บวกที่ต้องเพิ่มใน SPEC-053:**
+- **boot counter** — บูต ≥ 3 ครั้งใน 30 นาที → ขึ้นทุก service **แต่ EA เข้า `REDUCE_ONLY`**
+  + alert `FATAL` · ต้องมีคนปลด · (boot loop คือสัญญาณว่ามีอะไรพังจริง ไม่ใช่เหตุบังเอิญ)
+- บูตปกติ (ครั้งแรก) → เทรดต่อได้ทันทีหลัง reconciliation ผ่าน **ไม่ต้องรอคน**
+
+> เขียนไว้เพื่อให้ตอนเขียน SPEC-053 ไม่ต้องมาเถียงกันใหม่ — **ข้อกำหนดคือขึ้นเองทั้งหมด
+> และมันทำได้โดยไม่ต้องลดความปลอดภัย** เพราะด่านที่ต้องผ่านมีอยู่ในระบบแล้วทุกด่าน
 
 ## Phase 7 — Live Ramp
 
