@@ -725,7 +725,6 @@ private:
          m_log.Warn(StringFormat("socket_timeouts_failed err=%d", GetLastError()));
       m_log.Info(StringFormat("socket_connected host=%s port=%d", m_host, m_port));
       m_reconnect_count++;
-      SendHello();
    }
 
 public:
@@ -773,10 +772,14 @@ public:
    bool Init(const string host, const int port, const string token,
              const int connect_timeout_ms = 3000)
    {
-      m_host = host;
+      const int raw_host_len = StringLen(host);
+      const int raw_token_len = StringLen(token);
+      m_host = FarmStringTrim(host);
       m_port = port;
-      m_token = token;
+      m_token = FarmStringTrim(token);
       m_connect_timeout_ms = connect_timeout_ms;
+      m_log.Info(StringFormat("wire_input_lengths host_raw=%d host_effective=%d token_raw=%d token_effective=%d",
+                              raw_host_len, StringLen(m_host), raw_token_len, StringLen(m_token)));
       if(StringLen(m_token) == 0)
       {
          m_log.Fatal("InpBrainToken is empty");
@@ -836,6 +839,7 @@ public:
    void Pump()
    {
       const ulong started = GetMicrosecondCount();
+      const ENUM_WIRE_STATE state_at_start = m_state;
 
       if(m_state == WIRE_DISCONNECTED || m_state == WIRE_FAILED_AUTH)
          TryConnect();
@@ -848,6 +852,19 @@ public:
       }
 
       ReadAvailable();
+
+      if(m_state == WIRE_CONNECTED)
+      {
+         if(state_at_start == WIRE_CONNECTED)
+            SendHello();
+
+         if(m_state == WIRE_CONNECTED && ElapsedSec(m_state_entered_tick) >= FARM_WIRE_HELLO_ACK_TIMEOUT_SEC)
+         {
+            m_log.Warn("connected_hello_timeout");
+            CloseSocket();
+            ScheduleReconnect();
+         }
+      }
 
       if(m_state == WIRE_AUTHENTICATING && ElapsedSec(m_state_entered_tick) >= FARM_WIRE_HELLO_ACK_TIMEOUT_SEC)
       {
