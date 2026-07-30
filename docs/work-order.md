@@ -1,7 +1,133 @@
 # Work Order — งานของ Codex
 
-**อัปเดต:** 2026-07-27 (รอบ 2) · **โดย:** Claude
+**อัปเดต:** 2026-07-30 (รอบ 3) · **โดย:** Claude
 ทำจากบนลงล่าง · ห้ามข้าม · คิดว่าลำดับผิด → implementation note มาก่อน
+
+---
+
+# ★ ต้องทำตอนนี้ — รอบแก้ SPEC-063 / SPEC-016 ครั้งที่ 3 (2026-07-30)
+
+> ⚠️ อย่าสับสนกับ **"รอบที่ 3 — SPEC-004 Codegen"** ด้านล่าง — นั่นคือลำดับ ticket
+> ส่วนนี้คือ **รอบแก้ตาม review** ของงานที่ค้างอยู่ในมือตอนนี้
+
+> ที่มา: [review รอบ 3](reviews/SPEC-063-03.md) `CHANGES_REQUIRED` + ผลรัน live chaos จริงคืนนี้
+> · รอบ 2 ปิดไป 9 ข้อ ([รายการ](#-ปิดแล้วในรอบแก้นี้--ไม่ต้องทำซ้ำ)) เหลือที่นี่คือของที่ยังค้าง
+>
+> **ห้ามรายงาน PASS จนกว่า "แก้ 1" จะเสร็จ** — gate ปัจจุบันเขียวได้แม้ไม่มีการคอมไพล์เกิดขึ้น
+
+## แก้ 1 🔴 T1 · gate เชื่อไม่ได้ — **ค้างมา 2 รอบแล้ว ทำก่อนอย่างอื่น**
+
+แก้ **ทั้งสองสคริปต์** `tools/run-mql5-tests.ps1` และ `tools/compile-gate.ps1`
+
+| # | ทำ | ที่ |
+|---|-----|-----|
+| a | `Remove-Item` **`.ex5` และ compile log** ก่อน compile ทุกครั้ง (`-ErrorAction SilentlyContinue`) | `run-mql5-tests.ps1:167-171` · `compile-gate.ps1:46-48` |
+| b | parse `Result: N errors` → **error > 0 หรือ parse ไม่ได้ = FAIL ทันที** ห้ามเดินต่อไปเช็ค `.ex5` | `run-mql5-tests.ps1:174-186` — ตอนนี้ `Write-Output "  compile: $result"` แล้วจบ **ไม่เคยตรวจเลย** |
+| c | คง `Test-Path .ex5` ไว้เป็นด่านที่สอง | `:182` |
+| d | (T3) `.mqh` ที่ไม่มี target ไหน include → **FAIL** ไม่ใช่ `[WARN]` | `compile-gate.ps1:101-106` — ตอนนี้ไม่เพิ่ม `$totalErr` เลย gate จึงเขียว |
+
+**ทำไมรอไม่ได้ — `git_sha` ไม่ใช่ตาข่ายอย่างที่คิด:**
+
+```
+compile พัง → .ex5 เก่ายังอยู่ → :182 ผ่าน → tester รัน binary เก่า
+→ EA อ่าน sha ปัจจุบันจาก .set (:193) → :250 ตรวจผ่าน → MQL5 TESTS: PASSED
+```
+
+`git_sha` **ฉีดผ่าน `.set` ไม่ได้ compile ติดมากับ `.ex5`** จึงจับ stale binary ไม่ได้เลย
+
+## แก้ 2 🔴 `BrokerTime.mqh` — แก้ 4 ข้อพร้อมกัน ไฟล์เดียว
+
+| # | finding | ทำ | ที่ |
+|---|---------|-----|-----|
+| a | **B4 + B16** | `LocalTime()` → **`GmtTime()`** ทั้ง throttle 20s และหน้าต่าง 90s · เปลี่ยนชื่อฟิลด์เป็น `_gmt` | `:157-168` · `:93-111` |
+| b | **B16b** | **cast เป็น `long` ก่อนลบเสมอ** · เก็บฟิลด์ที่ใช้วัดระยะเป็น `long` ไม่ใช่ `datetime` | ทุกจุดที่ลบเวลา |
+| c | **B18** | ตรรกะ 90 วินาทีถูกเขียนไว้ **2 ที่** → รวมเหลือฟังก์ชันเดียว | `:106-110` + `:160-164` |
+| d | **B15** | ฟื้นจาก invalid: ถ้า offset **ต่างจากเดิมต้องคืน `true`** · `AcceptOffset` **ห้ามทับ** `m_previous_offset_sec` (ตอน `Init` ให้เป็น `0`) · อัปเดต `m_last_change_utc` | `:113-122` · `:178-182` |
+
+**ข้อ b คือครึ่งหนึ่งของบั๊กที่ผมเพิ่งเจอ:** `datetime` เป็น **unsigned** →
+นาฬิกาถอยหลัง (DST ปีละ 2 ครั้ง · NTP แก้เวลาเป็นก้อน) ทำให้ `a - b` **underflow เป็นบวกมหาศาล**
+→ `> 90` เป็นจริงทันที → **EA เข้า SafeMode โดยไม่มีเหตุ**
+
+**ข้อ d:** ตอนนี้ broker ดับคร่อม DST แล้วกลับมาที่ offset ใหม่ → เส้นแบ่งวัน R6 ขยับทั้งระบบ
+โดย `FarmExecutor.mq5:92` ไม่เข้าเงื่อนไข → **ไม่ log ไม่ส่ง ERROR ไม่มีใครรู้**
+
+spec: [`SPEC-063 §4.3.1 · §4.3.2`](specs/SPEC-063-broker-time.md) (rev.2a + rev.2b)
+
+## แก้ 3 🔴 live chaos ต่อไม่ติด — **ตรึงพอร์ต**
+
+**หลักฐานจากการรันจริง 2026-07-30 21:57–22:03:** ทั้ง 5 test ตายเพราะไม่มี `connect` เลย
+· EA log: `socket_connect_failed host=127.0.0.1 port=62292 err=4014` ทุก retry
+· พอร์ตที่สุ่มได้ต่างกันทุกครั้ง: `62292` `63011` `52337` `64343` `64415`
+
+`free_port()` **ไม่ได้ให้ประโยชน์อะไรกับ suite นี้เลย** — `assert_no_terminal_running()`
+บังคับให้รันทีละตัวอยู่แล้ว live chaos รันขนานไม่ได้ตั้งแต่ต้น
+แต่ถ้า MT5 build นี้ต้องการ whitelist แบบ `address:port` → **สุ่มพอร์ต = whitelist ไม่ได้เลยตลอดกาล**
+
+→ ตรึงพอร์ตเดียว อ่านจาก env มี default: `EA_FARM_CHAOS_PORT` default `45001`
+→ เขียนขั้นตอน whitelist ลง handoff (จะย้ายไป runbook SPEC-030b)
+
+> ⏳ **ยังมีงานเพิ่มถ้าผลทดสอบออกมาแบบหนึ่ง** — กำลังแยกสาเหตุด้วยการเปิด terminal เอง
+> (ไม่ผ่าน `/config`) · ถ้าต่อติด แปลว่า `[Experts]` ใน ini ที่ `write_startup_files()` เขียน
+> (`AllowLiveTrading` · `AllowDllImport` · `Enabled` · `Account` · `Profile`)
+> ไปรีเซ็ต setting ของ terminal → ต้องเลิกเขียนทับ **Claude จะยืนยันให้ก่อน อย่าเพิ่งแก้ข้อนี้**
+
+## แก้ 4 🔴 `Wire.mqh` — fallback ตัวสุดท้าย + counter reset
+
+**a) ลบ fallback ใน `NextMsgId()`** — `:219-220`
+
+```mql5
+if(utc_now <= 0)
+   return NextMsgIdFromMs(GetTickCount64());   // ← ลบทิ้ง คืน "" แทน
+```
+
+มันยังไม่ใช่ dead code เพราะ `TestWire.mq5:181,189,197,201,228,232` เรียกผ่าน
+`TestNextMsgId()` **โดยไม่มี broker time** → เดินเข้า fallback ทุกครั้ง
+· นี่คือสิ่งที่ [§4.7](specs/SPEC-063-broker-time.md) ห้ามตรงตัว: *"ห้ามให้ production path มีทางลัดสำหรับ test"*
+→ **ฉีด fake `CBrokerTime`** ให้ 6 จุดนั้น (fake clock มีพร้อมใน `TestBrokerTime.mq5` แล้ว)
+
+**b) `m_dropped_no_time` ต้อง reset เมื่อกลับมาส่งได้** — `:237-239`
+ตอนนี้ `% 10` นับสะสมทั้ง session → ช่วงพังรอบที่ 2 จะเริ่มนับต่อจาก 16
+แล้ว**บรรทัดแรกของช่วงใหม่ไม่ถูก log เลย** · ค่าสะสมเก็บแยกเป็น `m_dropped_no_time_total`
+· acceptance ทดสอบได้อยู่ใน [§6.3](specs/SPEC-063-broker-time.md)
+
+## แก้ 5 🟠 gate ที่เหลือ
+
+| # | ทำ | ที่ |
+|---|-----|-----|
+| **T5** | เลิก**เขียนทับไฟล์ผลของ EA** เพื่อเติม `started_at` → เขียนไฟล์แยก (`*-observed.json`) · ถ้าจำเป็นต้องเขียนจริงใช้ `[IO.File]::WriteAllText` + `UTF8Encoding $false` — **ห้ามมี BOM** เพราะ Python `json.load()` จะพัง และไฟล์นี้คือสิ่งที่ SPEC-065 เอาไป attest | `run-mql5-tests.ps1:249-251` |
+| **T6** | `run-chaos.ps1` เช็ค**รายชื่อ test ที่รันจริง** ไม่ใช่จำนวน skip — รัน `-v` แล้ว parse เทียบ required list แบบเดียวกับ `$RequiredSuiteNames` | `run-chaos.ps1:41-60` |
+| **⑤** | แยก **`exit 3`** สำหรับ env failure: ตรวจ EA log หา `err=4014` → พิมพ์ว่าต้องไป whitelist · **ยังแดงเหมือนเดิม** แต่ script แยกออกว่าเป็นสิ่งแวดล้อมหรือ regression | `run-chaos.ps1` |
+| **T7** | `ReadToEnd()` สองสตรีมเรียงกัน → **deadlock ได้** ถ้า child เขียน stderr จนเต็ม buffer · ใช้ async read | `run-chaos.ps1:34-36` |
+| **T9** | ไม่มี timeout รวม → `WaitForExit($ms)` + kill + FAIL (fast ~10 นาที · slow ~70 นาที) | `run-chaos.ps1:36` |
+| **T8** | `$Repo = "D:\ea-farm"` hardcoded **ที่ที่ 3 แล้ว** → รวมเข้า `.env` ตอน SPEC-002 (`C11` เดิม · SPEC-028 จะใช้ค่าเดียวกันอีก) | `run-chaos.ps1:14` |
+
+**หลักฐานสดของ T6:** รันคืนนี้ gate พิมพ์ `CHAOS GATE: FAILED -- skipped=0`
+ทั้งที่ unittest บอก `FAILED (failures=5, skipped=1)` — regex จับเฉพาะ `OK \(skipped=N\)`
+จึงอ่านไม่ได้ตอน fail · **ตัวเลขใน gate output เชื่อไม่ได้ตอนแดง**
+
+## ✅ ปิดแล้วในรอบแก้นี้ — ไม่ต้องทำซ้ำ
+
+ตรวจจากโค้ดจริงเมื่อ 2026-07-30 · [review](reviews/SPEC-063-03.md)
+
+| finding | หลักฐาน |
+|---------|---------|
+| **T2** gate ผ่านฟรีเมื่อ suite ไม่มีรายชื่อ | `run-mql5-tests.ps1:261-265` guard ครบ ✅ |
+| **B9** error code + context | `FarmExecutor.mq5:95-100` `BROKER_TIME_OFFSET_CHANGED` + `{old_offset_sec,new_offset_sec}` ✅ |
+| **B10** `DiagnosticLine()` | `BrokerTime.mqh:305-325` — `local=` · `rounded_offset` แยก · เวลาอ่านออก ✅ **ดีกว่าที่ spec ขอ** |
+| **B13** `detected_at` | `:118` + `Wire.mqh:468` ✅ |
+| **B11** ULID seed | **Claude ถอน finding เอง** — seed มี `ChartID` + `ACCOUNT_LOGIN` อยู่แล้ว ไม่ต้องแก้ ✅ |
+| **B8** seam retry loop | ตัวนับ `elapsed_ms` **ดีกว่าที่ spec เขียน** — Claude แก้ spec ตามโค้ด ✅ |
+| **C3** backoff ถึง 30s cap | `test_wire_resilience.py:227-236` 7 connect + ยืนยัน monotonic ✅ |
+| **C5** duplicate session หน่วง 60s | `:253-266` + เปลี่ยนชื่อ test ให้ตรงสิ่งที่ทดสอบ ✅ |
+| **C8** log reader ฝั่ง EA | `mark_ea_log` / `read_ea_log_since` + test UTF-16 ✅ |
+| **C12** soak ไม่ `sleep(3600)` | `:291-304` poll 0.5s + fail ภายใน ~4 วินาที ✅ **ตรงตามที่ขอเป๊ะ** |
+| **C13** comment `monotonic` ข้ามโปรเซส | `echo_server.py:65` ✅ |
+| **C9** เวลาที่ชุด fast ใช้จริง | **327 วินาที** — วัดได้แล้วจากการรันจริง ไม่ต้องเดา ✅ |
+| **C10** `.set` โฟลเดอร์ไหนที่ `[StartUp]` อ่านจริง | terminal log: **`MQL5\Presets\farm-chaos.set`** · `write_startup_files()` เขียน 3 ที่ ใช้จริงที่เดียว → **ลบอีก 2 ที่ได้** ✅ |
+
+**ยืนยันเพิ่ม:** `CBrokerTime` ทำงานถูกบนเทอร์มินัลจริง —
+`broker_time valid=true offset=3600 detected_at_utc=2026.07.30 15:00:04`
+`DiagnosticLine()` ที่เพิ่งแก้ **ใช้ debug ได้จริง** ไม่ใช่แค่ผ่าน test
 
 ---
 
