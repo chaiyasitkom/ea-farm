@@ -614,7 +614,7 @@ private:
 
    void ReadAvailable()
    {
-      if(m_socket == INVALID_HANDLE || !SocketIsConnected(m_socket))
+      if(m_socket == INVALID_HANDLE)
          return;
 
       while(SocketIsReadable(m_socket))
@@ -651,6 +651,8 @@ private:
                continue;
             m_messages_recv++;
             HandleInboundLine(line);
+            if(m_socket == INVALID_HANDLE)
+               return;
          }
       }
    }
@@ -844,14 +846,19 @@ public:
       if(m_state == WIRE_DISCONNECTED || m_state == WIRE_FAILED_AUTH)
          TryConnect();
 
+      ReadAvailable();
+
+      if(m_socket != INVALID_HANDLE && !SocketIsConnected(m_socket))
+      {
+         ReadAvailable();
+      }
+
       if(m_socket != INVALID_HANDLE && !SocketIsConnected(m_socket))
       {
          m_log.Warn("socket_disconnected");
          CloseSocket();
          ScheduleReconnect();
       }
-
-      ReadAvailable();
 
       if(m_state == WIRE_CONNECTED)
       {
