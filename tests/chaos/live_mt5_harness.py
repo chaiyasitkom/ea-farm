@@ -88,7 +88,7 @@ def assert_iux_available() -> None:
             raise AssertionError(f"IUX MT5 path not found: {path}")
 
 
-def assert_no_terminal_running() -> None:
+def _terminal_tasklist_stdout() -> str:
     result = subprocess.run(
         ["tasklist", "/FI", "IMAGENAME eq terminal64.exe", "/FO", "CSV", "/NH"],
         check=False,
@@ -96,8 +96,26 @@ def assert_no_terminal_running() -> None:
         text=True,
         timeout=10,
     )
-    if "terminal64.exe" in result.stdout:
+    return result.stdout
+
+
+def assert_no_terminal_running() -> None:
+    if "terminal64.exe" in _terminal_tasklist_stdout():
         raise AssertionError("terminal64.exe is already running; close MT5 before live chaos tests")
+
+
+def wait_for_no_terminal_running(timeout: float = 15.0) -> None:
+    deadline = time.monotonic() + timeout
+    remaining = ""
+    while time.monotonic() < deadline:
+        remaining = _terminal_tasklist_stdout()
+        if "terminal64.exe" not in remaining:
+            return
+        time.sleep(0.25)
+    raise AssertionError(
+        "terminal64.exe still running after live_terminal teardown; "
+        f"remaining tasklist rows: {remaining.strip()}"
+    )
 
 
 def today_ea_log_path() -> Path:
@@ -256,3 +274,4 @@ def live_terminal(port: int) -> Iterator[subprocess.Popen[str]]:
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait(timeout=10.0)
+            wait_for_no_terminal_running()
