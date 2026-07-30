@@ -17,9 +17,10 @@
 | SPEC-007 | Data ingest: MT5 history → Parquet (**6 คู่ · M1 เท่านั้นแล้ว resample** · ~10 ปี) | Codex | 002, **064** | **SPEC_READY** — [spec](specs/SPEC-007-data-ingest.md) |
 | SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | **SPEC_READY** — [spec](specs/SPEC-008-data-quality-gate.md) |
 | SPEC-009 | **CI: ปิด G3 ด้วย attestation** — `pre-push` hook + `mql5-attest` + workflow ที่รอ remote | Codex | 002, **065** | **SPEC_READY** — [spec](specs/SPEC-009-ci.md) |
-| SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | **001** (แก้จาก 002 — เป็น MQL5 ล้วน ไม่ต้องรอ scaffold) | 🔨 **IN_REVIEW รอบ 2 → `CHANGES_REQUIRED`** · [spec rev.2a](specs/SPEC-063-broker-time.md) · [review 1](reviews/SPEC-063.md) · [review 2](reviews/SPEC-063-02.md) — B1/B2/B3/B5/B8 ปิดแล้ว · เหลือ **B4** (ไม่เคยแตะ) · B15/B16 ใหม่ · **gate T1/T2 ต้องแก้ก่อนเชื่อผลรัน** |
+| SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | **001** (แก้จาก 002 — เป็น MQL5 ล้วน ไม่ต้องรอ scaffold) | ✅ **APPROVED_WITH_NOTES** (รอบ 4 · 2026-07-31) — [review](reviews/SPEC-063-04.md) · gate เขียว: compile 0/0 · **TestBrokerTime 67/67** (`ran_names` 21 ชื่อ) · `git_sha` ตรงจริง commit `294da01` · ค้าง 2 ข้อภาคสนาม (§6.5 ตลาดปิด · §9 Q2 drift) ที่ต้องรอ **W1** + สุดสัปดาห์ |
 | SPEC-064 | **SymbolRegistry** — `(broker, raw)` → canonical + base/quote + risk profile ต่อ symbol (G7) · 🔴 ขาดไม่ได้หลังเพิ่ม XM: `GOLD` → `XAUUSD` เดาด้วย string rule ไม่ได้ ([ADR-003](decisions/ADR-003-multi-broker.md)) | Codex | **004** (แก้จาก 006 — เป็นไฟล์ในรีโป ไม่ใช่ตาราง DB) | **SPEC_READY** — [spec](specs/SPEC-064-symbol-registry.md) |
 | SPEC-065 | **MQL5 test harness** — ส่วนใหญ่ทำแล้ว · เหลือ manifest หลาย suite + attestation ให้ CI (G9, [07](07-compile-gate.md)) | Codex | 001 | **SPEC_READY** — [spec](specs/SPEC-065-mql5-test-harness.md) |
+| SPEC-066 | **กริ่ง handoff ผ่าน git hook** — ของชั่วคราวก่อน SPEC-029 · ~40 บรรทัด ใช้ได้วันนี้ · **ลบทิ้งเมื่อ SPEC-029 §4.2.1 ขึ้น** | Codex | — | **SPEC_READY** — [spec](specs/SPEC-066-handoff-doorbell-hook.md) |
 
 ## Phase 1 — Execution Plane
 
