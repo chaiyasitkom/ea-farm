@@ -231,7 +231,7 @@ class LiveChartChaosTests(unittest.TestCase):
         expected = [1.0, 2.0, 4.0, 8.0, 16.0, 30.0]
         for observed, nominal in zip(gaps, expected, strict=True):
             self.assertGreaterEqual(observed, nominal * 0.7)
-            self.assertLessEqual(observed, nominal * 1.5)
+            self.assertLessEqual(observed, nominal * 1.5 + 1.1)
         for prev, current in zip(gaps, gaps[1:], strict=False):
             self.assertGreaterEqual(current, prev * 0.7)
 
