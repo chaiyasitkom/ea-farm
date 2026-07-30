@@ -133,7 +133,8 @@ Codex ต้องเขียน unit test ให้ครบ 3 เคส: **`U
 ### ★ ทั้ง 6 คู่มี USD อยู่ข้างหนึ่ง — กระทบ P3/P4/P5 โดยตรง
 
 **P3** ยังถูกต้อง (decompose ครบทุกสกุล) แต่ USD อยู่ใน **ทุก** position
-→ เพดาน 2.0% จะ block ตั้งแต่ position ที่ 2–3 · **SPEC-025 ต้องตัดสินว่า USD ได้เพดานแยกไหม**
+→ **ตัดสินแล้ว: USD ได้เพดานแยก 5.0%** ส่วนสกุลอื่นคง 2.0% ([ADR-004 §3](decisions/ADR-004-exposure-unit.md))
+· สกุลบัญชีอ่านจาก `HELLO.account.currency` ห้าม hardcode `"USD"`
 
 **P4/P5** — 6 คู่ แต่เดิมพันอิสระจริง ~4 ก้อน:
 `EURUSD`+`GBPUSD` (ยุโรป) · `USDJPY` · `AUDUSD`+`USDCAD` (commodity FX) · `XAUUSD` (โลหะ)
@@ -151,15 +152,16 @@ Codex ต้องเขียน unit test ให้ครบ 3 เคส: **`U
 |---|-----|---------|--------|
 | P1 | `farm_daily_loss_pct` — รวมทุกบัญชี ถ่วงตาม equity | −1.5% warn / −3.0% breach | warn → `SCALED 0.5` · breach → `FLATTEN` ทั้งฟาร์ม |
 | P2 | `farm_max_dd_pct` | 8% warn / 12% breach | warn → `REDUCE_ONLY` · breach → `HALT` |
-| P3 | `max_currency_exposure` — net exposure ต่อสกุลเงินเดียว | 2.0% ของ farm equity | reject intent ที่จะเกิน |
-| P4 | `max_correlated_risk` — กลุ่มที่ correlation 20d > 0.7 นับเป็นก้อนเดียว | 1.0% ของ farm equity ต่อกลุ่ม | scale intent ลง |
-| P5 | `max_concurrent_strategies_same_direction` | 3 | reject ตัวที่ confidence ต่ำสุด |
+| P3 | `max_currency_exposure` — exposure ต่อสกุลเงินเดียว **หน่วย = risk-normalized** ([ADR-004](decisions/ADR-004-exposure-unit.md)) | **2.0%** ของ farm equity · **USD (สกุลบัญชี) = 5.0%** | reject intent ที่จะเกิน |
+| P4 | `max_correlated_risk` — กลุ่มที่ correlation 20d > 0.7 นับเป็นก้อนเดียว · หน่วยเดียวกับ P3 | 1.0% ของ farm equity ต่อกลุ่ม | scale intent ลง |
+| P5 | `max_concurrent_strategies_same_direction` — **นับต่อ correlation group** ไม่ใช่ทั้งฟาร์ม ([SPEC-025 §4.5](specs/SPEC-025-brain-risk-portfolio.md)) | 3 ต่อกลุ่ม | reject ตัวที่ confidence ต่ำสุด |
 | P6 | `strategy_allocation` — งบเสี่ยงต่อกลยุทธ์ | เท่ากันตอนเริ่ม | scale |
 | P7 | `regime_scale` — จาก RegimeService | ดูตาราง §Regime | คูณ `scale_factor` |
 | P8 | `news_block` — จาก NewsService | ดูตาราง §News | reject / reduce |
 | P9 | `sanity_check` — confidence ∈ [0,1], target_volume finite, SL ฝั่งถูก | เข้มงวด | reject + alert (บ่งว่า model เพี้ยน) |
 | P10 | `stale_data_guard` — feature ที่ใช้เก่ากว่า 2 bar | reject | ห้ามเทรดด้วยข้อมูลเก่า |
 | P11 | `session_health` — บัญชีที่ heartbeat หาย > 30s | exclude จากการคำนวณ + alert | |
+| P12 | `no_cross_account_hedge` — ห้ามถือ exposure สวนทางกันใน canonical symbol เดียวกันข้ามบัญชี/ข้ามโบรกเกอร์ ([ADR-005](decisions/ADR-005-cross-account-hedge.md)) | บังคับ ทั้งฟาร์ม | reject intent ที่จะทำให้เกิด · สภาพที่เกิดแล้ว → `REDUCE_ONLY` เฉพาะ symbol นั้น + alert `ERROR` ค้างจนคนแก้ |
 
 ### สำคัญ: P3/P4 ต้องคำนวณจาก exposure จริง**ทั้งฟาร์ม** ไม่ใช่ต่อบัญชี
 
@@ -176,7 +178,25 @@ XAUUSD long 0.10 lot  →  +10 oz XAU   /  −10 × price USD
 ```
 รวมทุกขาแล้วแปลงเป็น account currency → นี่คือ net exposure จริง
 
-### 🔴 P3 ยังไม่ระบุ "หน่วย" ของ exposure — ต้องตัดสินก่อน SPEC-024
+### ✅ หน่วยของ P3/P4 — ปิดแล้ว: risk-normalized ([ADR-004](decisions/ADR-004-exposure-unit.md))
+
+> **นิยามที่ผูกพัน:** exposure ของสกุล X = *"ถ้า SL ของทุก position ที่มี X อยู่ขาหนึ่ง
+> ถูกชนพร้อมกันในทิศเดียวกัน จะเสียกี่ % ของ farm equity"*
+>
+> ```
+> risk_money(pos) = |price_open − sl| / point × value_per_point × volume
+> risk_pct(pos)   = risk_money / farm_equity × 100
+> ```
+>
+> - `value_per_point` **คำนวณจาก `contract_size` + ราคาปัจจุบัน** ห้ามใช้ `tick_value` ที่ค้างจาก `HELLO`
+> - ระดับ **สกุลเงิน** รวมแบบ signed · ระดับ **canonical symbol** รวมแบบ **gross** ([ADR-005 §5](decisions/ADR-005-cross-account-hedge.md))
+> - `farm_equity` dedupe ตาม `(broker, login)` · position dedupe ตาม ticket — [ADR-004 §4.1–4.2](decisions/ADR-004-exposure-unit.md)
+> - **USD ได้เพดานแยก 5.0%** เพราะทั้ง 6 คู่มี USD ขาหนึ่ง (ADR-004 §3)
+>
+> สูตรเต็ม เคส fail-closed และไม้ที่ไม่มี SL อยู่ใน [ADR-004](decisions/ADR-004-exposure-unit.md) + [SPEC-024](specs/SPEC-024-currency-exposure.md)
+
+<details>
+<summary>บันทึกเหตุผลตอนที่ยังไม่ตัดสิน (เก็บไว้อ้างอิง)</summary>
 
 **เจอ 2026-07-27 ตอนคำนวณ D5** — ตารางบอกเพดาน P3 = `2.0% ของ farm equity`
 แต่ decomposition ข้างบนให้ผลเป็น **notional** สองอย่างนี้เทียบกันตรงๆ ไม่ได้
@@ -204,11 +224,14 @@ XAUUSD long 0.10 lot  →  +10 oz XAU   /  −10 × price USD
 | กี่ไม้ในสกุลเดียวกันถึงชน P3 | ~6 ไม้ (สอดคล้องกับ R4 = 8 ticket) |
 
 **→ ข้อเสนอ: นิยาม P3 เป็น risk-normalized** และเขียนสูตรให้ชัดใน SPEC-024
-**ยังไม่แก้ตารางจนกว่าจะได้ยืนยัน** เพราะเปลี่ยนความหมายของกฎ risk ไม่ใช่แค่ปรับตัวเลข
-· ติดตามที่ D9 ใน [backlog](backlog.md)
+· ติดตามที่ D9 ใน [backlog](backlog.md) *(ปิดแล้ว)*
 
 ⚠️ P4 (`max_correlated_risk` 1.0%) มีปัญหาหน่วยเดียวกัน — ชื่อมีคำว่า `risk` อยู่แล้ว
 จึงน่าจะตั้งใจให้เป็น risk-normalized ตั้งแต่แรก · ต้องนิยามให้ตรงกันทั้ง P3 และ P4
+
+**ผลสรุป 2026-07-30:** เจ้าของยืนยันข้อเสนอนี้ → [ADR-004](decisions/ADR-004-exposure-unit.md)
+
+</details>
 
 ---
 
@@ -274,7 +297,8 @@ XAUUSD long 0.10 lot  →  +10 oz XAU   /  −10 × price USD
 
 - ❌ Martingale / grid / averaging down ทุกรูปแบบ — ไม่ implement แม้เป็น option
 - ❌ ไม่มี SL — ทุก position ต้องมี SL (R9)
-- ❌ Hedge ข้ามบัญชีเพื่อเลี่ยง DD limit — เป็นการโกงตัวเลขตัวเอง
+- ❌ Hedge ข้ามบัญชี/ข้ามโบรกเกอร์ **ทุกกรณี** ไม่ใช่แค่เพื่อเลี่ยง DD limit —
+  บังคับด้วย P12 ([ADR-005](decisions/ADR-005-cross-account-hedge.md)) · "แยกบัญชีแล้วสวนกันได้" ถูกยกเลิกแล้ว
 - ❌ ให้ LLM สั่งเทรดตรงๆ
 - ❌ Optimize บน in-sample แล้วขึ้น live เลย
 - ❌ เพิ่ม lot หลังขาดทุนเพื่อ "เอาคืน"

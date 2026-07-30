@@ -89,7 +89,11 @@ EUR/USD  →  IUX: "EURUSD.iux"   XM: "EURUSD"
 
 ---
 
-## 4. 🔴 ช่องว่างใหม่ที่หลายโบรกเกอร์เปิดขึ้น: hedge ข้ามโบรกเกอร์ (D10)
+## 4. ~~🔴~~ ✅ ช่องว่างใหม่ที่หลายโบรกเกอร์เปิดขึ้น: hedge ข้ามโบรกเกอร์ (D10 — **ปิดแล้ว**)
+
+> **ตัดสินแล้ว 2026-07-30 → [ADR-005](ADR-005-cross-account-hedge.md):** ห้ามสวนกันทั้งฟาร์ม ·
+> P12 `no_cross_account_hedge` reject intent ที่จะทำให้เกิด · P3/P4 รวม gross ที่ระดับ canonical symbol
+> · หัวข้อด้านล่างเก็บไว้เป็นบันทึกว่าเจอปัญหานี้ได้อย่างไร
 
 [ADR-001 §2](ADR-001-hedging-account.md) ห้าม internal hedge ไว้ที่ระดับ **(magic, symbol) ในบัญชีเดียว** (R18)
 
@@ -109,9 +113,8 @@ EUR/USD  →  IUX: "EURUSD.iux"   XM: "EURUSD"
 มี exposure สวนทางกันข้ามบัญชี → **alert + reject intent ที่จะทำให้เกิด** ไม่ใช่ปล่อยให้ net กันเอง
 · ติดตามที่ **D10** · ต้องปิดก่อน SPEC-025
 
-> ⚠️ ข้อยกเว้นที่ต้องคิดให้ชัดตอนเขียน P12: ถ้าตั้งใจให้ **คนละกลยุทธ์**สวนกันได้
-> ADR-001 บอกไว้แล้วว่าให้ **แยกบัญชี** — ตอนนี้เรามีหลายบัญชีจริงแล้ว จึงต้องตัดสินว่า
-> "แยกบัญชี = อนุญาตให้สวนกัน" หรือ "ห้ามสวนกันทั้งฟาร์ม" · **เจ้าของต้องตัดสิน**
+> ✅ **คำถามนี้ตอบแล้ว: "ห้ามสวนกันทั้งฟาร์ม"** — แยกบัญชีไม่ทำให้สวนกันได้
+> เหตุผลเต็มและนิยามที่ผูกพันอยู่ใน [ADR-005](ADR-005-cross-account-hedge.md)
 
 ---
 
@@ -176,8 +179,8 @@ symbol ที่เทอร์มินัล XM เคยแตะ: `EURUSD` `
 - [ ] **`SPEC-064`** (ยังไม่เขียน) — ต้องเขียนใหม่ให้รองรับ `(broker, raw)` → canonical
       พร้อมตาราง mapping ที่คนกรอก + fail-closed
 - [ ] **`SPEC-007`** (ยังไม่เขียน) — ingest ต้องวนต่อ broker · `broker` เป็นส่วนของ PK อยู่แล้ว
-- [ ] **`SPEC-025`** — เพิ่ม P12 no_cross_account_hedge (D10)
-- [ ] **`SPEC-024`** — P3 ต้อง aggregate ด้วย **canonical** symbol ไม่ใช่ raw
+- [x] **`SPEC-025`** — เพิ่ม P12 no_cross_account_hedge (D10) → [spec](../specs/SPEC-025-brain-risk-portfolio.md)
+- [x] **`SPEC-024`** — P3 ต้อง aggregate ด้วย **canonical** symbol ไม่ใช่ raw → [spec](../specs/SPEC-024-currency-exposure.md)
 - [ ] 🔴 **XM login ให้ผ่าน** (D11) — ตอนนี้ `Invalid account`
 - [ ] 🔴 **อ่าน contract spec ของ XM** — อาจพลิก D5 (§5)
 - [ ] ยืนยันว่า XM มี `AUDUSD` / `USDCAD` (§6)
