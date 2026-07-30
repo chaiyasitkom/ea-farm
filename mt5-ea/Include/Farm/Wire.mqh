@@ -11,6 +11,7 @@
 #define FARM_WIRE_FAILED_AUTH_RETRY_SEC 60
 #define FARM_WIRE_HEARTBEAT_MISS_LIMIT 3
 #define FARM_ULID_ALPHABET "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+#define FARM_WIRE_DIAG_FILE "ea-farm-wire-diag.jsonl"
 
 enum ENUM_WIRE_STATE {
    WIRE_DISCONNECTED,
@@ -113,6 +114,7 @@ private:
    string          m_strategy_id;
    int             m_magic;
    bool            m_verbose;
+   int             m_diag_handle;
    CFarmLogger     m_log;
    CBrokerTime    *m_broker_time;
 
@@ -126,20 +128,7 @@ private:
       return (int)((NowTick() - since_tick) / 1000);
    }
 
-   void EnterState(const ENUM_WIRE_STATE state)
-   {
-      m_state = state;
-      m_state_entered_tick = NowTick();
-   }
-
-   int JitteredBackoffMs() const
-   {
-      const int jitter = (int)MathRound((double)m_backoff_sec * 1000.0 * 0.2);
-      const int spread = (jitter > 0 ? (int)(GetTickCount() % (uint)(jitter * 2 + 1)) - jitter : 0);
-      return m_backoff_sec * 1000 + spread;
-   }
-
-   string WireStateText(const ENUM_WIRE_STATE state) const
+   string WireStateTextRaw(const ENUM_WIRE_STATE state) const
    {
       if(state == WIRE_DISCONNECTED)
          return "DISCONNECTED";
@@ -154,6 +143,74 @@ private:
       if(state == WIRE_FAILED_AUTH)
          return "FAILED_AUTH";
       return "DISCONNECTED";
+   }
+
+   string DiagTsJson() const
+   {
+      datetime wire_utc = 0;
+      if(m_broker_time != NULL && m_broker_time.IsValid())
+         wire_utc = m_broker_time.NowUtc();
+      if(wire_utc > 0)
+         return FarmJsonQuote(FarmFormatIsoUtc(wire_utc));
+      return FarmJsonQuote(StringFormat("tick_ms:%I64u", GetTickCount64()));
+   }
+
+   void WriteDiagLine(const string json)
+   {
+      if(!m_verbose || m_diag_handle == INVALID_HANDLE)
+         return;
+      FileWriteString(m_diag_handle, json + "\n");
+      FileFlush(m_diag_handle);
+   }
+
+   void OpenDiagFile()
+   {
+      if(!m_verbose || m_diag_handle != INVALID_HANDLE)
+         return;
+      ResetLastError();
+      m_diag_handle = FileOpen(FARM_WIRE_DIAG_FILE, FILE_WRITE | FILE_TXT | FILE_ANSI | FILE_COMMON | FILE_SHARE_READ);
+      if(m_diag_handle == INVALID_HANDLE)
+         m_log.Warn(StringFormat("wire_diag_file_open_failed path=FILE_COMMON\\%s err=%d", FARM_WIRE_DIAG_FILE, GetLastError()));
+   }
+
+   void CloseDiagFile()
+   {
+      if(m_diag_handle == INVALID_HANDLE)
+         return;
+      FileFlush(m_diag_handle);
+      FileClose(m_diag_handle);
+      m_diag_handle = INVALID_HANDLE;
+   }
+
+   void EnterState(const ENUM_WIRE_STATE state, const string reason)
+   {
+      const ENUM_WIRE_STATE previous = m_state;
+      m_state = state;
+      m_state_entered_tick = NowTick();
+      WriteDiagLine("{"
+         "\"ev\":\"state\","
+         "\"ts\":" + DiagTsJson() + ","
+         "\"from\":" + FarmJsonQuote(WireStateTextRaw(previous)) + ","
+         "\"to\":" + FarmJsonQuote(WireStateTextRaw(state)) + ","
+         "\"reason\":" + FarmJsonQuote(reason) +
+      "}");
+   }
+
+   void EnterState(const ENUM_WIRE_STATE state)
+   {
+      EnterState(state, "EnterState");
+   }
+
+   int JitteredBackoffMs() const
+   {
+      const int jitter = (int)MathRound((double)m_backoff_sec * 1000.0 * 0.2);
+      const int spread = (jitter > 0 ? (int)(GetTickCount() % (uint)(jitter * 2 + 1)) - jitter : 0);
+      return m_backoff_sec * 1000 + spread;
+   }
+
+   string WireStateText(const ENUM_WIRE_STATE state) const
+   {
+      return WireStateTextRaw(state);
    }
 
    string WireStateText() const
@@ -193,10 +250,16 @@ private:
    void ScheduleReconnect()
    {
       const int wait_ms = JitteredBackoffMs();
+      const int scheduled_backoff_sec = m_backoff_sec;
       m_next_connect_tick = NowTick() + (uint)(wait_ms > 100 ? wait_ms : 100);
       const int next_backoff = m_backoff_sec * 2;
       m_backoff_sec = (next_backoff < 30 ? next_backoff : 30);
-      EnterState(WIRE_DISCONNECTED);
+      WriteDiagLine("{"
+         "\"ev\":\"reconnect\","
+         "\"ts\":" + DiagTsJson() + ","
+         "\"backoff_sec\":" + IntegerToString(scheduled_backoff_sec) +
+      "}");
+      EnterState(WIRE_DISCONNECTED, "ScheduleReconnect");
    }
 
    void CloseSocket()
@@ -520,7 +583,7 @@ private:
          return;
       }
       SendRawLine(hello);
-      EnterState(WIRE_AUTHENTICATING);
+      EnterState(WIRE_AUTHENTICATING, "SendHello");
    }
 
    void SendHeartbeat()
@@ -581,6 +644,11 @@ private:
       }
 
       const string type = FarmJsonGetString(line, "type", "");
+      WriteDiagLine("{"
+         "\"ev\":\"inbound\","
+         "\"ts\":" + DiagTsJson() + ","
+         "\"type\":" + FarmJsonQuote(type) +
+      "}");
       if(type == "HELLO_ACK")
       {
          const bool accepted = FarmJsonGetBool(line, "accepted", false);
@@ -590,7 +658,7 @@ private:
             m_missed_heartbeat_acks = 0;
             m_heartbeat_seq = 0;
             m_backoff_sec = 1;
-            EnterState(WIRE_READY);
+            EnterState(WIRE_READY, "HELLO_ACK accepted");
             m_log.Info("wire_ready session_id=" + m_session_id);
          }
          else
@@ -598,7 +666,7 @@ private:
             const string reason = FarmJsonGetString(line, "reject_reason", "UNKNOWN");
             m_log.Error("hello_rejected reason=" + reason);
             CloseSocket();
-            EnterState(WIRE_FAILED_AUTH);
+            EnterState(WIRE_FAILED_AUTH, "HELLO_ACK rejected " + reason);
          }
          return;
       }
@@ -713,7 +781,7 @@ private:
          return;
 
       CloseSocket();
-      EnterState(WIRE_CONNECTING);
+      EnterState(WIRE_CONNECTING, "TryConnect");
       m_socket = SocketCreate();
       if(m_socket == INVALID_HANDLE)
       {
@@ -733,7 +801,7 @@ private:
          return;
       }
 
-      EnterState(WIRE_CONNECTED);
+      EnterState(WIRE_CONNECTED, "TryConnect");
       ResetLastError();
       if(!SocketTimeouts(m_socket, m_connect_timeout_ms, m_connect_timeout_ms))
          m_log.Warn(StringFormat("socket_timeouts_failed err=%d", GetLastError()));
@@ -772,6 +840,7 @@ public:
       m_strategy_id = "trend_v1";
       m_magic = 770001;
       m_verbose = false;
+      m_diag_handle = INVALID_HANDLE;
       m_broker_time = NULL;
       m_log.Init("wire", false);
    }
@@ -801,7 +870,8 @@ public:
       }
       m_next_connect_tick = 0;
       m_backoff_sec = 1;
-      EnterState(WIRE_DISCONNECTED);
+      OpenDiagFile();
+      EnterState(WIRE_DISCONNECTED, "Init");
       return true;
    }
 
@@ -826,7 +896,8 @@ public:
             SendRawLine(line);
       }
       CloseSocket();
-      EnterState(WIRE_DISCONNECTED);
+      EnterState(WIRE_DISCONNECTED, "Shutdown");
+      CloseDiagFile();
    }
 
    bool SendErrorReport(const string severity, const string code, const string message, const bool fatal)
@@ -904,6 +975,15 @@ public:
 
       const ulong elapsed_us = GetMicrosecondCount() - started;
       RecordPumpElapsed(elapsed_us);
+      WriteDiagLine("{"
+         "\"ev\":\"pump\","
+         "\"ts\":" + DiagTsJson() + ","
+         "\"state_start\":" + FarmJsonQuote(WireStateText(state_at_start)) + ","
+         "\"state_end\":" + FarmJsonQuote(WireStateText(m_state)) + ","
+         "\"read_loops\":" + IntegerToString(read_loops) + ","
+         "\"bytes_read\":" + IntegerToString(bytes_read) + ","
+         "\"pump_us\":" + IntegerToString((long)elapsed_us) +
+      "}");
       if(m_verbose)
          m_log.Info(StringFormat("pump_diag state_start=%s state_end=%s read_loops=%d bytes_read=%d pump_elapsed_us=%I64u",
                                  WireStateText(state_at_start), WireStateText(m_state), read_loops, bytes_read, elapsed_us));
@@ -1048,7 +1128,7 @@ public:
 
    void TestSetState(const ENUM_WIRE_STATE state)
    {
-      EnterState(state);
+      EnterState(state, "TestSetState");
    }
 
    int TestReceivedQueueDepth() const
