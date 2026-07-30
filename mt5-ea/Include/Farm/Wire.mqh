@@ -1,6 +1,7 @@
 #ifndef FARM_WIRE_MQH
 #define FARM_WIRE_MQH
 
+#include "BrokerTime.mqh"
 #include "Json.mqh"
 #include "Logger.mqh"
 
@@ -25,18 +26,19 @@ string FarmCrockford32Char(const int value)
    return StringSubstr(FARM_ULID_ALPHABET, (value & 31), 1);
 }
 
-void FarmSeedUlidRandom()
+void FarmSeedUlidRandom(const datetime local_entropy = 0)
 {
    const ulong seed = (ulong)GetMicrosecondCount()
-                      ^ (ulong)TimeLocal()
+                      ^ (ulong)GetTickCount64()
+                      ^ (ulong)local_entropy
                       ^ (ulong)ChartID()
                       ^ (ulong)AccountInfoInteger(ACCOUNT_LOGIN);
    MathSrand((int)(seed % 2147483647ULL));
 }
 
-string FarmRandomUlidSuffix()
+string FarmRandomUlidSuffix(const datetime local_entropy = 0)
 {
-   FarmSeedUlidRandom();
+   FarmSeedUlidRandom(local_entropy);
    string out = "";
    for(int i = 0; i < 16; i++)
       out += FarmCrockford32Char(MathRand());
@@ -101,6 +103,8 @@ private:
    long            m_messages_recv;
    long            m_reconnect_count;
    long            m_bytes_dropped;
+   long            m_messages_dropped_no_time_total;
+   long            m_messages_dropped_no_time_current;
    long            m_queue_drop_count;
    ulong           m_ulid_last_ms;
    string          m_ulid_rand_suffix;
@@ -110,6 +114,7 @@ private:
    int             m_magic;
    bool            m_verbose;
    CFarmLogger     m_log;
+   CBrokerTime    *m_broker_time;
 
    uint NowTick() const
    {
@@ -210,7 +215,49 @@ private:
 
    string NextMsgId()
    {
-      return NextMsgIdFromMs((ulong)TimeGMT() * 1000ULL);
+      datetime utc_now = 0;
+      if(m_broker_time != NULL && m_broker_time.IsValid())
+         utc_now = m_broker_time.NowUtc();
+      if(utc_now <= 0)
+         return "";
+      return NextMsgIdFromMs((ulong)utc_now * 1000ULL);
+   }
+
+   datetime NowUtcForWire() const
+   {
+      if(m_broker_time != NULL && m_broker_time.IsValid())
+         return m_broker_time.NowUtc();
+      return 0;
+   }
+
+   bool MakeWireEnvelope(const string type, const string payload_json, string &out_line)
+   {
+      out_line = "";
+      const datetime wire_utc = NowUtcForWire();
+      if(wire_utc <= 0)
+      {
+         m_messages_dropped_no_time_total++;
+         m_messages_dropped_no_time_current++;
+         if((m_messages_dropped_no_time_current % 10) == 1)
+            m_log.Warn(StringFormat("message_dropped_no_broker_time type=%s current_drops=%I64d total_drops=%I64d", type, m_messages_dropped_no_time_current, m_messages_dropped_no_time_total));
+         return false;
+      }
+      const string msg_id = NextMsgId();
+      if(StringLen(msg_id) == 0)
+      {
+         m_messages_dropped_no_time_total++;
+         m_messages_dropped_no_time_current++;
+         if((m_messages_dropped_no_time_current % 10) == 1)
+            m_log.Warn(StringFormat("message_dropped_no_broker_time type=%s current_drops=%I64d total_drops=%I64d", type, m_messages_dropped_no_time_current, m_messages_dropped_no_time_total));
+         return false;
+      }
+      if(m_messages_dropped_no_time_current > 0)
+      {
+         m_log.Warn(StringFormat("broker_time_restored dropped_no_time=%I64d total_drops=%I64d", m_messages_dropped_no_time_current, m_messages_dropped_no_time_total));
+         m_messages_dropped_no_time_current = 0;
+      }
+      out_line = FarmMakeEnvelope(type, msg_id, m_session_id, wire_utc, wire_utc, payload_json);
+      return true;
    }
 
    bool HasPartialSend() const
@@ -429,23 +476,44 @@ private:
          "\"max_dd_pct\":6.0"
       "}";
 
-      return "{"
-         "\"token\":" + FarmJsonQuote(m_token) + ","
-         "\"ea_version\":" + FarmJsonQuote(m_ea_version) + ","
-         "\"terminal_build\":" + IntegerToString((int)TerminalInfoInteger(TERMINAL_BUILD)) + ","
-         "\"account\":" + account + ","
-         "\"symbol\":" + symbol_json + ","
-         "\"timeframe\":" + FarmJsonQuote(timeframe) + ","
-         "\"strategy_id\":" + FarmJsonQuote(m_strategy_id) + ","
-         "\"magic\":" + IntegerToString(m_magic) + ","
-         "\"local_limits\":" + limits +
-      "}";
+      string broker_time_field = "";
+      if(m_broker_time != NULL && m_broker_time.IsValid())
+      {
+         const string broker_time = "{"
+            "\"utc_offset_sec\":" + IntegerToString(m_broker_time.OffsetSeconds()) + ","
+            "\"detected_at\":" + FarmJsonQuote(FarmFormatIsoUtc(m_broker_time.DetectedAtUtc())) + ","
+            "\"source\":\"INFERRED_SERVER_MINUS_GMT\","
+            "\"local_gmt_offset_sec\":" + IntegerToString(m_broker_time.LocalGmtOffsetSeconds()) + ","
+            "\"local_dst_sec\":" + IntegerToString(m_broker_time.LocalDstSeconds()) +
+         "}";
+         broker_time_field = "\"broker_time\":" + broker_time + ",";
+      }
+
+      string payload = "{";
+      payload += "\"token\":" + FarmJsonQuote(m_token) + ",";
+      payload += "\"ea_version\":" + FarmJsonQuote(m_ea_version) + ",";
+      payload += "\"terminal_build\":" + IntegerToString((int)TerminalInfoInteger(TERMINAL_BUILD)) + ",";
+      payload += "\"account\":" + account + ",";
+      payload += "\"symbol\":" + symbol_json + ",";
+      payload += "\"timeframe\":" + FarmJsonQuote(timeframe) + ",";
+      payload += "\"strategy_id\":" + FarmJsonQuote(m_strategy_id) + ",";
+      payload += "\"magic\":" + IntegerToString(m_magic) + ",";
+      payload += broker_time_field;
+      payload += "\"local_limits\":" + limits;
+      payload += "}";
+      return payload;
    }
 
    void SendHello()
    {
       const string payload = BuildHelloPayload();
-      const string hello = FarmMakeEnvelope("HELLO", NextMsgId(), m_session_id, TimeCurrent(), payload);
+      string hello;
+      if(!MakeWireEnvelope("HELLO", payload, hello))
+      {
+         CloseSocket();
+         ScheduleReconnect();
+         return;
+      }
       SendRawLine(hello);
       EnterState(WIRE_AUTHENTICATING);
    }
@@ -463,10 +531,13 @@ private:
             "\"reconnect_count\":" + IntegerToString(m_reconnect_count) + ","
             "\"bytes_dropped\":" + IntegerToString(m_bytes_dropped) + ","
             "\"seconds_since_last_inbound\":" + IntegerToString(SecondsSinceLastInbound()) + ","
+            "\"broker_utc_offset_sec\":" + ((m_broker_time != NULL && m_broker_time.IsValid()) ? IntegerToString(m_broker_time.OffsetSeconds()) : "null") + ","
             "\"pump_p99_us\":" + IntegerToString((long)PumpP99Us()) +
          "}" +
       "}";
-      const string msg = FarmMakeEnvelope("HEARTBEAT", NextMsgId(), m_session_id, TimeCurrent(), payload);
+      string msg;
+      if(!MakeWireEnvelope("HEARTBEAT", payload, msg))
+         return;
       if(SendRawLine(msg))
       {
          m_heartbeat_seq = seq;
@@ -484,7 +555,9 @@ private:
          "\"context\":{},"
          "\"fatal\":true"
       "}";
-      SendRawLine(FarmMakeEnvelope("ERROR", NextMsgId(), m_session_id, TimeCurrent(), payload));
+      string line;
+      if(MakeWireEnvelope("ERROR", payload, line))
+         SendRawLine(line);
    }
 
    void QueueReceived(const string line)
@@ -673,6 +746,8 @@ public:
       m_messages_recv = 0;
       m_reconnect_count = 0;
       m_bytes_dropped = 0;
+      m_messages_dropped_no_time_total = 0;
+      m_messages_dropped_no_time_current = 0;
       m_queue_drop_count = 0;
       m_ulid_last_ms = 0;
       m_ulid_rand_suffix = FarmRandomUlidSuffix();
@@ -680,7 +755,15 @@ public:
       m_strategy_id = "trend_v1";
       m_magic = 770001;
       m_verbose = false;
+      m_broker_time = NULL;
       m_log.Init("wire", false);
+   }
+
+   void UseBrokerTime(CBrokerTime *broker_time)
+   {
+      m_broker_time = broker_time;
+      if(m_broker_time != NULL)
+         m_ulid_rand_suffix = FarmRandomUlidSuffix(m_broker_time.LocalTime());
    }
 
    bool Init(const string host, const int port, const string token,
@@ -717,10 +800,33 @@ public:
       if(m_socket != INVALID_HANDLE && SocketIsConnected(m_socket))
       {
          const string payload = "{\"code\":\"EA_SHUTDOWN\",\"severity\":\"WARN\",\"message\":\"EA shutting down\",\"context\":{},\"fatal\":false}";
-         SendRawLine(FarmMakeEnvelope("ERROR", NextMsgId(), m_session_id, TimeCurrent(), payload));
+         string line;
+         if(MakeWireEnvelope("ERROR", payload, line))
+            SendRawLine(line);
       }
       CloseSocket();
       EnterState(WIRE_DISCONNECTED);
+   }
+
+   bool SendErrorReport(const string severity, const string code, const string message, const bool fatal)
+   {
+      return SendErrorReportWithContext(severity, code, message, "{}", fatal);
+   }
+
+   bool SendErrorReportWithContext(const string severity, const string code, const string message,
+                                   const string context_json, const bool fatal)
+   {
+      const string payload = "{"
+         "\"code\":" + FarmJsonQuote(code) + ","
+         "\"severity\":" + FarmJsonQuote(severity) + ","
+         "\"message\":" + FarmJsonQuote(message) + ","
+         "\"context\":" + context_json + ","
+         "\"fatal\":" + FarmBoolJson(fatal) +
+      "}";
+      string line;
+      if(!MakeWireEnvelope("ERROR", payload, line))
+         return false;
+      return Send(line);
    }
 
    void Pump()
@@ -832,6 +938,11 @@ public:
    long BytesDropped() const
    {
       return m_bytes_dropped;
+   }
+
+   long MessagesDroppedNoTime() const
+   {
+      return m_messages_dropped_no_time_total;
    }
 
 #ifdef FARM_TEST

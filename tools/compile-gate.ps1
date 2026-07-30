@@ -21,7 +21,8 @@ $LogDir     = Join-Path $env:TEMP "ea-farm-compile"
 
 $Targets = @(
     "$Repo\mt5-ea\Experts\FarmExecutor.mq5",
-    "$Repo\tests\mql5\TestWire.mq5"
+    "$Repo\tests\mql5\TestWire.mq5",
+    "$Repo\tests\mql5\TestBrokerTime.mq5"
 )
 
 if (-not (Test-Path $MetaEditor)) { Write-Output "FATAL: MetaEditor not found at $MetaEditor"; exit 2 }
@@ -43,6 +44,9 @@ foreach ($t in $Targets) {
     }
 
     $log = Join-Path $LogDir (($name -replace '\.mq5$','') + ".log")
+    $ex5 = $t -replace '\.mq5$', '.ex5'
+    Remove-Item $log -ErrorAction SilentlyContinue
+    Remove-Item $ex5 -ErrorAction SilentlyContinue
     $a   = @("/compile:$t", "/inc:$IncRoot", "/log:$log")
     $p   = Start-Process -FilePath $MetaEditor -ArgumentList $a -Wait -PassThru -NoNewWindow
 
@@ -66,18 +70,22 @@ foreach ($t in $Targets) {
         elseif ($w -gt 0)  { $tag = "WARN" }
         else               { $tag = " OK " }
         $report.Add("[$tag] $name -- $e errors, $w warnings")
+        foreach ($d in $diags) { $report.Add("       $d") }
+        if ($e -gt 0) {
+            continue
+        }
     } else {
-        $report.Add("[????] $name -- cannot parse result line: $result")
+        $report.Add("[FAIL] $name -- cannot parse result line: $result")
         $totalErr++
+        foreach ($d in $diags) { $report.Add("       $d") }
+        continue
     }
 
-    foreach ($d in $diags) { $report.Add("       $d") }
-
-    $ex5 = $t -replace '\.mq5$', '.ex5'
     if (Test-Path $ex5) {
         $report.Add("       -> " + (Split-Path $ex5 -Leaf) + " " + (Get-Item $ex5).Length + " bytes")
     } else {
         $report.Add("       -> no .ex5 produced")
+        $totalErr++
     }
 }
 
@@ -98,7 +106,8 @@ if (Test-Path "$IncRoot\Include") {
 }
 $uncovered = $allInc | Where-Object { $covered -notcontains $_.FullName }
 if ($uncovered) {
-    $report.Add("[WARN] .mqh never seen by the compiler (no target includes them):")
+    $report.Add("[FAIL] .mqh never seen by the compiler (no target includes them):")
+    $totalErr += $uncovered.Count
     foreach ($u in $uncovered) { $report.Add("       $($u.FullName)") }
 } else {
     $report.Add("[ OK ] all $($allInc.Count) .mqh files covered by a compiled target")

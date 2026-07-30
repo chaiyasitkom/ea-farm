@@ -60,8 +60,52 @@ $Targets = @(
 
 # suite name -> source path (relative to repo)
 $Suites = @(
-    @{ Name = "TestWire"; Source = "tests\mql5\TestWire.mq5" }
+    @{ Name = "TestWire"; Source = "tests\mql5\TestWire.mq5" },
+    @{ Name = "TestBrokerTime"; Source = "tests\mql5\TestBrokerTime.mq5" }
 )
+
+$RequiredSuiteNames = @{
+    TestWire = @(
+        "test_framing_multiple_in_one_read",
+        "test_framing_split_across_reads",
+        "test_framing_crlf_tolerance",
+        "test_framing_empty_line_skipped",
+        "test_framing_oversize_frame_rejected",
+        "test_json_parse_malformed_skips_line",
+        "test_json_unknown_field_ignored",
+        "test_json_unknown_type_ignored",
+        "test_queue_full_drops_oldest",
+        "test_partial_send_resumes",
+        "test_utf8_multibyte_not_split",
+        "test_msg_id_empty_without_broker_time",
+        "test_msg_id_monotonic_across_1000_calls",
+        "test_msg_id_monotonic_when_clock_frozen",
+        "test_msg_id_unique_across_10000_calls"
+    )
+    TestBrokerTime = @(
+        "test_offset_detect_whole_hour",
+        "test_offset_detect_half_hour",
+        "test_offset_detect_negative",
+        "test_offset_reject_non_quantized",
+        "test_offset_reject_out_of_bounds",
+        "test_init_fails_when_server_time_zero",
+        "test_init_retries_until_deadline",
+        "test_init_retries_then_accepts_good_sample",
+        "test_roundtrip_broker_utc_identity",
+        "test_format_iso_utc_matches_schema",
+        "test_invalid_returns_zero_not_stale",
+        "test_invalid_after_90s_of_bad_samples",
+        "test_recovery_from_invalid_changed_offset_reports_change",
+        "test_dst_change_needs_three_samples",
+        "test_refresh_throttles_samples_20s",
+        "test_dst_change_accepted_on_third",
+        "test_dst_flap_does_not_change_offset",
+        "test_broker_day_start_normal",
+        "test_broker_day_start_across_dst_23h_and_25h",
+        "test_is_same_broker_day_across_utc_midnight",
+        "test_local_time_comes_from_source"
+    )
+}
 
 foreach ($t in $Targets) {
     if (-not $t.Enabled) { continue }
@@ -127,6 +171,9 @@ foreach ($s in $Suites) {
 
     # ---- 2. compile in the data folder ---------------------------------
     $clog = Join-Path $WorkDir "$targetName-$name-tester.log"
+    $ex5 = Join-Path $expDst "$name.ex5"
+    Remove-Item $clog -ErrorAction SilentlyContinue
+    Remove-Item $ex5 -ErrorAction SilentlyContinue
     $a = @("/compile:$expDst\$name.mq5", "/inc:$Data\MQL5", "/log:$clog")
     Start-Process -FilePath $MetaEditor -ArgumentList $a -Wait -NoNewWindow | Out-Null
 
@@ -138,7 +185,19 @@ foreach ($s in $Suites) {
     }
     Write-Output "  compile: $result"
 
-    if (-not (Test-Path (Join-Path $expDst "$name.ex5"))) {
+    if ($result -notmatch 'Result:\s*(\d+)\s*error') {
+        Write-Output "  [FAIL] cannot parse compile result line"
+        $anyFail = $true
+        continue
+    }
+    $compileErrors = [int]$Matches[1]
+    if ($compileErrors -gt 0) {
+        Write-Output "  [FAIL] compile reported $compileErrors error(s)"
+        $anyFail = $true
+        continue
+    }
+
+    if (-not (Test-Path $ex5)) {
         Write-Output "  [FAIL] no .ex5 -- compile failed, cannot run tests"
         $anyFail = $true
         continue
@@ -186,7 +245,7 @@ ShutdownTerminal=1
     $sw = [Diagnostics.Stopwatch]::StartNew()
     Start-Process -FilePath $Terminal -ArgumentList "/config:$ini" -Wait | Out-Null
     $sw.Stop()
-    Write-Output "  tester ran ${[int]$sw.Elapsed.TotalSeconds}s (exit code deliberately ignored)"
+    Write-Output "  tester ran $([int]$sw.Elapsed.TotalSeconds)s (exit code deliberately ignored)"
 
     # ---- 5. parse the result -------------------------------------------
     if (-not (Test-Path $resPath)) {
@@ -204,6 +263,24 @@ ShutdownTerminal=1
 
     $raw = Get-Content $resPath -Raw
     try { $j = $raw | ConvertFrom-Json } catch { Write-Output "  [FAIL] result is not valid JSON: $raw"; $anyFail = $true; continue }
+    $observedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    $observedPath = Join-Path $Common ($resultFile -replace '\.json$', '-observed.json')
+    $observed = [ordered]@{
+        suite = $name
+        target = $targetName
+        git_sha = $sha
+        observed_at = $observedAt
+        result_file = $resultFile
+        status = $j.status
+        total = $j.total
+        passed = $j.passed
+        failed = $j.failed
+    }
+    [IO.File]::WriteAllText(
+        $observedPath,
+        ($observed | ConvertTo-Json -Depth 8 -Compress),
+        [Text.UTF8Encoding]::new($false)
+    )
 
     if ($j.git_sha -ne $sha) {
         Write-Output "  [FAIL] git_sha mismatch: result=$($j.git_sha) HEAD=$sha"
@@ -212,22 +289,12 @@ ShutdownTerminal=1
     }
 
     Write-Output "  status=$($j.status) total=$($j.total) passed=$($j.passed) failed=$($j.failed)"
-    $requiredNames = @(
-        "test_framing_multiple_in_one_read",
-        "test_framing_split_across_reads",
-        "test_framing_crlf_tolerance",
-        "test_framing_empty_line_skipped",
-        "test_framing_oversize_frame_rejected",
-        "test_json_parse_malformed_skips_line",
-        "test_json_unknown_field_ignored",
-        "test_json_unknown_type_ignored",
-        "test_queue_full_drops_oldest",
-        "test_partial_send_resumes",
-        "test_utf8_multibyte_not_split",
-        "test_msg_id_monotonic_across_1000_calls",
-        "test_msg_id_monotonic_when_clock_frozen",
-        "test_msg_id_unique_across_10000_calls"
-    )
+    $requiredNames = $RequiredSuiteNames[$name]
+    if (-not $requiredNames -or $requiredNames.Count -eq 0) {
+        Write-Output "  [FAIL] no required test names registered for suite $name"
+        $anyFail = $true
+        continue
+    }
     if (-not ($j.PSObject.Properties.Name -contains "ran_names")) {
         Write-Output "  [FAIL] result JSON has no ran_names"
         $anyFail = $true

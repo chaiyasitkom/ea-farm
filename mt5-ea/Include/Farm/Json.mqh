@@ -61,10 +61,10 @@ string FarmDoubleJson(const double value, const int digits=8)
    return DoubleToString(value, digits);
 }
 
-string FarmIsoUtcFromBrokerTime(const datetime value)
+string FarmFormatIsoUtc(const datetime utc_time)
 {
    MqlDateTime dt;
-   TimeToStruct(value, dt);
+   TimeToStruct(utc_time, dt);
    return StringFormat("%04d-%02d-%02dT%02d:%02d:%02dZ",
                        dt.year, dt.mon, dt.day, dt.hour, dt.min, dt.sec);
 }
@@ -143,10 +143,11 @@ bool FarmJsonLooksLikeObject(const string line)
 }
 
 string FarmMakeEnvelope(const string type, const string msg_id, const string session_id,
-                        const datetime broker_time, const string payload_json)
+                        const datetime server_utc, const datetime sent_utc,
+                        const string payload_json)
 {
-   const string ts_server = FarmIsoUtcFromBrokerTime(broker_time);
-   const string ts_sent = FarmIsoUtcFromBrokerTime(TimeGMT());
+   const string ts_server = FarmFormatIsoUtc(server_utc);
+   const string ts_sent = FarmFormatIsoUtc(sent_utc);
    return "{"
           "\"v\":1,"
           "\"type\":" + FarmJsonQuote(type) + ","

@@ -12,6 +12,58 @@ int    g_failed = 0;
 string g_ran_names[];
 string g_failed_names[];
 
+class CWireFakeClockSource : public CBrokerClockSource
+{
+public:
+   datetime server_time;
+   datetime gmt_time;
+   datetime local_time;
+
+   CWireFakeClockSource()
+   {
+      server_time = 0;
+      gmt_time = 0;
+      local_time = 0;
+   }
+
+   void Set(const datetime server_value, const datetime gmt_value)
+   {
+      server_time = server_value;
+      gmt_time = gmt_value;
+      local_time = gmt_value + 25200;
+   }
+
+   virtual datetime ServerTime() { return server_time; }
+   virtual datetime GmtTime() { return gmt_time; }
+   virtual datetime LocalTime() { return local_time; }
+   virtual int GmtOffsetLocal() { return 25200; }
+   virtual int DstLocal() { return 0; }
+   virtual void SleepMs(const int ms) {}
+};
+
+datetime MakeTime(const int year, const int mon, const int day,
+                  const int hour, const int min, const int sec)
+{
+   MqlDateTime dt;
+   dt.year = year;
+   dt.mon = mon;
+   dt.day = day;
+   dt.hour = hour;
+   dt.min = min;
+   dt.sec = sec;
+   return StructToTime(dt);
+}
+
+bool UseValidBrokerTime(CWire &wire, CBrokerTime &clock, CWireFakeClockSource &src, const int offset_sec = 10800)
+{
+   const datetime utc = MakeTime(2026, 7, 27, 9, 15, 2);
+   src.Set(utc + offset_sec, utc);
+   const bool ok = clock.Init(GetPointer(src));
+   if(ok)
+      wire.UseBrokerTime(GetPointer(clock));
+   return ok;
+}
+
 void RecordRan(const string name)
 {
    const int count = ArraySize(g_ran_names);
@@ -178,14 +230,31 @@ bool LooksLikeUlid(const string value)
 void test_msg_id_is_ulid_26_chars()
 {
    CWire wire;
+   CBrokerTime clock;
+   CWireFakeClockSource src;
+   AssertTrue(UseValidBrokerTime(wire, clock, src), "test_msg_id_is_ulid_26_chars broker_time");
    const string msg_id = wire.TestNextMsgId();
    AssertTrue(LooksLikeUlid(msg_id), "test_msg_id_is_ulid_26_chars");
+}
+
+void test_msg_id_empty_without_broker_time()
+{
+   CWire wire;
+   AssertEqualString(wire.TestNextMsgId(), "", "test_msg_id_empty_without_broker_time");
 }
 
 void test_msg_id_differs_between_wire_objects()
 {
    CWire wire_a;
    CWire wire_b;
+   CBrokerTime clock_a;
+   CBrokerTime clock_b;
+   CWireFakeClockSource src_a;
+   CWireFakeClockSource src_b;
+   AssertTrue(UseValidBrokerTime(wire_a, clock_a, src_a), "test_msg_id_differs_between_wire_objects broker_time_a");
+   AssertTrue(UseValidBrokerTime(wire_b, clock_b, src_b, 7200), "test_msg_id_differs_between_wire_objects broker_time_b");
+   const datetime later = MakeTime(2026, 7, 27, 9, 15, 3);
+   src_b.Set(later + 7200, later);
    const string id_a = wire_a.TestNextMsgId();
    const string id_b = wire_b.TestNextMsgId();
    AssertTrue(id_a != id_b, "test_msg_id_differs_between_wire_objects");
@@ -194,6 +263,9 @@ void test_msg_id_differs_between_wire_objects()
 void test_msg_id_monotonic_across_1000_calls()
 {
    CWire wire;
+   CBrokerTime clock;
+   CWireFakeClockSource src;
+   AssertTrue(UseValidBrokerTime(wire, clock, src), "test_msg_id_monotonic_across_1000_calls broker_time");
    string previous = wire.TestNextMsgId();
    bool monotonic = true;
    for(int i = 1; i < 1000; i++)
@@ -225,6 +297,9 @@ void test_msg_id_monotonic_when_clock_frozen()
 void test_msg_id_unique_across_10000_calls()
 {
    CWire wire;
+   CBrokerTime clock;
+   CWireFakeClockSource src;
+   AssertTrue(UseValidBrokerTime(wire, clock, src), "test_msg_id_unique_across_10000_calls broker_time");
    string previous = wire.TestNextMsgId();
    bool unique = true;
    for(int i = 1; i < 10000; i++)
@@ -339,6 +414,8 @@ void RunAllTests()
    test_hello_ack_rejected_sets_failed_auth();
    RecordRan("test_msg_id_is_ulid_26_chars");
    test_msg_id_is_ulid_26_chars();
+   RecordRan("test_msg_id_empty_without_broker_time");
+   test_msg_id_empty_without_broker_time();
    RecordRan("test_msg_id_differs_between_wire_objects");
    test_msg_id_differs_between_wire_objects();
    RecordRan("test_msg_id_monotonic_across_1000_calls");
@@ -403,7 +480,7 @@ void WriteJsonResult()
    json += "\"suite\":\"TestWire\",";
    json += "\"git_sha\":" + FarmJsonQuote(InpTestGitSha) + ",";
    json += "\"status\":" + FarmJsonQuote(g_failed == 0 ? "PASS" : "FAIL") + ",";
-   json += "\"started_at\":" + FarmJsonQuote(TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS)) + ",";
+   json += "\"started_at\":" + FarmJsonQuote("tester") + ",";
    json += "\"total\":" + IntegerToString(g_total) + ",";
    json += "\"passed\":" + IntegerToString(g_total - g_failed) + ",";
    json += "\"failed\":" + IntegerToString(g_failed) + ",";
