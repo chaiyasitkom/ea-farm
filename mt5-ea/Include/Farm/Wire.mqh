@@ -690,13 +690,18 @@ private:
       if(m_socket == INVALID_HANDLE || !SocketIsConnected(m_socket))
          return;
 
-      while(SocketIsReadable(m_socket))
+      while(true)
       {
+         const uint avail = SocketIsReadable(m_socket);
+         if(avail == 0)
+            break;
+
          read_loops++;
          uchar buf[];
-         ArrayResize(buf, FARM_WIRE_READ_CHUNK_BYTES);
+         const int want = (int)MathMin((uint)FARM_WIRE_READ_CHUNK_BYTES, avail);
+         ArrayResize(buf, want);
          ResetLastError();
-         const int n = SocketRead(m_socket, buf, FARM_WIRE_READ_CHUNK_BYTES, 0);
+         const int n = SocketRead(m_socket, buf, want, 0);
          if(n < 0)
          {
             m_log.Warn(StringFormat("socket_read_failed err=%d", GetLastError()));
@@ -984,6 +989,18 @@ public:
          "\"bytes_read\":" + IntegerToString(bytes_read) + ","
          "\"pump_us\":" + IntegerToString((long)elapsed_us) +
       "}");
+      if(elapsed_us > 20000)
+      {
+         WriteDiagLine("{"
+            "\"ev\":\"pump_slow\","
+            "\"ts\":" + DiagTsJson() + ","
+            "\"state_start\":" + FarmJsonQuote(WireStateText(state_at_start)) + ","
+            "\"state_end\":" + FarmJsonQuote(WireStateText(m_state)) + ","
+            "\"read_loops\":" + IntegerToString(read_loops) + ","
+            "\"bytes_read\":" + IntegerToString(bytes_read) + ","
+            "\"pump_us\":" + IntegerToString((long)elapsed_us) +
+         "}");
+      }
       if(m_verbose)
          m_log.Info(StringFormat("pump_diag state_start=%s state_end=%s read_loops=%d bytes_read=%d pump_elapsed_us=%I64u",
                                  WireStateText(state_at_start), WireStateText(m_state), read_loops, bytes_read, elapsed_us));
