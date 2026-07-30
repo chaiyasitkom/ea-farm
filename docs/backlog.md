@@ -17,7 +17,7 @@
 | SPEC-007 | Data ingest: MT5 history → Parquet (**6 คู่ · M1 เท่านั้นแล้ว resample** · ~10 ปี) | Codex | 002, **064** | **SPEC_READY** — [spec](specs/SPEC-007-data-ingest.md) |
 | SPEC-008 | Data quality gate (gap/spike/dup/weekend detection) | Codex | 007 | **SPEC_READY** — [spec](specs/SPEC-008-data-quality-gate.md) |
 | SPEC-009 | **CI: ปิด G3 ด้วย attestation** — `pre-push` hook + `mql5-attest` + workflow ที่รอ remote | Codex | 002, **065** | **SPEC_READY** — [spec](specs/SPEC-009-ci.md) |
-| SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | **001** (แก้จาก 002 — เป็น MQL5 ล้วน ไม่ต้องรอ scaffold) | **SPEC_READY** — [spec](specs/SPEC-063-broker-time.md) |
+| SPEC-063 | **BrokerTime module** — broker tz/DST เป็นแหล่งความจริงเดียว ห้ามคำนวณเวลาเอง (G6) | Codex | **001** (แก้จาก 002 — เป็น MQL5 ล้วน ไม่ต้องรอ scaffold) | 🔨 **IN_REVIEW รอบ 2 → `CHANGES_REQUIRED`** · [spec rev.2a](specs/SPEC-063-broker-time.md) · [review 1](reviews/SPEC-063.md) · [review 2](reviews/SPEC-063-02.md) — B1/B2/B3/B5/B8 ปิดแล้ว · เหลือ **B4** (ไม่เคยแตะ) · B15/B16 ใหม่ · **gate T1/T2 ต้องแก้ก่อนเชื่อผลรัน** |
 | SPEC-064 | **SymbolRegistry** — `(broker, raw)` → canonical + base/quote + risk profile ต่อ symbol (G7) · 🔴 ขาดไม่ได้หลังเพิ่ม XM: `GOLD` → `XAUUSD` เดาด้วย string rule ไม่ได้ ([ADR-003](decisions/ADR-003-multi-broker.md)) | Codex | **004** (แก้จาก 006 — เป็นไฟล์ในรีโป ไม่ใช่ตาราง DB) | **SPEC_READY** — [spec](specs/SPEC-064-symbol-registry.md) |
 | SPEC-065 | **MQL5 test harness** — ส่วนใหญ่ทำแล้ว · เหลือ manifest หลาย suite + attestation ให้ CI (G9, [07](07-compile-gate.md)) | Codex | 001 | **SPEC_READY** — [spec](specs/SPEC-065-mql5-test-harness.md) |
 
@@ -46,15 +46,15 @@
 | SPEC-023 | `SafeMode.mqh` + R13 kill file + R16 brain timeout | Codex | 019, **063** | **SPEC_READY** — [spec](specs/SPEC-023-safemode.md) |
 | SPEC-060 | **MarketDataCollector** — MT5 read-only ป้อน quote+bar ทุก symbol (G1) | Codex | 006, **013**, **064** | **SPEC_READY** — [spec](specs/SPEC-060-market-data-collector.md) |
 | SPEC-061 | **P10 stale-data guard ให้ fail-closed** — collector ตาย = reject ไม่ใช่ correlation 0 (G1) | Codex | 060 | **SPEC_READY** — [spec](specs/SPEC-061-stale-data-guard.md) |
-| SPEC-024 | Currency exposure decomposition (P3) | Codex | 014, 064 | TODO |
-| SPEC-025 | `brain/risk/` P1,P2,P5,P6,P9,P10,P11 | Codex | 024 | TODO |
-| SPEC-026 | Correlation engine + P4 correlated risk cap | Codex | 024, 060 | TODO |
-| SPEC-027 | `RISK_DIRECTIVE` end-to-end + mode precedence test | Codex | 025 | TODO |
-| SPEC-028 | Ops dashboard v1 + **kill switch** | Codex | 025 | TODO |
-| SPEC-029 | Telegram alerting | Codex | 025 | TODO |
-| SPEC-030 | Risk scenario suite (20 สถานการณ์เลวร้าย) | **Claude ออกแบบ** / Codex code | 019–027 | TODO |
-| SPEC-030b | **Runbook ขั้นต้น** — ย้ายมาจาก Phase 6 เพราะเงินจริงเริ่มปลาย Phase 2 (G4) | **Claude** | 028 | TODO |
-| SPEC-062 | **Watchdog** — process แยกเฝ้า brain ห้ามแชร์ dependency (G2) | Codex | 029 | TODO |
+| SPEC-027 | **`RISK_DIRECTIVE` end-to-end + mode precedence** — ★ **กลับด้าน dependency: ไม่ขึ้นกับ 025 แล้ว** ท่อ+กฎ precedence แยกจากคนตัดสิน → **หลุดจากเงา D9/D10** | Codex | **013, 019, 023, 063** (แก้จาก 025) | **SPEC_READY** — [spec](specs/SPEC-027-risk-directive.md) |
+| SPEC-028 | Ops dashboard v1 + **kill switch** — process แยกจาก brain · กดได้ตอน brain ตาย | Codex | 006, 014, **023** (แก้จาก 025) | **SPEC_READY** — [spec](specs/SPEC-028-dashboard-kill-switch.md) |
+| SPEC-029 | Telegram alerting — outbox pattern · storm cap ห้ามกลืน BREACH | Codex | 006, 014 (แก้จาก 025) | **SPEC_READY** — [spec](specs/SPEC-029-telegram-alerting.md) · 🔑 ต้องมี bot token ตอนรัน test ชั้น live |
+| SPEC-062 | **Watchdog** — process แยกเฝ้า brain ห้ามแชร์ dependency (G2) · stdlib ล้วน | Codex | 028, 029 | **SPEC_READY** — [spec](specs/SPEC-062-watchdog.md) |
+| SPEC-024 | Currency exposure decomposition (P3) | Codex | 014, 064 | 🔴 **BLOCKED — D9** |
+| SPEC-025 | `brain/risk/` P1,P2,P5,P6,P9,P10,P11 · **ต้อง `import` จาก SPEC-027 ห้ามเขียน `stricter_of` ใหม่** | Codex | 024, **027** | 🔴 **BLOCKED — D9 + D10** |
+| SPEC-026 | Correlation engine + P4 correlated risk cap | Codex | 024, 060 | 🔴 **BLOCKED — D9** |
+| SPEC-030 | Risk scenario suite (20 สถานการณ์เลวร้าย) | **Claude ออกแบบ** / Codex code | 019–027 | TODO — เขียนได้เมื่อ 019–027 implement เสร็จ |
+| SPEC-030b | **Runbook ขั้นต้น** — ย้ายมาจาก Phase 6 เพราะเงินจริงเริ่มปลาย Phase 2 (G4) | **Claude** | 028 | TODO — ต้องรอ 028 + 023 ทำงานจริงก่อน ไม่งั้นเขียนจากจินตนาการ |
 
 ## Phase 3 — Research + ML
 
