@@ -92,18 +92,80 @@ if(utc_now <= 0)
 
 ## แก้ 5 🟠 gate ที่เหลือ
 
+> อัปเดตหลัง [review รอบ 4](reviews/SPEC-063-04.md) — T5 ปิดแล้ว · เพิ่ม **P1** และ **N1**
+
 | # | ทำ | ที่ |
 |---|-----|-----|
-| **T5** | เลิก**เขียนทับไฟล์ผลของ EA** เพื่อเติม `started_at` → เขียนไฟล์แยก (`*-observed.json`) · ถ้าจำเป็นต้องเขียนจริงใช้ `[IO.File]::WriteAllText` + `UTF8Encoding $false` — **ห้ามมี BOM** เพราะ Python `json.load()` จะพัง และไฟล์นี้คือสิ่งที่ SPEC-065 เอาไป attest | `run-mql5-tests.ps1:249-251` |
-| **T6** | `run-chaos.ps1` เช็ค**รายชื่อ test ที่รันจริง** ไม่ใช่จำนวน skip — รัน `-v` แล้ว parse เทียบ required list แบบเดียวกับ `$RequiredSuiteNames` | `run-chaos.ps1:41-60` |
-| **⑤** | แยก **`exit 3`** สำหรับ env failure: ตรวจ EA log หา `err=4014` → พิมพ์ว่าต้องไป whitelist · **ยังแดงเหมือนเดิม** แต่ script แยกออกว่าเป็นสิ่งแวดล้อมหรือ regression | `run-chaos.ps1` |
-| **T7** | `ReadToEnd()` สองสตรีมเรียงกัน → **deadlock ได้** ถ้า child เขียน stderr จนเต็ม buffer · ใช้ async read | `run-chaos.ps1:34-36` |
-| **T9** | ไม่มี timeout รวม → `WaitForExit($ms)` + kill + FAIL (fast ~10 นาที · slow ~70 นาที) | `run-chaos.ps1:36` |
+| ~~**T5**~~ | ✅ **ปิดแล้ว** — เขียน `*-observed.json` แยก ไม่แตะไฟล์ EA · `UTF8Encoding $false` ไม่มี BOM | — |
+| **P1** ★ | **preflight ตรวจสิ่งแวดล้อมก่อนรัน** — ดู §P1 ด้านล่าง · **ทำก่อนข้ออื่นในตารางนี้** | `run-chaos.ps1` |
+| **⑤** | แยก **`exit 3`** สำหรับ env failure · ทำคู่กับ P1 (P1 คือคนตรวจ · ⑤ คือรหัสที่คืน) | `run-chaos.ps1` |
+| **N1** | `*-observed.json` บันทึก `git_sha = $sha` (HEAD) และเขียน**ก่อน**เช็ค `$j.git_sha` → ถ้าผลเป็นของเก่า ไฟล์จะอ้าง HEAD ปัจจุบันทั้งที่ผลไม่ใช่ของมัน · **เก็บทั้ง `git_sha_head` และ `git_sha_result = $j.git_sha`** หรือย้ายไปเขียนหลังเช็คผ่าน · สำคัญเพราะไฟล์นี้คือสิ่งที่ [SPEC-065](specs/SPEC-065-mql5-test-harness.md) เอาไป attest | `run-mql5-tests.ps1:266-282` |
+| **T6** | เช็ค**รายชื่อ test ที่รันจริง** ไม่ใช่จำนวน skip — รัน `-v` แล้ว parse เทียบ required list แบบเดียวกับ `$RequiredSuiteNames` · **ปิดไปครึ่งเดียว** (regex อ่านค่าตอน fail ได้แล้ว แต่ยังนับจำนวน) | `run-chaos.ps1:44-48` |
+| **T7** | `ReadToEnd()` สองสตรีมเรียงกัน → **deadlock ได้** ถ้า child เขียน stderr จนเต็ม buffer · ใช้ async read | `run-chaos.ps1:37-38` |
+| **T9** | ไม่มี timeout รวม → `WaitForExit($ms)` + kill + FAIL (fast ~10 นาที · slow ~70 นาที) | `run-chaos.ps1:39` |
 | **T8** | `$Repo = "D:\ea-farm"` hardcoded **ที่ที่ 3 แล้ว** → รวมเข้า `.env` ตอน SPEC-002 (`C11` เดิม · SPEC-028 จะใช้ค่าเดียวกันอีก) | `run-chaos.ps1:14` |
 
-**หลักฐานสดของ T6:** รันคืนนี้ gate พิมพ์ `CHAOS GATE: FAILED -- skipped=0`
-ทั้งที่ unittest บอก `FAILED (failures=5, skipped=1)` — regex จับเฉพาะ `OK \(skipped=N\)`
-จึงอ่านไม่ได้ตอน fail · **ตัวเลขใน gate output เชื่อไม่ได้ตอนแดง**
+**หลักฐานสดของ T6 และ T9:** รัน 2026-07-30
+· รอบแรก gate พิมพ์ `CHAOS GATE: FAILED -- skipped=0` ทั้งที่ unittest บอก `skipped=1`
+· รอบสอง **ค้างเกิน 10 นาทีจนถูกตัด** แล้วทิ้ง `terminal64.exe` + `python` ค้าง 3 process
+  เพราะไม่มี timeout และ `finally` ของ harness ไม่ได้ทำงานตอนแม่ถูก kill
+  → **T9 ต้องมีทั้ง timeout และการเก็บกวาด process ลูกด้วย** ไม่ใช่แค่ `WaitForExit($ms)`
+
+---
+
+### §P1 ★ preflight — เจอปัญหาใน 5 มิลลิวินาที แทน 327 วินาที
+
+**ที่มา:** คืน 2026-07-30 เสียเวลาไป 2 รอบเต็ม (327 วินาที + 10 นาที) เพื่อค้นพบว่า
+**MT5 ไม่ได้เปิด WebRequest** ซึ่งเป็นค่าที่อ่านได้จากไฟล์ก่อนรันด้วยซ้ำ
+· gate ที่ใช้เวลา 5 นาทีเพื่อบอกว่า "สิ่งแวดล้อมไม่พร้อม" คือ gate ที่คนจะเลิกรัน
+
+#### ตรวจ 3 อย่างก่อนแตะ MT5
+
+| # | ตรวจ | ไม่ผ่าน → |
+|---|------|-----------|
+| 1 | **พอร์ตว่างไหม** — ลอง bind `127.0.0.1:$EA_FARM_CHAOS_PORT` | `FAILED (ENV)` + **บอกว่า PID ไหนถืออยู่** (`netstat -ano`) · `exit 3` |
+| 2 | **`WebRequest=1`** ใน `[Experts]` ของ `common.ini` | `FAILED (ENV)` + ขั้นตอนตั้งค่า · `exit 3` |
+| 3 | **`WebRequestUrl=` มี `127.0.0.1`** | เหมือนข้อ 2 |
+
+ไฟล์: `<TERMINAL_DATA>\config\common.ini` — **UTF-16LE อ่านได้ ไม่ได้เข้ารหัส**
+(`settings.ini` ต่างหากที่เข้ารหัส — อย่าไปยุ่ง)
+
+```
+[Experts]      ← บรรทัด ~37
+WebRequest=0   ← checkbox "Allow WebRequest for listed URL"
+WebRequestUrl= ← รายการ whitelist คั่นด้วย ;
+```
+
+#### ★★ ข้อจำกัดที่ **ต้องเขียนกำกับไว้ในโค้ด** ห้ามละ
+
+`common.ini` ถูกเขียน**เฉพาะตอน MT5 ปิดอย่างสะอาด** เท่านั้น
+· harness `kill` terminal ทุกครั้ง → ไฟล์นี้จะค้างเป็นค่าของ **"ครั้งล่าสุดที่ปิดสะอาด"**
+· ตัวอย่างจริง: 2026-07-30 ผู้ใช้แก้ setting เวลา 22:21 (`settings.ini` เปลี่ยน)
+  แต่ `common.ini` ยังเป็นของ **07-29 16:31** เพราะไม่เคยปิดสะอาดเลยตั้งแต่นั้น
+
+| ต้องทำ | ห้ามทำ |
+|--------|--------|
+| เตือนเมื่อ `common.ini` เก่ากว่า `settings.ini` — *"ค่าที่อ่านอาจไม่ใช่ค่าปัจจุบัน ปิด MT5 ให้สนิทหนึ่งครั้งแล้วรันใหม่"* | ถือว่า preflight ผ่าน = สิ่งแวดล้อมพร้อมแน่นอน |
+| ให้ preflight เป็น **ด่านคัดกรอง** ที่จับเคสชัดๆ ได้เร็ว | ให้ preflight เป็น**หลักฐาน**ว่าพร้อม |
+
+**ถ้าละข้อนี้ P1 จะกลายเป็น bug class เดิมของโปรเจกต์นี้ทันที** —
+*"เขียวเพราะอ่านของเก่า"* ซึ่งเป็นสิ่งเดียวกับ T1 (stale `.ex5`) และ G1 (`correlation = 0`)
+
+#### ห้าม preflight แก้ค่าให้เอง
+
+อย่าเขียน `common.ini` เพื่อ "ช่วยตั้งให้" — MT5 เขียนทับตอนปิด และการมี 2 คนเขียนไฟล์เดียวกัน
+จะทำให้สืบไม่ได้ว่าค่าที่รันจริงมาจากไหน · **preflight มีหน้าที่บอก ไม่ใช่ซ่อม**
+(หลักการเดียวกับ [SPEC-028 §4.3](specs/SPEC-028-dashboard-kill-switch.md) — เครื่องมือฉุกเฉินยิ่งโง่ยิ่งเชื่อได้)
+
+#### ผลพลอยได้: ขั้นตอนที่ต้องลง runbook (SPEC-030b)
+
+| ขั้น | ทำ |
+|------|-----|
+| 1 | `Tools → Options → Expert Advisors` |
+| 2 | ✅ Allow Algo Trading |
+| 3 | ✅ **Allow WebRequest for listed URL** ← ไม่ติ๊ก = รายการข้างล่างถูกละเลยทั้งหมด |
+| 4 | เพิ่ม `127.0.0.1` **และ** `127.0.0.1:45001` |
+| 5 | ★ **ปิดด้วย `File → Exit`** — ห้ามปิดด้วย Task Manager ไม่งั้น config ไม่ถูกเขียน |
 
 ## ✅ ปิดแล้วในรอบแก้นี้ — ไม่ต้องทำซ้ำ
 
