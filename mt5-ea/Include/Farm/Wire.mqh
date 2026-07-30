@@ -139,21 +139,26 @@ private:
       return m_backoff_sec * 1000 + spread;
    }
 
-   string WireStateText() const
+   string WireStateText(const ENUM_WIRE_STATE state) const
    {
-      if(m_state == WIRE_DISCONNECTED)
+      if(state == WIRE_DISCONNECTED)
          return "DISCONNECTED";
-      if(m_state == WIRE_CONNECTING)
+      if(state == WIRE_CONNECTING)
          return "CONNECTING";
-      if(m_state == WIRE_CONNECTED)
+      if(state == WIRE_CONNECTED)
          return "CONNECTED";
-      if(m_state == WIRE_AUTHENTICATING)
+      if(state == WIRE_AUTHENTICATING)
          return "AUTHENTICATING";
-      if(m_state == WIRE_READY)
+      if(state == WIRE_READY)
          return "READY";
-      if(m_state == WIRE_FAILED_AUTH)
+      if(state == WIRE_FAILED_AUTH)
          return "FAILED_AUTH";
       return "DISCONNECTED";
+   }
+
+   string WireStateText() const
+   {
+      return WireStateText(m_state);
    }
 
    void RecordPumpElapsed(const ulong elapsed_us)
@@ -612,13 +617,14 @@ private:
          m_log.Debug("unknown_message_type_skipped type=" + type);
    }
 
-   void ReadAvailable()
+   void ReadAvailable(int &read_loops, int &bytes_read)
    {
       if(m_socket == INVALID_HANDLE || !SocketIsConnected(m_socket))
          return;
 
       while(SocketIsReadable(m_socket))
       {
+         read_loops++;
          uchar buf[];
          ArrayResize(buf, FARM_WIRE_READ_CHUNK_BYTES);
          ResetLastError();
@@ -633,6 +639,7 @@ private:
          if(n == 0)
             break;
 
+         bytes_read += n;
          m_last_inbound_tick = NowTick();
          AppendInboundBytes(buf, n);
          if(ArraySize(m_inbound_bytes) > FARM_WIRE_MAX_FRAME_BYTES && !InboundHasNewline())
@@ -653,6 +660,13 @@ private:
             HandleInboundLine(line);
          }
       }
+   }
+
+   void ReadAvailable()
+   {
+      int read_loops = 0;
+      int bytes_read = 0;
+      ReadAvailable(read_loops, bytes_read);
    }
 
    bool PopFrame(string &out_line)
@@ -840,6 +854,8 @@ public:
    {
       const ulong started = GetMicrosecondCount();
       const ENUM_WIRE_STATE state_at_start = m_state;
+      int read_loops = 0;
+      int bytes_read = 0;
 
       if(m_state == WIRE_DISCONNECTED || m_state == WIRE_FAILED_AUTH)
          TryConnect();
@@ -851,7 +867,7 @@ public:
          ScheduleReconnect();
       }
 
-      ReadAvailable();
+      ReadAvailable(read_loops, bytes_read);
 
       if(m_state == WIRE_CONNECTED)
       {
@@ -888,6 +904,9 @@ public:
 
       const ulong elapsed_us = GetMicrosecondCount() - started;
       RecordPumpElapsed(elapsed_us);
+      if(m_verbose)
+         m_log.Info(StringFormat("pump_diag state_start=%s state_end=%s read_loops=%d bytes_read=%d pump_elapsed_us=%I64u",
+                                 WireStateText(state_at_start), WireStateText(m_state), read_loops, bytes_read, elapsed_us));
       if(elapsed_us > 50000)
          m_log.Warn(StringFormat("pump_slow_us=%I64u", elapsed_us));
       else if(m_verbose && elapsed_us > 20000)
