@@ -199,6 +199,47 @@ class LiveChartChaosTests(unittest.TestCase):
     def _event_log(self, name: str) -> Path:
         return Path(tempfile.gettempdir()) / f"ea-farm-{name}.jsonl"
 
+    def _wait_for_backoff_ladder_connects(
+        self,
+        event_log: Path,
+        expected_gaps: list[float],
+        timeout: float,
+    ) -> list[dict[str, Any]]:
+        count = len(expected_gaps) + 1
+        deadline = time.monotonic() + timeout
+        last_gaps: list[float] = []
+        while time.monotonic() < deadline:
+            connects = [
+                item for item in read_events(event_log) if item.get("event") == "connect"
+            ]
+            times = [float(item["monotonic"]) for item in connects]
+            gaps = [times[idx + 1] - times[idx] for idx in range(len(times) - 1)]
+            last_gaps = gaps
+            for start_idx, gap in enumerate(gaps):
+                if not 0.7 <= gap <= 2.6 or len(connects) - start_idx < count:
+                    continue
+                candidate = connects[start_idx : start_idx + count]
+                candidate_times = [float(item["monotonic"]) for item in candidate]
+                candidate_gaps = [
+                    candidate_times[idx + 1] - candidate_times[idx]
+                    for idx in range(len(candidate_times) - 1)
+                ]
+                if self._backoff_gaps_match(candidate_gaps, expected_gaps):
+                    return candidate
+            time.sleep(0.1)
+        raise AssertionError(
+            f"timed out waiting for {count} backoff ladder connects; observed gaps={last_gaps}"
+        )
+
+    def _backoff_gaps_match(self, gaps: list[float], expected: list[float]) -> bool:
+        for observed, nominal in zip(gaps, expected, strict=True):
+            if observed < nominal * 0.7 or observed > nominal * 1.5 + 1.1:
+                return False
+        for prev, current in zip(gaps, gaps[1:], strict=False):
+            if current < prev * 0.7:
+                return False
+        return True
+
     def test_ea_reconnects_after_server_kill(self) -> None:
         port = chaos_port()
         event_log = self._event_log("live-events-reconnect")
@@ -224,11 +265,15 @@ class LiveChartChaosTests(unittest.TestCase):
         with echo_server(port, event_log, "--close-on-accept"):
             event_log.write_text("", encoding="utf-8")
             with live_terminal(port):
-                connects = wait_for_event_count(event_log, "connect", 7, timeout=100.0)
+                expected = [1.0, 2.0, 4.0, 8.0, 16.0, 30.0]
+                connects = self._wait_for_backoff_ladder_connects(
+                    event_log,
+                    expected,
+                    timeout=100.0,
+                )
 
-        times = [float(item["monotonic"]) for item in connects[:7]]
+        times = [float(item["monotonic"]) for item in connects]
         gaps = [times[idx + 1] - times[idx] for idx in range(len(times) - 1)]
-        expected = [1.0, 2.0, 4.0, 8.0, 16.0, 30.0]
         for observed, nominal in zip(gaps, expected, strict=True):
             self.assertGreaterEqual(observed, nominal * 0.7)
             self.assertLessEqual(observed, nominal * 1.5 + 1.1)
