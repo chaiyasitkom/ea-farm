@@ -8,7 +8,7 @@
 
 | ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
 |----|-----|-------|---------|-------|
-| SPEC-001 | MT5 Executor skeleton + Wire (socket, JSON-lines, reconnect) | Codex | — | **SPEC_READY** |
+| SPEC-001 | MT5 Executor skeleton + Wire (socket, JSON-lines, reconnect) | Codex | — | 🔨 **IN_REVIEW** (2026-07-31) — ฟังก์ชันครบ · gate เขียว: **TestWire 53/53** · `Pump()` p99 **16,576 µs** (เกณฑ์ < 20,000) · §1.6 partial-send ปิดแล้ว · **เหลือ 4 ข้อ:** soak 24 ชม. 🔴 · slow gate `..._over_1h` 🔴 · N1 (assertion เป็น dead code) 🟠 · W2 (`echo_server` นับ TCP ขยะ) 🟠 — [review chaos 03](reviews/SPEC-016-chaos-03.md) |
 | SPEC-002 | Repo scaffold, `.env.example`, **`tools/task.py`** (ไม่ใช่ Makefile — เครื่องนี้ไม่มี `make`) + local gate `check` | Codex | — | **SPEC_READY** — [spec](specs/SPEC-002-repo-scaffold.md) |
 | SPEC-003 | `contracts/schema/*.json` ทุก message type | **Claude** | — | ✅ **DONE** — 13 schema + README · [handoff](reviews/SPEC-003-schema-handoff.md) |
 | SPEC-004 | Codegen: schema → pydantic + MQL5 struct/serializer | Codex | 003 | **SPEC_READY** — [spec](specs/SPEC-004-codegen.md) |
@@ -32,7 +32,7 @@
 | SPEC-013 | Gateway: asyncio TCP server, auth, session registry ★ **คอขวดของ Phase 1** | Codex | 002, 004, 006, **064** | **SPEC_READY** — [spec](specs/SPEC-013-gateway.md) |
 | SPEC-014 | Persist intents/exec_reports/account_state/bars | Codex | **006**, 013 | **SPEC_READY** — [spec](specs/SPEC-014-persistence.md) |
 | SPEC-015 | EMA baseline strategy (พิสูจน์ท่อ ไม่ใช่ทำเงิน) | Codex | 013, **014**, **064** | **SPEC_READY** — [spec](specs/SPEC-015-ema-baseline.md) |
-| SPEC-016 | Chaos test harness + scenario — **ชั้น A (wire) ต้องการแค่ 001** · ชั้น B (intent) ต้องการ 011+013 | Codex | **001** (A) · 011,013 (B) | **SPEC_READY** — [spec](specs/SPEC-016-chaos-harness.md) ← **ปลดล็อก work-order รอบ 1** |
+| SPEC-016 | Chaos test harness + scenario — **ชั้น A (wire) ต้องการแค่ 001** · ชั้น B (intent) ต้องการ 011+013 | Codex | **001** (A) · 011,013 (B) | ✅ **ชั้น A APPROVED_WITH_NOTES** (2026-07-31) — `CHAOS GATE: PASSED` 5 ผ่าน 1 skip (soak) · backoff พิสูจน์ครบ**ถึง cap 30s** · **W1 ปิด: `SocketRead` ขอ 4096 byte เสมอ → บล็อก `Pump()` 29 วินาที** ([review](reviews/SPEC-016-chaos-03.md)) · ค้าง N1 🟠 · **ชั้น B ยังไม่เริ่ม** รอ 011+013 — [spec](specs/SPEC-016-chaos-harness.md) |
 | SPEC-017 | Position reconciliation ตอน `OnInit` | Codex | **010**, 011, **063** | **SPEC_READY** — [spec](specs/SPEC-017-reconciliation.md) |
 | SPEC-018 | DB ↔ MT5 history consistency checker | Codex | 014, **064** | **SPEC_READY** — [spec](specs/SPEC-018-consistency-checker.md) |
 
