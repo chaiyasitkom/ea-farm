@@ -21,6 +21,7 @@
 | SPEC-064 | **SymbolRegistry** — `(broker, raw)` → canonical + base/quote + risk profile ต่อ symbol (G7) · 🔴 ขาดไม่ได้หลังเพิ่ม XM: `GOLD` → `XAUUSD` เดาด้วย string rule ไม่ได้ ([ADR-003](decisions/ADR-003-multi-broker.md)) | Codex | **004** (แก้จาก 006 — เป็นไฟล์ในรีโป ไม่ใช่ตาราง DB) | **SPEC_READY** — [spec](specs/SPEC-064-symbol-registry.md) |
 | SPEC-065 | **MQL5 test harness** — ส่วนใหญ่ทำแล้ว · เหลือ manifest หลาย suite + attestation ให้ CI (G9, [07](07-compile-gate.md)) | Codex | 001 | **SPEC_READY** — [spec](specs/SPEC-065-mql5-test-harness.md) |
 | SPEC-066 | **กริ่ง handoff ผ่าน git hook** — ของชั่วคราวก่อน SPEC-029 · ~40 บรรทัด ใช้ได้วันนี้ · **ลบทิ้งเมื่อ SPEC-029 §4.2.1 ขึ้น** | Codex | — | **SPEC_READY** — [spec](specs/SPEC-066-handoff-doorbell-hook.md) |
+| SPEC-067 | **Memory / handle soak harness** — ปิดครึ่งที่ยังไม่มีของของ `SPEC-001:160` (*"ไม่ memory leak"*) · sampler + เกณฑ์ตัดสิน**ด้วยความชัน ไม่ใช่ค่าสูงสุด** · 2 profile: `steady` 24 ชม. · **`churn` 2 ชม. (~240 reconnect — จับ handle leak ได้ดีกว่า steady ที่ใช้เวลา 12 เท่า)** | Codex | **001 §S1** ([review](reviews/SPEC-001-soak-01.md)) · 016 | **SPEC_READY** — [spec](specs/SPEC-067-memory-soak.md) · ⚠️ ห้ามเริ่ม `steady` ก่อน S1 merge |
 
 ## Phase 1 — Execution Plane
 
