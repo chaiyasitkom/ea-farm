@@ -83,9 +83,8 @@ class EchoGateway:
     ) -> None:
         session_id = ""
         peer = writer.get_extra_info("peername")
-        self.log_event("connect", peer=str(peer))
+        protocol_seen = False
         if self.close_on_accept:
-            self.log_event("close_on_accept", peer=str(peer))
             writer.close()
             await writer.wait_closed()
             return
@@ -94,9 +93,15 @@ class EchoGateway:
             await asyncio.Event().wait()
         try:
             while True:
-                raw = await asyncio.wait_for(reader.readline(), timeout=30.0)
+                try:
+                    raw = await asyncio.wait_for(reader.readline(), timeout=30.0)
+                except asyncio.TimeoutError:
+                    if protocol_seen:
+                        self.log_event("read_timeout", session_id=session_id)
+                    return
                 if raw == b"":
-                    self.log_event("client_closed", session_id=session_id)
+                    if protocol_seen:
+                        self.log_event("client_closed", session_id=session_id)
                     return
                 if len(raw) > MAX_FRAME_BYTES:
                     self.log_event("frame_too_large", session_id=session_id, size=len(raw))
@@ -117,6 +122,9 @@ class EchoGateway:
 
                 message_type = message.get("type")
                 session_id = str(message.get("session_id") or session_id)
+                if not protocol_seen:
+                    protocol_seen = True
+                    self.log_event("connect", peer=str(peer), session_id=session_id)
                 self.log_event("message", session_id=session_id, type=str(message_type))
                 payload = message.get("payload")
                 if not isinstance(payload, dict):
@@ -142,7 +150,8 @@ class EchoGateway:
         finally:
             if session_id:
                 self.sessions.discard(session_id)
-            self.log_event("disconnect", session_id=session_id)
+            if protocol_seen:
+                self.log_event("disconnect", session_id=session_id)
             writer.close()
             await writer.wait_closed()
 

@@ -30,6 +30,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SERVER = ROOT / "brain" / "gateway" / "echo_server.py"
 TOKEN = "test-token"
 HEARTBEAT_SEC = 2
+FAST_HEARTBEAT_INTERVAL_SECONDS = 300
 SOAK_SECONDS = 3600
 WIRE_DIAG = Path(
     r"C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\Common\Files\ea-farm-wire-diag.jsonl"
@@ -93,14 +94,18 @@ def recv_message(sock: socket.socket) -> dict[str, Any]:
 
 
 class EventTail:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, from_end: bool = False) -> None:
         self.path = path
-        self.offset = 0
+        self.offset = path.stat().st_size if from_end and path.exists() else 0
         self.partial = ""
 
     def read_new(self) -> list[dict[str, Any]]:
         if not self.path.exists():
             return []
+        current_size = self.path.stat().st_size
+        if current_size < self.offset:
+            self.offset = 0
+            self.partial = ""
         events: list[dict[str, Any]] = []
         with self.path.open("r", encoding="utf-8") as fh:
             fh.seek(self.offset)
@@ -249,6 +254,27 @@ class WireResilienceTests(unittest.TestCase):
         self.assertEqual(response["type"], "HELLO_ACK")
         self.assertIs(response["payload"]["accepted"], True)
 
+    def test_non_protocol_tcp_connection_is_not_logged_as_connect(self) -> None:
+        event_log = Path(tempfile.gettempdir()) / "ea-farm-non-protocol-connect.jsonl"
+        event_log.write_text("", encoding="utf-8")
+        with server_process("--event-log", str(event_log)) as (_proc, port):
+            with socket.create_connection(("127.0.0.1", port), timeout=2.0):
+                pass
+            time.sleep(0.2)
+            self.assertEqual(
+                [item for item in read_events(event_log) if item.get("event") == "connect"],
+                [],
+            )
+
+            with socket.create_connection(("127.0.0.1", port), timeout=2.0) as sock:
+                send_message(sock, hello("acct-real-EURUSD-H1"))
+                response = recv_message(sock)
+            self.assertIs(response["payload"]["accepted"], True)
+
+        connects = [item for item in read_events(event_log) if item.get("event") == "connect"]
+        self.assertEqual(len(connects), 1)
+        self.assertEqual(connects[0]["session_id"], "acct-real-EURUSD-H1")
+
     def test_log_reader_handles_utf16(self) -> None:
         path = Path(tempfile.gettempdir()) / "ea-farm-test-utf16.log"
         path.write_bytes("before\n".encode("utf-16le"))
@@ -272,46 +298,66 @@ class LiveChartChaosTests(unittest.TestCase):
     def _event_log(self, name: str) -> Path:
         return Path(tempfile.gettempdir()) / f"ea-farm-{name}.jsonl"
 
-    def _wait_for_backoff_ladder_connects(
+    def _wait_for_backoff_ladder_diag(
         self,
-        event_log: Path,
-        expected_gaps: list[float],
+        diag_tail: EventTail,
+        expected_backoff: list[int],
         timeout: float,
     ) -> list[dict[str, Any]]:
-        count = len(expected_gaps) + 1
+        expected_with_cap = [*expected_backoff, expected_backoff[-1]]
         deadline = time.monotonic() + timeout
-        last_gaps: list[float] = []
+        reconnects: list[dict[str, Any]] = []
+        last_seen: list[int] = []
         while time.monotonic() < deadline:
-            connects = [
-                item for item in read_events(event_log) if item.get("event") == "connect"
-            ]
-            times = [float(item["monotonic"]) for item in connects]
-            gaps = [times[idx + 1] - times[idx] for idx in range(len(times) - 1)]
-            last_gaps = gaps
-            for start_idx, gap in enumerate(gaps):
-                if not 0.7 <= gap <= 2.6 or len(connects) - start_idx < count:
-                    continue
-                candidate = connects[start_idx : start_idx + count]
-                candidate_times = [float(item["monotonic"]) for item in candidate]
-                candidate_gaps = [
-                    candidate_times[idx + 1] - candidate_times[idx]
-                    for idx in range(len(candidate_times) - 1)
+            reconnects.extend(
+                item for item in diag_tail.read_new() if item.get("ev") == "reconnect"
+            )
+            for start_idx in range(0, len(reconnects) - len(expected_with_cap) + 1):
+                candidate = reconnects[start_idx : start_idx + len(expected_with_cap)]
+                candidate_backoff = [
+                    int(item["backoff_sec"])
+                    for item in candidate
+                    if "backoff_sec" in item
                 ]
-                if self._backoff_gaps_match(candidate_gaps, expected_gaps):
+                last_seen = candidate_backoff
+                if candidate_backoff == expected_with_cap:
+                    for item in candidate:
+                        if not isinstance(item.get("tick_ms"), int):
+                            raise AssertionError(
+                                "reconnect diag missing integer tick_ms\n"
+                                + _format_timeline(reconnects, "ea reconnect timeline")
+                            )
                     return candidate
             time.sleep(0.1)
         raise AssertionError(
-            f"timed out waiting for {count} backoff ladder connects; observed gaps={last_gaps}"
+            "timed out waiting for EA reconnect ladder "
+            f"{expected_with_cap}; observed backoff_sec={last_seen}\n"
+            + _format_timeline(reconnects, "ea reconnect timeline")
         )
 
-    def _backoff_gaps_match(self, gaps: list[float], expected: list[float]) -> bool:
-        for observed, nominal in zip(gaps, expected, strict=True):
-            if observed < nominal * 0.7 or observed > nominal * 1.5 + 1.1:
-                return False
-        for prev, current in zip(gaps, gaps[1:], strict=False):
-            if current < prev * 0.7:
-                return False
-        return True
+    def _assert_backoff_waits_match_diag(
+        self,
+        reconnects: list[dict[str, Any]],
+        expected_backoff: list[int],
+    ) -> None:
+        ticks_ms = [int(item["tick_ms"]) for item in reconnects]
+        gaps = [
+            (ticks_ms[idx + 1] - ticks_ms[idx]) / 1000.0
+            for idx in range(len(ticks_ms) - 1)
+        ]
+        for observed, nominal in zip(gaps, expected_backoff, strict=True):
+            lower = nominal * 0.8
+            upper = nominal * 1.2 + 1.1
+            self.assertGreaterEqual(
+                observed,
+                lower,
+                f"observed gaps={gaps} expected_backoff={expected_backoff}",
+            )
+            self.assertLessEqual(
+                observed,
+                upper,
+                f"observed gaps={gaps} expected_backoff={expected_backoff}",
+            )
 
     def test_ea_reconnects_after_server_kill(self) -> None:
         port = chaos_port()
@@ -335,23 +381,19 @@ class LiveChartChaosTests(unittest.TestCase):
         port = chaos_port()
         event_log = self._event_log("live-events-backoff")
         event_log.write_text("", encoding="utf-8")
+        diag_tail = EventTail(WIRE_DIAG, from_end=True)
         with echo_server(port, event_log, "--close-on-accept"):
             event_log.write_text("", encoding="utf-8")
             with live_terminal(port):
-                expected = [1.0, 2.0, 4.0, 8.0, 16.0, 30.0]
-                connects = self._wait_for_backoff_ladder_connects(
-                    event_log,
+                expected = [1, 2, 4, 8, 16, 30]
+                reconnects = self._wait_for_backoff_ladder_diag(
+                    diag_tail,
                     expected,
                     timeout=100.0,
                 )
 
-        times = [float(item["monotonic"]) for item in connects]
-        gaps = [times[idx + 1] - times[idx] for idx in range(len(times) - 1)]
-        for observed, nominal in zip(gaps, expected, strict=True):
-            self.assertGreaterEqual(observed, nominal * 0.7)
-            self.assertLessEqual(observed, nominal * 1.5 + 1.1)
-        for prev, current in zip(gaps, gaps[1:], strict=False):
-            self.assertGreaterEqual(current, prev * 0.7)
+        self.assertEqual([int(item["backoff_sec"]) for item in reconnects], [*expected, 30])
+        self._assert_backoff_waits_match_diag(reconnects, expected)
 
     def test_bad_token_waits_60s(self) -> None:
         port = chaos_port()
@@ -396,6 +438,61 @@ class LiveChartChaosTests(unittest.TestCase):
         gap = float(connects[1]["monotonic"]) - float(connects[0]["monotonic"])
         self.assertGreaterEqual(gap, 4.0)
         self.assertLessEqual(gap, 12.0)
+
+    def test_heartbeat_interval_within_5pct_over_5min(self) -> None:
+        port = chaos_port()
+        event_log = self._event_log("live-events-heartbeat-interval")
+        event_log.write_text("", encoding="utf-8")
+        with echo_server(port, event_log):
+            event_log.write_text("", encoding="utf-8")
+            with live_terminal(port):
+                wait_for_event(event_log, "hello_ack", timeout=30.0)
+                event_tail = EventTail(event_log)
+                server_events: list[dict[str, Any]] = read_events(event_log)
+                deadline = time.monotonic() + FAST_HEARTBEAT_INTERVAL_SECONDS
+                last_progress = time.monotonic()
+                while time.monotonic() < deadline:
+                    new_events = event_tail.read_new()
+                    server_events.extend(new_events)
+                    if any(
+                        item.get("event") == "heartbeat" and item.get("ack") is True
+                        for item in new_events
+                    ):
+                        last_progress = time.monotonic()
+                    if time.monotonic() - last_progress > 10.0:
+                        raise AssertionError(
+                            "no heartbeat progress for 10s\n"
+                            + _format_timeline(server_events, "server timeline")
+                            + "\n"
+                            + _format_timeline(_read_wire_diag_tail(), "ea pump timeline")
+                        )
+                    time.sleep(0.5)
+
+        events = read_events(event_log)
+        heartbeats = [
+            float(item["monotonic"])
+            for item in events
+            if item.get("event") == "heartbeat" and item.get("ack") is True
+        ]
+        min_heartbeats = int(
+            FAST_HEARTBEAT_INTERVAL_SECONDS / HEARTBEAT_SEC * 0.95
+        )
+        self.assertGreaterEqual(len(heartbeats), min_heartbeats)
+        gaps = [heartbeats[idx + 1] - heartbeats[idx] for idx in range(len(heartbeats) - 1)]
+        self.assertTrue(gaps, "not enough heartbeats to measure interval")
+        mean_gap = sum(gaps) / len(gaps)
+        lower = HEARTBEAT_SEC * 0.95
+        upper = HEARTBEAT_SEC * 1.05
+        self.assertGreaterEqual(
+            mean_gap,
+            lower,
+            f"mean_gap={mean_gap:.4f} min={min(gaps):.4f} max={max(gaps):.4f}",
+        )
+        self.assertLessEqual(
+            mean_gap,
+            upper,
+            f"mean_gap={mean_gap:.4f} min={min(gaps):.4f} max={max(gaps):.4f}",
+        )
 
     @unittest.skipUnless(slow_enabled(), "set EA_FARM_LIVE_MT5_SLOW=1 to run the 1h soak")
     def test_no_heartbeat_loss_over_1h(self) -> None:

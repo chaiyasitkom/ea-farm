@@ -160,6 +160,11 @@ private:
       return FarmJsonQuote(StringFormat("tick_ms:%I64u", GetTickCount64()));
    }
 
+   string DiagClockJson() const
+   {
+      return "\"ts\":" + DiagTsJson() + ",\"tick_ms\":" + IntegerToString((long)GetTickCount64());
+   }
+
    void WriteDiagLine(const string json)
    {
       if(!m_verbose || m_diag_handle == INVALID_HANDLE)
@@ -194,13 +199,14 @@ private:
       m_state_entered_tick = NowTick();
       if(state == WIRE_READY && previous != WIRE_READY)
          m_next_heartbeat_tick = m_state_entered_tick;
-      WriteDiagLine("{"
-         "\"ev\":\"state\","
-         "\"ts\":" + DiagTsJson() + ","
-         "\"from\":" + FarmJsonQuote(WireStateTextRaw(previous)) + ","
-         "\"to\":" + FarmJsonQuote(WireStateTextRaw(state)) + ","
+      WriteDiagLine(
+         "{\"ev\":\"state\"," +
+         DiagClockJson() + "," +
+         "\"from\":" + FarmJsonQuote(WireStateTextRaw(previous)) + "," +
+         "\"to\":" + FarmJsonQuote(WireStateTextRaw(state)) + "," +
          "\"reason\":" + FarmJsonQuote(reason) +
-      "}");
+         "}"
+      );
    }
 
    void EnterState(const ENUM_WIRE_STATE state)
@@ -261,11 +267,12 @@ private:
       m_next_connect_tick = NowTick() + (uint)(wait_ms > 100 ? wait_ms : 100);
       const int next_backoff = m_backoff_sec * 2;
       m_backoff_sec = (next_backoff < 30 ? next_backoff : 30);
-      WriteDiagLine("{"
-         "\"ev\":\"reconnect\","
-         "\"ts\":" + DiagTsJson() + ","
+      WriteDiagLine(
+         "{\"ev\":\"reconnect\"," +
+         DiagClockJson() + "," +
          "\"backoff_sec\":" + IntegerToString(scheduled_backoff_sec) +
-      "}");
+         "}"
+      );
       EnterState(WIRE_DISCONNECTED, "ScheduleReconnect");
    }
 
@@ -617,7 +624,7 @@ private:
       {
          m_heartbeat_seq = seq;
          m_missed_heartbeat_acks++;
-         WriteDiagLine("{\"ev\":\"hb_sent\",\"ts\":" + DiagTsJson() + ",\"seq\":" + IntegerToString(seq) + "}");
+         WriteDiagLine("{\"ev\":\"hb_sent\"," + DiagClockJson() + ",\"seq\":" + IntegerToString(seq) + "}");
       }
    }
 
@@ -662,11 +669,12 @@ private:
       }
 
       const string type = FarmJsonGetString(line, "type", "");
-      WriteDiagLine("{"
-         "\"ev\":\"inbound\","
-         "\"ts\":" + DiagTsJson() + ","
+      WriteDiagLine(
+         "{\"ev\":\"inbound\"," +
+         DiagClockJson() + "," +
          "\"type\":" + FarmJsonQuote(type) +
-      "}");
+         "}"
+      );
       if(type == "HELLO_ACK")
       {
          const bool accepted = FarmJsonGetBool(line, "accepted", false);
@@ -1003,26 +1011,28 @@ public:
 
       const ulong elapsed_us = GetMicrosecondCount() - started;
       RecordPumpElapsed(elapsed_us);
-      WriteDiagLine("{"
-         "\"ev\":\"pump\","
-         "\"ts\":" + DiagTsJson() + ","
-         "\"state_start\":" + FarmJsonQuote(WireStateText(state_at_start)) + ","
-         "\"state_end\":" + FarmJsonQuote(WireStateText(m_state)) + ","
-         "\"read_loops\":" + IntegerToString(read_loops) + ","
-         "\"bytes_read\":" + IntegerToString(bytes_read) + ","
+      WriteDiagLine(
+         "{\"ev\":\"pump\"," +
+         DiagClockJson() + "," +
+         "\"state_start\":" + FarmJsonQuote(WireStateText(state_at_start)) + "," +
+         "\"state_end\":" + FarmJsonQuote(WireStateText(m_state)) + "," +
+         "\"read_loops\":" + IntegerToString(read_loops) + "," +
+         "\"bytes_read\":" + IntegerToString(bytes_read) + "," +
          "\"pump_us\":" + IntegerToString((long)elapsed_us) +
-      "}");
+         "}"
+      );
       if(elapsed_us > 20000)
       {
-         WriteDiagLine("{"
-            "\"ev\":\"pump_slow\","
-            "\"ts\":" + DiagTsJson() + ","
-            "\"state_start\":" + FarmJsonQuote(WireStateText(state_at_start)) + ","
-            "\"state_end\":" + FarmJsonQuote(WireStateText(m_state)) + ","
-            "\"read_loops\":" + IntegerToString(read_loops) + ","
-            "\"bytes_read\":" + IntegerToString(bytes_read) + ","
+         WriteDiagLine(
+            "{\"ev\":\"pump_slow\"," +
+            DiagClockJson() + "," +
+            "\"state_start\":" + FarmJsonQuote(WireStateText(state_at_start)) + "," +
+            "\"state_end\":" + FarmJsonQuote(WireStateText(m_state)) + "," +
+            "\"read_loops\":" + IntegerToString(read_loops) + "," +
+            "\"bytes_read\":" + IntegerToString(bytes_read) + "," +
             "\"pump_us\":" + IntegerToString((long)elapsed_us) +
-         "}");
+            "}"
+         );
       }
       if(m_verbose)
          m_log.Info(StringFormat("pump_diag state_start=%s state_end=%s read_loops=%d bytes_read=%d pump_elapsed_us=%I64u",
