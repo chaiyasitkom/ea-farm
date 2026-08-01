@@ -11,6 +11,7 @@ import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 
@@ -133,11 +134,26 @@ def mark_ea_log(path: Path | None = None) -> LogMark:
 
 
 def read_ea_log_since(mark: LogMark) -> str:
-    if not mark.path.exists():
-        return ""
-    with mark.path.open("rb") as fh:
-        fh.seek(mark.offset)
-        data = fh.read()
+    chunks: list[bytes] = []
+    if mark.path.exists():
+        with mark.path.open("rb") as fh:
+            fh.seek(mark.offset)
+            chunks.append(fh.read())
+
+    try:
+        current_day = datetime.strptime(mark.path.stem, "%Y%m%d")
+    except ValueError:
+        current_day = None
+
+    if current_day is not None:
+        today = datetime.now()
+        while current_day.date() < today.date():
+            current_day += timedelta(days=1)
+            next_log = mark.path.with_name(f"{current_day:%Y%m%d}.log")
+            if next_log.exists():
+                chunks.append(next_log.read_bytes())
+
+    data = b"".join(chunks)
     if not data:
         return ""
     return data.decode("utf-16le", errors="replace")

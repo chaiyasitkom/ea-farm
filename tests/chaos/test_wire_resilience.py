@@ -310,12 +310,11 @@ class LiveChartChaosTests(unittest.TestCase):
     ) -> list[dict[str, Any]]:
         expected_with_cap = [*expected_backoff, expected_backoff[-1]]
         deadline = time.monotonic() + timeout
-        reconnects: list[dict[str, Any]] = []
+        events: list[dict[str, Any]] = []
         last_seen: list[int] = []
         while time.monotonic() < deadline:
-            reconnects.extend(
-                item for item in diag_tail.read_new() if item.get("ev") == "reconnect"
-            )
+            events.extend(diag_tail.read_new())
+            reconnects = [item for item in events if item.get("ev") == "reconnect"]
             for start_idx in range(0, len(reconnects) - len(expected_with_cap) + 1):
                 candidate = reconnects[start_idx : start_idx + len(expected_with_cap)]
                 candidate_backoff = [
@@ -331,7 +330,20 @@ class LiveChartChaosTests(unittest.TestCase):
                                 "reconnect diag missing integer tick_ms\n"
                                 + _format_timeline(reconnects, "ea reconnect timeline")
                             )
-                    return candidate
+                    start_tick = int(candidate[0]["tick_ms"])
+                    end_tick = int(candidate[-1]["tick_ms"])
+                    candidate_events = [
+                        item
+                        for item in events
+                        if start_tick <= int(item.get("tick_ms", -1)) <= end_tick
+                    ]
+                    for item in candidate_events:
+                        if item.get("ev") == "state" and not isinstance(item.get("tick_ms"), int):
+                            raise AssertionError(
+                                "state diag missing integer tick_ms\n"
+                                + _format_timeline(candidate_events, "ea candidate timeline")
+                            )
+                    return candidate_events
             time.sleep(0.1)
         raise AssertionError(
             "timed out waiting for EA reconnect ladder "
@@ -341,27 +353,46 @@ class LiveChartChaosTests(unittest.TestCase):
 
     def _assert_backoff_waits_match_diag(
         self,
-        reconnects: list[dict[str, Any]],
+        candidate_events: list[dict[str, Any]],
         expected_backoff: list[int],
-    ) -> None:
+    ) -> list[float]:
+        reconnects = [item for item in candidate_events if item.get("ev") == "reconnect"]
         ticks_ms = [int(item["tick_ms"]) for item in reconnects]
-        gaps = [
-            (ticks_ms[idx + 1] - ticks_ms[idx]) / 1000.0
-            for idx in range(len(ticks_ms) - 1)
-        ]
-        for observed, nominal in zip(gaps, expected_backoff, strict=True):
+        waits: list[float] = []
+        for idx, nominal in enumerate(expected_backoff):
+            next_connecting = next(
+                (
+                    item
+                    for item in candidate_events
+                    if item.get("ev") == "state"
+                    and item.get("to") == "CONNECTING"
+                    and int(item.get("tick_ms", -1)) > ticks_ms[idx]
+                    and int(item.get("tick_ms", -1)) <= ticks_ms[idx + 1]
+                ),
+                None,
+            )
+            if next_connecting is None:
+                raise AssertionError(
+                    "missing CONNECTING state after reconnect diag "
+                    f"idx={idx} backoff_sec={nominal}\n"
+                    + _format_timeline(candidate_events, "ea candidate timeline")
+                )
+            waits.append((int(next_connecting["tick_ms"]) - ticks_ms[idx]) / 1000.0)
+
+        for observed, nominal in zip(waits, expected_backoff, strict=True):
             lower = nominal * 0.8
-            upper = nominal * 1.2 + 1.1
+            upper = nominal * 1.2 + 1.0
             self.assertGreaterEqual(
                 observed,
                 lower,
-                f"observed gaps={gaps} expected_backoff={expected_backoff}",
+                f"observed waits={waits} expected_backoff={expected_backoff}",
             )
             self.assertLessEqual(
                 observed,
                 upper,
-                f"observed gaps={gaps} expected_backoff={expected_backoff}",
+                f"observed waits={waits} expected_backoff={expected_backoff}",
             )
+        return waits
 
     def test_ea_reconnects_after_server_kill(self) -> None:
         port = chaos_port()
@@ -390,14 +421,15 @@ class LiveChartChaosTests(unittest.TestCase):
             event_log.write_text("", encoding="utf-8")
             with live_terminal(port):
                 expected = [1, 2, 4, 8, 16, 30]
-                reconnects = self._wait_for_backoff_ladder_diag(
+                candidate_events = self._wait_for_backoff_ladder_diag(
                     diag_tail,
                     expected,
                     timeout=100.0,
                 )
 
+        reconnects = [item for item in candidate_events if item.get("ev") == "reconnect"]
         self.assertEqual([int(item["backoff_sec"]) for item in reconnects], [*expected, 30])
-        self._assert_backoff_waits_match_diag(reconnects, expected)
+        waits = self._assert_backoff_waits_match_diag(candidate_events, expected)
         ticks_ms = [int(item["tick_ms"]) for item in reconnects]
         gaps = [
             (ticks_ms[idx + 1] - ticks_ms[idx]) / 1000.0
@@ -406,7 +438,8 @@ class LiveChartChaosTests(unittest.TestCase):
         print(
             "backoff_ladder "
             f"backoff_sec={[int(item['backoff_sec']) for item in reconnects]} "
-            f"gaps_sec={_format_seconds(gaps)}",
+            f"waits_sec={_format_seconds(waits)} "
+            f"reconnect_gaps_sec={_format_seconds(gaps)}",
             flush=True,
         )
 

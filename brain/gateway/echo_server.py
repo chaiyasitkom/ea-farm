@@ -52,6 +52,7 @@ class EchoGateway:
     force_hello_reject: str | None = None
     close_on_accept: bool = False
     close_after_hello: bool = False
+    close_every_sec: float | None = None
     stop_reading: bool = False
     sessions: set[str] = field(default_factory=set)
     server: asyncio.Server | None = None
@@ -84,6 +85,7 @@ class EchoGateway:
         session_id = ""
         peer = writer.get_extra_info("peername")
         protocol_seen = False
+        connected_at = time.monotonic()
         if self.close_on_accept:
             writer.close()
             await writer.wait_closed()
@@ -94,8 +96,18 @@ class EchoGateway:
         try:
             while True:
                 try:
-                    raw = await asyncio.wait_for(reader.readline(), timeout=30.0)
+                    read_timeout = 30.0
+                    if self.close_every_sec is not None:
+                        remaining = self.close_every_sec - (time.monotonic() - connected_at)
+                        if remaining <= 0:
+                            self.log_event("close_every", session_id=session_id)
+                            return
+                        read_timeout = min(read_timeout, remaining)
+                    raw = await asyncio.wait_for(reader.readline(), timeout=read_timeout)
                 except asyncio.TimeoutError:
+                    if self.close_every_sec is not None:
+                        self.log_event("close_every", session_id=session_id)
+                        return
                     if protocol_seen:
                         self.log_event("read_timeout", session_id=session_id)
                     return
@@ -211,6 +223,7 @@ def main() -> None:
     parser.add_argument("--force-hello-reject", choices=["BAD_TOKEN", "DUPLICATE_SESSION"])
     parser.add_argument("--close-on-accept", action="store_true")
     parser.add_argument("--close-after-hello", action="store_true")
+    parser.add_argument("--close-every-sec", type=float)
     parser.add_argument("--stop-reading", action="store_true")
     args = parser.parse_args()
 
@@ -227,6 +240,7 @@ def main() -> None:
         force_hello_reject=args.force_hello_reject,
         close_on_accept=args.close_on_accept,
         close_after_hello=args.close_after_hello,
+        close_every_sec=args.close_every_sec,
         stop_reading=args.stop_reading,
     )
     asyncio.run(run_until_signal(gateway))
