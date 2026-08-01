@@ -4,6 +4,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from typing import cast
 
 from tests.chaos.live_mt5_harness import (
     echo_server,
@@ -12,7 +13,7 @@ from tests.chaos.live_mt5_harness import (
     live_terminal,
     slow_enabled,
 )
-from tests.soak.soak_sampler import analyse, collect, load_samples
+from tests.soak.soak_sampler import Profile, analyse, collect, load_samples, write_verdict_artifact
 
 
 @unittest.skipUnless(
@@ -25,13 +26,20 @@ class MemorySoakTests(unittest.TestCase):
         event_log = Path(tempfile.gettempdir()) / "ea-farm-soak-churn-events.jsonl"
         event_log.write_text("", encoding="utf-8")
         samples_path = Path(tempfile.gettempdir()) / "ea-farm-soak-churn-samples.jsonl"
+        verdict_path = Path(tempfile.gettempdir()) / "ea-farm-soak-churn-verdict.json"
+        profile = cast(Profile, os.environ.get("EA_FARM_SOAK_PROFILE", "churn"))
+        self.assertEqual(profile, "churn")
 
-        with echo_server(port, event_log, "--close-every-sec", "30"):
-            with live_terminal(port) as terminal:
-                duration_sec = float(os.environ.get("EA_FARM_SOAK_CHURN_SEC", "7200"))
-                collect(terminal.pid, duration_sec, samples_path)
+        try:
+            with echo_server(port, event_log, "--close-every-sec", "30"):
+                with live_terminal(port) as terminal:
+                    duration_sec = float(os.environ.get("EA_FARM_SOAK_CHURN_SEC", "7200"))
+                    collect(terminal.pid, duration_sec, samples_path)
+        finally:
+            artifact = write_verdict_artifact(samples_path, verdict_path, profile)
+            print(f"soak_churn_artifact={verdict_path} {artifact}", flush=True)
 
-        verdict = analyse(load_samples(samples_path))
+        verdict = analyse(load_samples(samples_path), profile)
         print(f"soak_churn_verdict={verdict}", flush=True)
         self.assertTrue(verdict.passed, verdict.reason)
 

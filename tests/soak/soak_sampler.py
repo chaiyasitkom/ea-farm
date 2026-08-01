@@ -8,10 +8,12 @@ import time
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 SAMPLE_INTERVAL_SEC = 30
-WARMUP_SEC = 3600
+Profile = Literal["steady", "churn"]
+WARMUP_SEC: dict[Profile, int] = {"steady": 3600, "churn": 600}
+PROFILE_DURATION_SEC: dict[Profile, int] = {"steady": 24 * 3600, "churn": 2 * 3600}
 MB = 1024 * 1024
 
 MAX_PRIVATE_SLOPE_MB_PER_HOUR = 1.0
@@ -91,14 +93,21 @@ def load_samples(path: Path) -> list[Sample]:
     return samples
 
 
-def _post_warmup_samples(samples: list[Sample]) -> list[Sample]:
+def _profile_warmup_sec(profile: Profile) -> int:
+    try:
+        return WARMUP_SEC[profile]
+    except KeyError as exc:
+        raise ValueError(f"unknown soak profile: {profile}") from exc
+
+
+def _post_warmup_samples(samples: list[Sample], profile: Profile) -> list[Sample]:
     if not samples:
         raise SoakEnvironmentError("no samples collected")
     sorted_samples = sorted(samples, key=lambda sample: sample.monotonic)
     pids = {sample.pid for sample in sorted_samples}
     if len(pids) != 1:
         raise SoakEnvironmentError(f"pid changed during soak: {sorted(pids)}")
-    warmup_end = sorted_samples[0].monotonic + WARMUP_SEC
+    warmup_end = sorted_samples[0].monotonic + _profile_warmup_sec(profile)
     used = [sample for sample in sorted_samples if sample.monotonic >= warmup_end]
     if len(used) < 2:
         raise SoakEnvironmentError("fewer than two samples after warmup")
@@ -114,8 +123,8 @@ def _detect_gaps(samples: list[Sample]) -> list[tuple[str, float]]:
     return gaps
 
 
-def analyse(samples: list[Sample]) -> Verdict:
-    used = _post_warmup_samples(samples)
+def analyse(samples: list[Sample], profile: Profile) -> Verdict:
+    used = _post_warmup_samples(samples, profile)
     baseline = used[0]
     final = used[-1]
     elapsed = final.monotonic - baseline.monotonic
@@ -131,7 +140,8 @@ def analyse(samples: list[Sample]) -> Verdict:
     handle_growth = final.num_handles - baseline.num_handles
     thread_growth = final.num_threads - baseline.num_threads
     gaps = _detect_gaps(used)
-    expected_samples = int(math.floor(elapsed / SAMPLE_INTERVAL_SEC)) + 1
+    expected_elapsed = PROFILE_DURATION_SEC[profile] - WARMUP_SEC[profile]
+    expected_samples = int(math.floor(expected_elapsed / SAMPLE_INTERVAL_SEC)) + 1
     coverage = len(used) / expected_samples if expected_samples > 0 else 0.0
 
     failures: list[str] = []
@@ -164,6 +174,67 @@ def analyse(samples: list[Sample]) -> Verdict:
         samples_used=len(used),
         gaps_detected=gaps,
     )
+
+
+def _environment_artifact(
+    reason: str,
+    sample_count: int,
+    profile: Profile,
+    *,
+    insufficient_data: bool,
+) -> dict[str, Any]:
+    artifact_reason = f"insufficient data: {reason}" if insufficient_data else reason
+    return {
+        "passed": False,
+        "reason": artifact_reason,
+        "profile": profile,
+        "total_samples": sample_count,
+        "private_slope_mb_per_hour": None,
+        "private_growth_mb": None,
+        "handle_growth": None,
+        "thread_growth": None,
+        "samples_used": 0,
+        "gaps_detected": [],
+        "environment_error": True,
+    }
+
+
+def write_verdict_artifact(
+    samples_path: Path,
+    verdict_path: Path,
+    profile: Profile,
+) -> dict[str, Any]:
+    try:
+        samples = load_samples(samples_path) if samples_path.exists() else []
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        payload = _environment_artifact(str(exc), 0, profile, insufficient_data=False)
+    else:
+        try:
+            verdict = analyse(samples, profile)
+        except SoakEnvironmentError as exc:
+            reason = str(exc)
+            insufficient_data = reason in {
+                "no samples collected",
+                "fewer than two samples after warmup",
+            }
+            payload = _environment_artifact(
+                reason,
+                len(samples),
+                profile,
+                insufficient_data=insufficient_data,
+            )
+        else:
+            payload = asdict(verdict)
+            payload["profile"] = profile
+            payload["total_samples"] = len(samples)
+            payload["environment_error"] = False
+
+    verdict_path.parent.mkdir(parents=True, exist_ok=True)
+    verdict_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    return payload
 
 
 def _private_bytes(process: Any) -> int:
@@ -225,22 +296,22 @@ def _main() -> int:
     parser.add_argument("--duration-sec", type=float, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--verdict", type=Path, required=True)
+    parser.add_argument("--profile", choices=("steady", "churn"), required=True)
     args = parser.parse_args()
+    profile = cast(Profile, args.profile)
 
     try:
         samples_path = collect(args.pid, args.duration_sec, args.out)
-        verdict = analyse(load_samples(samples_path))
     except SoakEnvironmentError as exc:
         print(str(exc))
+        write_verdict_artifact(args.out, args.verdict, profile)
         return 3
 
-    args.verdict.parent.mkdir(parents=True, exist_ok=True)
-    args.verdict.write_text(
-        json.dumps(asdict(verdict), indent=2, sort_keys=True),
-        encoding="utf-8",
-    )
+    payload = write_verdict_artifact(samples_path, args.verdict, profile)
     print(args.verdict.read_text(encoding="utf-8"))
-    return 0 if verdict.passed else 1
+    if payload.get("environment_error"):
+        return 3
+    return 0 if payload.get("passed") else 1
 
 
 if __name__ == "__main__":

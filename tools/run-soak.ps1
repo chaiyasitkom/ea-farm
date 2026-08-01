@@ -23,6 +23,7 @@ try {
 
     $env:EA_FARM_LIVE_MT5 = "1"
     $env:EA_FARM_LIVE_MT5_SLOW = "1"
+    $env:EA_FARM_SOAK_PROFILE = $Profile
 
     if ($Profile -eq "churn") {
         $suite = "tests.soak.test_memory_soak.MemorySoakTests.test_soak_churn_2h_no_handle_leak"
