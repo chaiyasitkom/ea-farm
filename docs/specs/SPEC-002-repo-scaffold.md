@@ -148,7 +148,8 @@ FARM_TELEGRAM_BOT_TOKEN=
 FARM_TELEGRAM_CHAT_ID=
 
 # rev.2 — ปิด T8: path ของเครื่อง ห้าม hardcode ในโค้ดอีก
-EA_FARM_REPO=D:\ea-farm
+# rev.2a — ทุกตัวต้องว่าง ไฟล์นี้ commit ขึ้น remote สาธารณะ
+EA_FARM_REPO=
 EA_FARM_CHAOS_PORT=45001
 EA_FARM_MT5_DATA_DIR=
 EA_FARM_MT5_COMMON_DIR=
@@ -170,6 +171,20 @@ EA_FARM_MT5_COMMON_DIR=
 >
 > `EA_FARM_MT5_*` เว้นว่างได้ — ว่าง = ใช้ค่า default ที่ helper รู้จัก
 > · **ห้ามใส่ค่าจริงของเครื่องใครลงไฟล์นี้** (ยังอยู่ใต้กฎ "placeholder เท่านั้น")
+>
+> ### 🔴 rev.2a (2026-08-01) — ผมเขียนตัวอย่างผิดเอง
+>
+> ฉบับ rev.2 เขียน `EA_FARM_REPO=D:\ea-farm` ซึ่งเป็น **path จริงของเครื่องนี้**
+> ในไฟล์ที่ **commit และ push ขึ้น remote สาธารณะ** — ขัดกับกฎในบรรทัดบนของตัวเอง
+> · Codex ทำตามตัวอย่างถูกทุกตัวอักษร · **ความผิดอยู่ที่ spec ไม่ใช่ implementation**
+>
+> **`EA_FARM_REPO` ต้องว่าง** · `EA_FARM_CHAOS_PORT=45001` เก็บค่าไว้ได้เพราะเป็น
+> ค่าตกลงของโปรโตคอล ไม่ใช่ข้อมูลของเครื่องใคร
+>
+> **และ `test_env_example_has_no_real_values` ต้องแรงขึ้น** — ตอนนี้เช็คแค่ 3 บรรทัด
+> (`changeme` · telegram ว่าง · ไม่มี `test-token`) จึง**จับตัวอย่างที่ผมเขียนผิดไม่ได้**
+> → ต้องเพิ่ม: ไม่มี drive letter (`C:\` `D:\`) · ไม่มี `/Users/` · ไม่มี `/home/`
+> · **test ที่ชื่อบอกว่าตรวจ "ไม่มีค่าจริง" ต้องตรวจให้สมชื่อ**
 
 ### 3.7 โครงโฟลเดอร์ตาม README
 
