@@ -9,7 +9,7 @@
 | ID | งาน | ผู้ทำ | ขึ้นกับ | สถานะ |
 |----|-----|-------|---------|-------|
 | SPEC-001 | MT5 Executor skeleton + Wire (socket, JSON-lines, reconnect) | Codex | — | 🔨 **IN_REVIEW** (2026-07-31) — ฟังก์ชันครบ · gate เขียว: **TestWire 53/53** · `Pump()` p99 **16,576 µs** (เกณฑ์ < 20,000) · §1.6 partial-send ปิดแล้ว · **เหลือ 4 ข้อ:** soak 24 ชม. 🔴 · slow gate `..._over_1h` 🔴 · N1 (assertion เป็น dead code) 🟠 · W2 (`echo_server` นับ TCP ขยะ) 🟠 — [review chaos 03](reviews/SPEC-016-chaos-03.md) |
-| SPEC-002 | Repo scaffold, `.env.example`, **`tools/task.py`** (ไม่ใช่ Makefile — เครื่องนี้ไม่มี `make`) + local gate `check` | Codex | — | **SPEC_READY** — [spec](specs/SPEC-002-repo-scaffold.md) |
+| SPEC-002 | Repo scaffold, `.env.example`, **`tools/task.py`** (ไม่ใช่ Makefile — เครื่องนี้ไม่มี `make`) + local gate `check` | Codex | — | 🔴 **CHANGES_REQUIRED** (2026-08-01) — [review](reviews/SPEC-002-scaffold-01.md) · โครงถูกและ 9 test ครบ · ตกที่ **G1** `install` ลง `.venv` แต่ `check` ถาม `sys.executable` → `[SKIP]` ทุกตัว → **เขียวโดยไม่ได้ตรวจอะไรเลย** · **G2** edge ① `.venv` คนละเวอร์ชันไม่ถูกตรวจ · **spec เป็น [rev.2](specs/SPEC-002-repo-scaffold.md)** เพิ่ม `psutil` + `EA_FARM_*` ปิด T8 |
 | SPEC-003 | `contracts/schema/*.json` ทุก message type | **Claude** | — | ✅ **DONE** — 13 schema + README · [handoff](reviews/SPEC-003-schema-handoff.md) |
 | SPEC-004 | Codegen: schema → pydantic + MQL5 struct/serializer | Codex | 003 | **SPEC_READY** — [spec](specs/SPEC-004-codegen.md) |
 | SPEC-005 | Round-trip test harness (py ↔ mql5) | Codex | **002**, 004 | **SPEC_READY** — [spec](specs/SPEC-005-roundtrip-harness.md) |
