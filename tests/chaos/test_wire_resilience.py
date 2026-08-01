@@ -32,6 +32,8 @@ TOKEN = "test-token"
 HEARTBEAT_SEC = 2
 FAST_HEARTBEAT_INTERVAL_SECONDS = 300
 SOAK_SECONDS = 3600
+# One EventSetTimer(1) period plus Windows scheduling slop.
+TIMER_PERIOD_SLOP_SEC = 1.5
 WIRE_DIAG = Path(
     r"C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\Common\Files\ea-farm-wire-diag.jsonl"
 )
@@ -381,7 +383,7 @@ class LiveChartChaosTests(unittest.TestCase):
 
         for observed, nominal in zip(waits, expected_backoff, strict=True):
             lower = nominal * 0.8
-            upper = nominal * 1.2 + 1.0
+            upper = nominal * 1.2 + TIMER_PERIOD_SLOP_SEC
             self.assertGreaterEqual(
                 observed,
                 lower,
