@@ -89,8 +89,13 @@ requires-python = ">=3.11,<3.14"     # ★ ดู §4.1
 | กลุ่ม | package |
 |-------|---------|
 | runtime | `pydantic` |
-| dev | `pytest` · `pytest-asyncio` · `ruff` · `mypy` |
+| dev | `pytest` · `pytest-asyncio` · `ruff` · `mypy` · **`psutil`** ← เพิ่ม rev.2 |
 | codegen | อยู่ใน `requirements-codegen.txt` ที่ SPEC-004 สร้าง — **อย่าย้ายเข้ามา** |
+
+> **rev.2 (2026-08-01) — เพิ่ม `psutil`**
+> [SPEC-067 §3.1](SPEC-067-memory-soak.md) ใช้ `psutil.memory_info().private` เป็น**ตัวตัดสิน**
+> ของ soak · §5 กรณี 5 สั่งให้ `exit 3` ถ้าไม่มี — ซึ่งแปลว่า **ถ้าไม่ประกาศที่นี่ soak รันไม่ได้เลย**
+> · อยู่กลุ่ม `dev` เพราะ production path ไม่ใช้
 
 **import mapping ที่ต้องตั้ง** — `contracts/gen/python/` ต้อง import ได้โดยไม่ต้องเขียน
 `from contracts.gen.python.models import ...` ซึ่งอ่านไม่รู้เรื่อง:
@@ -141,9 +146,30 @@ FARM_LOG_LEVEL=INFO
 # Phase 2 — ยังไม่ใช้
 FARM_TELEGRAM_BOT_TOKEN=
 FARM_TELEGRAM_CHAT_ID=
+
+# rev.2 — ปิด T8: path ของเครื่อง ห้าม hardcode ในโค้ดอีก
+EA_FARM_REPO=D:\ea-farm
+EA_FARM_CHAOS_PORT=45001
+EA_FARM_MT5_DATA_DIR=
+EA_FARM_MT5_COMMON_DIR=
 ```
 
 `.gitignore` กัน `.env` ไว้แล้ว และ `!.env.example` ยกเว้นไฟล์นี้ไว้แล้ว — **ตรวจว่ายังจริง**
+
+> ### rev.2 (2026-08-01) — 4 ตัวล่างคือการปิด **T8**
+>
+> `D:\ea-farm` ถูก hardcode อยู่ **3 ที่** (`run-chaos.ps1:14` · `compile-gate.ps1:18` ·
+> `run-mql5-tests.ps1:34`) และ path ของ MT5 อีก **4 ที่** (`live_mt5_harness.py:22-25` ·
+> `test_wire_resilience.py:32`) — **ตัวหลังมีชื่อผู้ใช้ Windows อยู่บน remote สาธารณะ**
+>
+> | กฎ | |
+> |----|--|
+> | ทุก path ที่ขึ้นกับเครื่อง **ต้องอ่านจาก env** | มี default ได้ แต่ต้องมีที่เดียว |
+> | ฝั่ง Python | helper เดียวใน `tests/chaos/live_mt5_harness.py` แล้ว `import` ไปใช้ |
+> | ฝั่ง PowerShell | อ่าน `.env` หรือรับเป็นพารามิเตอร์ · **ห้ามประกาศซ้ำในแต่ละสคริปต์** |
+>
+> `EA_FARM_MT5_*` เว้นว่างได้ — ว่าง = ใช้ค่า default ที่ helper รู้จัก
+> · **ห้ามใส่ค่าจริงของเครื่องใครลงไฟล์นี้** (ยังอยู่ใต้กฎ "placeholder เท่านั้น")
 
 ### 3.7 โครงโฟลเดอร์ตาม README
 
