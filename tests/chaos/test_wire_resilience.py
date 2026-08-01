@@ -29,6 +29,8 @@ from tests.chaos.live_mt5_harness import (
 ROOT = Path(__file__).resolve().parents[2]
 SERVER = ROOT / "brain" / "gateway" / "echo_server.py"
 TOKEN = "test-token"
+HEARTBEAT_SEC = 2
+SOAK_SECONDS = 3600
 WIRE_DIAG = Path(
     r"C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\Common\Files\ea-farm-wire-diag.jsonl"
 )
@@ -94,6 +96,7 @@ class EventTail:
     def __init__(self, path: Path) -> None:
         self.path = path
         self.offset = 0
+        self.partial = ""
 
     def read_new(self) -> list[dict[str, Any]]:
         if not self.path.exists():
@@ -101,13 +104,25 @@ class EventTail:
         events: list[dict[str, Any]] = []
         with self.path.open("r", encoding="utf-8") as fh:
             fh.seek(self.offset)
-            for line in fh:
-                if not line.strip():
-                    continue
-                parsed = json.loads(line)
-                if isinstance(parsed, dict):
-                    events.append(parsed)
+            chunk = fh.read()
             self.offset = fh.tell()
+        if not chunk:
+            return []
+
+        data = self.partial + chunk
+        last_newline = data.rfind("\n")
+        if last_newline < 0:
+            self.partial = data
+            return []
+
+        complete = data[: last_newline + 1]
+        self.partial = data[last_newline + 1 :]
+        for line in complete.splitlines():
+            if not line.strip():
+                continue
+            parsed = json.loads(line)
+            if isinstance(parsed, dict):
+                events.append(parsed)
         return events
 
 
@@ -393,7 +408,7 @@ class LiveChartChaosTests(unittest.TestCase):
                 wait_for_event(event_log, "hello_ack", timeout=30.0)
                 event_tail = EventTail(event_log)
                 server_events: list[dict[str, Any]] = read_events(event_log)
-                deadline = time.monotonic() + 3600.0
+                deadline = time.monotonic() + SOAK_SECONDS
                 last_progress = time.monotonic()
                 seen_count = 0
                 while time.monotonic() < deadline:
@@ -422,7 +437,8 @@ class LiveChartChaosTests(unittest.TestCase):
             for item in events
             if item.get("event") == "heartbeat" and item.get("ack") is True
         ]
-        self.assertGreaterEqual(len(heartbeats), 1700)
+        min_heartbeats = int(SOAK_SECONDS / HEARTBEAT_SEC * 0.95)
+        self.assertGreaterEqual(len(heartbeats), min_heartbeats)
         gaps = [heartbeats[idx + 1] - heartbeats[idx] for idx in range(len(heartbeats) - 1)]
         if gaps:
             self.assertLessEqual(

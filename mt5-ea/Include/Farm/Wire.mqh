@@ -93,7 +93,7 @@ private:
    uint            m_next_connect_tick;
    uint            m_state_entered_tick;
    uint            m_last_inbound_tick;
-   uint            m_last_heartbeat_tick;
+   uint            m_next_heartbeat_tick;
    int             m_backoff_sec;
    int             m_missed_heartbeat_acks;
    int             m_heartbeat_seq;
@@ -126,6 +126,11 @@ private:
    int ElapsedSec(const uint since_tick) const
    {
       return (int)((NowTick() - since_tick) / 1000);
+   }
+
+   uint ElapsedMs(const uint since_tick) const
+   {
+      return NowTick() - since_tick;
    }
 
    string WireStateTextRaw(const ENUM_WIRE_STATE state) const
@@ -187,6 +192,8 @@ private:
       const ENUM_WIRE_STATE previous = m_state;
       m_state = state;
       m_state_entered_tick = NowTick();
+      if(state == WIRE_READY && previous != WIRE_READY)
+         m_next_heartbeat_tick = m_state_entered_tick;
       WriteDiagLine("{"
          "\"ev\":\"state\","
          "\"ts\":" + DiagTsJson() + ","
@@ -609,10 +616,20 @@ private:
       if(SendRawLine(msg))
       {
          m_heartbeat_seq = seq;
-         m_last_heartbeat_tick = NowTick();
          m_missed_heartbeat_acks++;
          WriteDiagLine("{\"ev\":\"hb_sent\",\"ts\":" + DiagTsJson() + ",\"seq\":" + IntegerToString(seq) + "}");
       }
+   }
+
+   void AdvanceHeartbeatSchedule(const uint now, const uint interval_ms)
+   {
+      if(interval_ms == 0)
+         return;
+      do
+      {
+         m_next_heartbeat_tick += interval_ms;
+      }
+      while((int)(now - m_next_heartbeat_tick) >= 0);
    }
 
    void SendProtocolError(const string code, const string message)
@@ -783,7 +800,7 @@ private:
    {
       if(m_state == WIRE_FAILED_AUTH && ElapsedSec(m_state_entered_tick) < FARM_WIRE_FAILED_AUTH_RETRY_SEC)
          return;
-      if(m_state == WIRE_DISCONNECTED && NowTick() < m_next_connect_tick)
+      if(m_state == WIRE_DISCONNECTED && m_next_connect_tick != 0 && (int)(NowTick() - m_next_connect_tick) < 0)
          return;
 
       CloseSocket();
@@ -826,7 +843,7 @@ public:
       m_next_connect_tick = 0;
       m_state_entered_tick = 0;
       m_last_inbound_tick = 0;
-      m_last_heartbeat_tick = 0;
+      m_next_heartbeat_tick = 0;
       m_backoff_sec = 1;
       m_missed_heartbeat_acks = 0;
       m_heartbeat_seq = 0;
@@ -968,8 +985,13 @@ public:
 
       if(m_state == WIRE_READY)
       {
-         if(ElapsedSec(m_last_heartbeat_tick) >= m_heartbeat_sec)
+         const uint now = NowTick();
+         const uint heartbeat_interval_ms = (uint)m_heartbeat_sec * 1000;
+         if((int)(now - m_next_heartbeat_tick) >= 0)
+         {
             SendHeartbeat();
+            AdvanceHeartbeatSchedule(now, heartbeat_interval_ms);
+         }
          if(m_missed_heartbeat_acks >= FARM_WIRE_HEARTBEAT_MISS_LIMIT)
          {
             m_log.Warn("heartbeat_ack_missed_reconnect");
@@ -1046,6 +1068,11 @@ public:
    int SecondsSinceLastInbound() const
    {
       return ElapsedSec(m_last_inbound_tick);
+   }
+
+   uint MsSinceLastInbound() const
+   {
+      return ElapsedMs(m_last_inbound_tick);
    }
 
    ENUM_WIRE_STATE State() const

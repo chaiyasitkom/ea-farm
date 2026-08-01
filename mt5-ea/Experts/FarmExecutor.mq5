@@ -106,8 +106,9 @@ void OnTimer()
    while(g_wire.Receive(msg))
       g_log.Debug("received_application_message=" + msg);
 
-   if(g_wire.IsAuthenticated() && g_wire.SecondsSinceLastInbound() > InpBrainTimeoutSec)
-      g_log.Warn("brain_timeout_warning seconds_since_last_inbound=" + IntegerToString(g_wire.SecondsSinceLastInbound()));
+   const uint brain_timeout_ms = (uint)(InpBrainTimeoutSec > 0 ? InpBrainTimeoutSec : 0) * 1000;
+   if(g_wire.IsAuthenticated() && g_wire.MsSinceLastInbound() >= brain_timeout_ms)
+      g_log.Warn("brain_timeout_warning ms_since_last_inbound=" + IntegerToString(g_wire.MsSinceLastInbound()));
 }
 
 void OnTick()
