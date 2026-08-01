@@ -29,6 +29,9 @@ from tests.chaos.live_mt5_harness import (
 ROOT = Path(__file__).resolve().parents[2]
 SERVER = ROOT / "brain" / "gateway" / "echo_server.py"
 TOKEN = "test-token"
+WIRE_DIAG = Path(
+    r"C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\Common\Files\ea-farm-wire-diag.jsonl"
+)
 
 
 def free_port() -> int:
@@ -85,6 +88,61 @@ def recv_message(sock: socket.socket) -> dict[str, Any]:
     if not isinstance(parsed, dict):
         raise AssertionError("response was not a JSON object")
     return cast(dict[str, Any], parsed)
+
+
+class EventTail:
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self.offset = 0
+
+    def read_new(self) -> list[dict[str, Any]]:
+        if not self.path.exists():
+            return []
+        events: list[dict[str, Any]] = []
+        with self.path.open("r", encoding="utf-8") as fh:
+            fh.seek(self.offset)
+            for line in fh:
+                if not line.strip():
+                    continue
+                parsed = json.loads(line)
+                if isinstance(parsed, dict):
+                    events.append(parsed)
+            self.offset = fh.tell()
+        return events
+
+
+def _event_time(item: dict[str, Any]) -> str:
+    value = item.get("monotonic", item.get("ts", "?"))
+    try:
+        return f"{float(value):.3f}"
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _format_timeline(events: list[dict[str, Any]], title: str) -> str:
+    lines = [title]
+    for item in events[-20:]:
+        event = item.get("event", item.get("ev", "?"))
+        details = " ".join(
+            f"{key}={value}"
+            for key, value in item.items()
+            if key not in {"event", "ev", "wall_time", "monotonic", "ts"}
+        )
+        lines.append(f"  t={_event_time(item)} {event} {details}".rstrip())
+    return "\n".join(lines)
+
+
+def _read_wire_diag_tail(path: Path = WIRE_DIAG, limit: int = 20) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    events: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        parsed = json.loads(line)
+        if isinstance(parsed, dict):
+            events.append(parsed)
+    return events[-limit:]
 
 
 def hello(session_id: str, token: str = TOKEN) -> dict[str, object]:
@@ -333,29 +391,47 @@ class LiveChartChaosTests(unittest.TestCase):
             event_log.write_text("", encoding="utf-8")
             with live_terminal(port):
                 wait_for_event(event_log, "hello_ack", timeout=30.0)
+                event_tail = EventTail(event_log)
+                server_events: list[dict[str, Any]] = read_events(event_log)
                 deadline = time.monotonic() + 3600.0
                 last_progress = time.monotonic()
                 seen_count = 0
                 while time.monotonic() < deadline:
-                    heartbeats_now = [
-                        float(item["monotonic"])
-                        for item in read_events(event_log)
+                    new_events = event_tail.read_new()
+                    server_events.extend(new_events)
+                    new_heartbeats = [
+                        item
+                        for item in new_events
                         if item.get("event") == "heartbeat" and item.get("ack") is True
                     ]
-                    if len(heartbeats_now) > seen_count:
-                        seen_count = len(heartbeats_now)
+                    if new_heartbeats:
+                        seen_count += len(new_heartbeats)
                         last_progress = time.monotonic()
-                    self.assertLessEqual(time.monotonic() - last_progress, 3.5)
+                    if time.monotonic() - last_progress > 10.0:
+                        raise AssertionError(
+                            "no heartbeat progress for 10s\n"
+                            + _format_timeline(server_events, "server timeline")
+                            + "\n"
+                            + _format_timeline(_read_wire_diag_tail(), "ea pump timeline")
+                        )
                     time.sleep(0.5)
 
+        events = read_events(event_log)
         heartbeats = [
             float(item["monotonic"])
-            for item in read_events(event_log)
+            for item in events
             if item.get("event") == "heartbeat" and item.get("ack") is True
         ]
         self.assertGreaterEqual(len(heartbeats), 1700)
         gaps = [heartbeats[idx + 1] - heartbeats[idx] for idx in range(len(heartbeats) - 1)]
-        self.assertLessEqual(max(gaps), 3.5)
+        if gaps:
+            self.assertLessEqual(
+                max(gaps),
+                3.5,
+                _format_timeline(events, "server timeline")
+                + "\n"
+                + _format_timeline(_read_wire_diag_tail(), "ea pump timeline"),
+            )
 
 
 if __name__ == "__main__":

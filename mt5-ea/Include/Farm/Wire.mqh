@@ -611,6 +611,7 @@ private:
          m_heartbeat_seq = seq;
          m_last_heartbeat_tick = NowTick();
          m_missed_heartbeat_acks++;
+         WriteDiagLine("{\"ev\":\"hb_sent\",\"ts\":" + DiagTsJson() + ",\"seq\":" + IntegerToString(seq) + "}");
       }
    }
 
