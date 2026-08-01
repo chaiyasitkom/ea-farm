@@ -54,7 +54,7 @@ class EchoGateway:
     close_after_hello: bool = False
     stop_reading: bool = False
     sessions: set[str] = field(default_factory=set)
-    server: asyncio.AbstractServer | None = None
+    server: asyncio.Server | None = None
 
     def log_event(self, event: str, **fields: Any) -> None:
         if self.event_log_path is None:

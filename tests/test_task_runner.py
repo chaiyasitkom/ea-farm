@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import platform
+import re
+import shutil
+import venv
 from pathlib import Path
 
 import pytest
@@ -59,14 +63,27 @@ def test_exit_code_0_when_only_skips(capsys: pytest.CaptureFixture[str]) -> None
     assert "FAILED" not in output
 
 
+def test_check_fails_when_environment_is_incomplete(capsys: pytest.CaptureFixture[str]) -> None:
+    code = task.summarize("check", [_result("lint", "SKIP", "ruff missing", 3)])
+
+    output = capsys.readouterr().out
+    assert code == 3
+    assert "[SKIP] lint -- ruff missing" in output
+    assert "check: ENVIRONMENT INCOMPLETE" in output
+
+
 def test_finds_repo_root_from_any_cwd() -> None:
     assert task.ROOT == Path(__file__).resolve().parents[1]
 
 
 def test_mql5_gate_propagates_exit_code(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(task.platform, "system", lambda: "Windows")
-    monkeypatch.setattr(task.shutil, "which", lambda _name: "powershell")
-    monkeypatch.setattr(task, "_run", lambda _command, name: _result(name, "FAIL", "exit=7", 7))
+    monkeypatch.setattr(platform, "system", lambda: "Windows")
+    monkeypatch.setattr(shutil, "which", lambda _name: "powershell")
+    monkeypatch.setattr(
+        task,
+        "_run",
+        lambda _command, name, _timeout_sec=900.0: _result(name, "FAIL", "exit=7", 7),
+    )
 
     result = task.target_mql5_gate()
 
@@ -75,12 +92,58 @@ def test_mql5_gate_propagates_exit_code(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 def test_missing_tool_reports_skip_not_traceback(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(task, "_module_exists", lambda _name: False)
+    monkeypatch.setattr(task, "_task_python_or_skip", lambda _name: Path("python"))
+    monkeypatch.setattr(task, "_module_exists", lambda _name, _python: False)
 
     result = task.target_lint()
 
     assert result.status == "SKIP"
+    assert result.code == 3
     assert "ruff is not installed" in result.detail
+
+
+def test_tool_lookup_uses_selected_python(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    selected_python = tmp_path / "python.exe"
+    selected_python.write_text("", encoding="utf-8")
+    seen: list[Path] = []
+
+    def module_exists(_name: str, python: Path) -> bool:
+        seen.append(python)
+        return True
+
+    monkeypatch.setattr(task, "_selected_python", lambda: selected_python)
+    monkeypatch.setattr(task, "_python_version", lambda _python: (3, 11))
+    monkeypatch.setattr(task, "_module_exists", module_exists)
+    monkeypatch.setattr(
+        task,
+        "_run",
+        lambda _command, name, _timeout_sec=900.0: _result(name, "OK"),
+    )
+
+    result = task.target_lint()
+
+    assert result.status == "OK"
+    assert seen == [selected_python]
+
+
+def test_existing_venv_with_wrong_python_version_warns_without_recreating(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    created: list[Path] = []
+    root = tmp_path / "repo"
+    (root / ".venv").mkdir(parents=True)
+
+    monkeypatch.setattr(task, "ROOT", root)
+    monkeypatch.setattr(task, "_venv_python", lambda: Path(__file__))
+    monkeypatch.setattr(task, "_python_version", lambda _python: (3, 10))
+    monkeypatch.setattr(venv, "create", lambda path, with_pip: created.append(path))
+
+    result = task.target_install()
+
+    assert result.status == "FAIL"
+    assert ".venv uses Python 3.10" in result.detail
+    assert created == []
 
 
 def test_env_example_has_no_real_values() -> None:
@@ -90,6 +153,9 @@ def test_env_example_has_no_real_values() -> None:
     assert "FARM_TELEGRAM_BOT_TOKEN=\n" in env
     assert "FARM_TELEGRAM_CHAT_ID=\n" in env
     assert "test-token" not in env
+    assert not re.search(r"\b[A-Za-z]:\\", env)
+    assert "/Users/" not in env
+    assert "/home/" not in env
 
 
 def test_pytest_markers_declared() -> None:

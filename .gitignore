@@ -73,3 +73,6 @@ Desktop.ini
 
 # ── NOTE: contracts/gen/ ต้อง commit (generated แต่ต้องอยู่ใน repo
 #    เพื่อให้ CI ตรวจ codegen-diff ได้ — ดู docs/02-contracts.md §6)
+
+# pytest temp dirs (สร้างโดย sandbox บางครั้งลบไม่ได้)
+.tmp-pytest/

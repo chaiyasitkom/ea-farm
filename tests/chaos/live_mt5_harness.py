@@ -8,11 +8,11 @@ import subprocess
 import sys
 import tempfile
 import time
-from dataclasses import dataclass
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parents[2]
 SERVER = ROOT / "brain" / "gateway" / "echo_server.py"
@@ -72,7 +72,12 @@ def wait_for_event(path: Path, event: str, timeout: float) -> dict[str, Any]:
     raise AssertionError(f"timed out waiting for event={event}")
 
 
-def wait_for_event_count(path: Path, event: str, count: int, timeout: float) -> list[dict[str, Any]]:
+def wait_for_event_count(
+    path: Path,
+    event: str,
+    count: int,
+    timeout: float,
+) -> list[dict[str, Any]]:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         matches = [item for item in read_events(path) if item.get("event") == event]
@@ -264,7 +269,10 @@ def live_terminal(port: int) -> Iterator[subprocess.Popen[str]]:
     deploy_and_compile_farm_executor()
     with tempfile.TemporaryDirectory(prefix="ea-farm-live-") as raw:
         ini = write_startup_files(port, Path(raw))
-        proc = subprocess.Popen([str(IUX_TERMINAL), f"/config:{ini}"], cwd=ROOT)
+        proc = cast(
+            subprocess.Popen[str],
+            subprocess.Popen([str(IUX_TERMINAL), f"/config:{ini}"], cwd=ROOT),
+        )
         try:
             yield proc
         finally:
