@@ -23,7 +23,7 @@ Phase 0 · Owner: Codex · Depends on: **SPEC-001 §S1** ([review](../reviews/SP
 
 ```python
 SAMPLE_INTERVAL_SEC = 30
-WARMUP_SEC = 3600          # ตัดชั่วโมงแรกทิ้งเสมอ ดู §4.2
+WARMUP_SEC = {"steady": 3600, "churn": 600}   # rev.2 — ต่อ profile ดู §4.2
 
 @dataclass(frozen=True)
 class Sample:
@@ -95,8 +95,29 @@ powershell -ExecutionPolicy Bypass -File tools\run-soak.ps1 -Profile churn    # 
 
 ### 4.2 เกณฑ์ตัดสิน
 
-ตัด **ชั่วโมงแรกทิ้งเสมอ** (`WARMUP_SEC`) — MT5 โหลด history/สร้าง cache ตอนเริ่ม
+ตัดช่วงเริ่มต้นทิ้ง (`WARMUP_SEC`) — MT5 โหลด history/สร้าง cache ตอนเริ่ม
 ตัวเลขช่วงนั้นไม่ใช่ steady state · **baseline = ตัวอย่างแรกหลัง warmup**
+
+> ### 🔴 rev.2 (2026-08-02) — warmup ต้องแยกตาม profile · ฉบับ rev.1 ผมเขียนผิดเอง
+>
+> rev.1 เขียน `WARMUP_SEC = 3600` เป็นค่าเดียวใช้ทั้งสอง profile **ซึ่งขัดกับ §4.3 ของตัวเอง**
+>
+> | | steady 24 ชม. | churn 2 ชม. |
+> |---|---|---|
+> | warmup 3600 คิดเป็น | 4% ของรอบ — ไม่มีผล | **50% ของรอบ** |
+> | §4.3 บอกว่าสัญญาณโผล่เมื่อไร | ตามเวลา | **~25 นาที** ← **อยู่ในช่วงที่ถูกทิ้งทั้งหมด** |
+>
+> **หลักฐานจากการรันจริง 2026-08-02:** churn ถูกหยุดที่นาทีที่ 59.5 · เก็บได้ **120 sample**
+> · `analyse()` โยน `SoakEnvironmentError("fewer than two samples after warmup")`
+> — มีข้อมูลเกือบชั่วโมงแต่วิเคราะห์ไม่ได้เลยสักตัว
+>
+> **แก้:** `WARMUP_SEC` เป็น dict ต่อ profile · `churn = 600` (10 นาที)
+> เพียงพอสำหรับ MT5 โหลด history ซึ่งใช้เวลาหลักนาที ไม่ใช่หลักชั่วโมง
+> · `steady = 3600` คงเดิม เพราะไม่มีต้นทุน
+>
+> **`_post_warmup_samples()` ต้องรับ profile เป็นพารามิเตอร์** และ
+> `analyse()` ต้องรับด้วย — ห้ามเดาจากความยาวของข้อมูลที่ได้รับ
+> เพราะรอบที่ถูกตัดกลางคันจะเดาผิดเสมอ
 
 | กฎ | เกณฑ์ | ตกแล้วหมายความว่า |
 |----|-------|------------------|
@@ -186,7 +207,9 @@ powershell -ExecutionPolicy Bypass -File tools\run-soak.ps1 -Profile churn    # 
 | `test_step_growth_30mb_fails_m2_not_m1` | โตขั้นบันไดครั้งเดียว 30 MB → **ตก M2 แต่ไม่ตก M1** ← พิสูจน์ว่าสองกฎทำงานคนละแบบ |
 | `test_slow_leak_0_9mb_per_hour_fails_m2` | 0.9 MB/ชม. → ผ่าน M1 แต่ **ตก M2** ← อีกทิศของคู่เดียวกัน |
 | `test_handle_leak_one_per_reconnect_fails_m3` | +1 handle ต่อรอบ × 240 → ตก M3 |
-| `test_warmup_hour_excluded_from_baseline` | ใส่ spike ใหญ่ในชั่วโมงแรก → ต้องไม่กระทบ verdict |
+| `test_warmup_hour_excluded_from_baseline` | ใส่ spike ใหญ่ในช่วง warmup → ต้องไม่กระทบ verdict |
+| `test_warmup_differs_per_profile` | **rev.2** — ข้อมูล 2 ชม. แบบ `churn` ต้องวิเคราะห์ได้ · ข้อมูลชุดเดียวกันแบบ `steady` ต้องบอกว่าสั้นเกินไป |
+| `test_churn_60min_run_is_analysable` | **rev.2** — ป้องกันเคสที่เพิ่งเจอจริง: 120 sample ใน 59.5 นาที ต้องไม่โยน `fewer than two samples after warmup` |
 | `test_sleep_gap_20pct_fails_m5` | เจาะช่องว่าง 20% → ตก M5 · **ห้ามผ่านด้วยการ interpolate** |
 | `test_pid_change_is_env_failure_not_verdict` | PID เปลี่ยน → env failure ไม่ใช่ `passed: false` |
 | `test_linear_slope_matches_known_series` | ป้อนเส้นที่รู้ความชัน → คลาดเคลื่อน < 1% |
