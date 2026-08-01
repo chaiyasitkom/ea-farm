@@ -152,6 +152,10 @@ def _format_timeline(events: list[dict[str, Any]], title: str) -> str:
     return "\n".join(lines)
 
 
+def _format_seconds(values: list[float]) -> str:
+    return "[" + ", ".join(f"{value:.3f}" for value in values) + "]"
+
+
 def _read_wire_diag_tail(path: Path = WIRE_DIAG, limit: int = 20) -> list[dict[str, Any]]:
     if not path.exists():
         return []
@@ -394,6 +398,17 @@ class LiveChartChaosTests(unittest.TestCase):
 
         self.assertEqual([int(item["backoff_sec"]) for item in reconnects], [*expected, 30])
         self._assert_backoff_waits_match_diag(reconnects, expected)
+        ticks_ms = [int(item["tick_ms"]) for item in reconnects]
+        gaps = [
+            (ticks_ms[idx + 1] - ticks_ms[idx]) / 1000.0
+            for idx in range(len(ticks_ms) - 1)
+        ]
+        print(
+            "backoff_ladder "
+            f"backoff_sec={[int(item['backoff_sec']) for item in reconnects]} "
+            f"gaps_sec={_format_seconds(gaps)}",
+            flush=True,
+        )
 
     def test_bad_token_waits_60s(self) -> None:
         port = chaos_port()
@@ -409,6 +424,7 @@ class LiveChartChaosTests(unittest.TestCase):
         self.assertFalse(acks[0]["accepted"])
         self.assertEqual(acks[0]["reason"], "BAD_TOKEN")
         self.assertGreaterEqual(second - first, 59.0)
+        print(f"bad_token_retry_delay_sec={second - first:.3f}", flush=True)
 
     def test_ea_handles_duplicate_session_rejection(self) -> None:
         port = chaos_port()
@@ -424,6 +440,7 @@ class LiveChartChaosTests(unittest.TestCase):
         self.assertFalse(acks[0]["accepted"])
         self.assertEqual(acks[0]["reason"], "DUPLICATE_SESSION")
         self.assertGreaterEqual(second - first, 55.0)
+        print(f"duplicate_session_retry_delay_sec={second - first:.3f}", flush=True)
 
     def test_heartbeat_gap_triggers_reconnect(self) -> None:
         port = chaos_port()
@@ -438,6 +455,7 @@ class LiveChartChaosTests(unittest.TestCase):
         gap = float(connects[1]["monotonic"]) - float(connects[0]["monotonic"])
         self.assertGreaterEqual(gap, 4.0)
         self.assertLessEqual(gap, 12.0)
+        print(f"heartbeat_gap_reconnect_sec={gap:.3f}", flush=True)
 
     def test_heartbeat_interval_within_5pct_over_5min(self) -> None:
         port = chaos_port()
@@ -493,6 +511,12 @@ class LiveChartChaosTests(unittest.TestCase):
             upper,
             f"mean_gap={mean_gap:.4f} min={min(gaps):.4f} max={max(gaps):.4f}",
         )
+        print(
+            "heartbeat_interval "
+            f"count={len(heartbeats)} mean_gap_sec={mean_gap:.4f} "
+            f"min_gap_sec={min(gaps):.4f} max_gap_sec={max(gaps):.4f}",
+            flush=True,
+        )
 
     @unittest.skipUnless(slow_enabled(), "set EA_FARM_LIVE_MT5_SLOW=1 to run the 1h soak")
     def test_no_heartbeat_loss_over_1h(self) -> None:
@@ -545,6 +569,12 @@ class LiveChartChaosTests(unittest.TestCase):
                 + "\n"
                 + _format_timeline(_read_wire_diag_tail(), "ea pump timeline"),
             )
+        print(
+            "heartbeat_soak "
+            f"count={len(heartbeats)} "
+            f"max_gap_sec={(max(gaps) if gaps else 0.0):.4f}",
+            flush=True,
+        )
 
 
 if __name__ == "__main__":

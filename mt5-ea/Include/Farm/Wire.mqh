@@ -12,6 +12,7 @@
 #define FARM_WIRE_HEARTBEAT_MISS_LIMIT 3
 #define FARM_ULID_ALPHABET "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 #define FARM_WIRE_DIAG_FILE "ea-farm-wire-diag.jsonl"
+#define FARM_WIRE_DIAG_ROTATE_BYTES 33554432ULL
 
 enum ENUM_WIRE_STATE {
    WIRE_DISCONNECTED,
@@ -115,6 +116,7 @@ private:
    int             m_magic;
    bool            m_verbose;
    int             m_diag_handle;
+   string          m_diag_session_id;
    CFarmLogger     m_log;
    CBrokerTime    *m_broker_time;
 
@@ -162,7 +164,9 @@ private:
 
    string DiagClockJson() const
    {
-      return "\"ts\":" + DiagTsJson() + ",\"tick_ms\":" + IntegerToString((long)GetTickCount64());
+      return "\"ts\":" + DiagTsJson() +
+             ",\"tick_ms\":" + IntegerToString((long)GetTickCount64()) +
+             ",\"session_id\":" + FarmJsonQuote(m_diag_session_id);
    }
 
    void WriteDiagLine(const string json)
@@ -178,9 +182,45 @@ private:
       if(!m_verbose || m_diag_handle != INVALID_HANDLE)
          return;
       ResetLastError();
-      m_diag_handle = FileOpen(FARM_WIRE_DIAG_FILE, FILE_WRITE | FILE_TXT | FILE_ANSI | FILE_COMMON | FILE_SHARE_READ);
+      bool rotated = false;
+      m_diag_handle = FileOpen(FARM_WIRE_DIAG_FILE, FILE_READ | FILE_WRITE | FILE_TXT | FILE_ANSI | FILE_COMMON | FILE_SHARE_READ);
       if(m_diag_handle == INVALID_HANDLE)
+      {
          m_log.Warn(StringFormat("wire_diag_file_open_failed path=FILE_COMMON\\%s err=%d", FARM_WIRE_DIAG_FILE, GetLastError()));
+         return;
+      }
+
+      const ulong existing_size = FileSize(m_diag_handle);
+      if(existing_size > FARM_WIRE_DIAG_ROTATE_BYTES)
+      {
+         FileClose(m_diag_handle);
+         ResetLastError();
+         m_diag_handle = FileOpen(FARM_WIRE_DIAG_FILE, FILE_WRITE | FILE_TXT | FILE_ANSI | FILE_COMMON | FILE_SHARE_READ);
+         if(m_diag_handle == INVALID_HANDLE)
+         {
+            m_log.Warn(StringFormat("wire_diag_file_rotate_open_failed path=FILE_COMMON\\%s previous_bytes=%I64u err=%d", FARM_WIRE_DIAG_FILE, existing_size, GetLastError()));
+            return;
+         }
+         rotated = true;
+         m_log.Warn(StringFormat("wire_diag_file_rotated path=FILE_COMMON\\%s previous_bytes=%I64u limit_bytes=%I64u",
+                                 FARM_WIRE_DIAG_FILE, existing_size, FARM_WIRE_DIAG_ROTATE_BYTES));
+      }
+      else
+      {
+         FileSeek(m_diag_handle, 0, SEEK_END);
+      }
+
+      if(rotated)
+      {
+         WriteDiagLine(
+            "{\"ev\":\"diag_rotate\"," +
+            DiagClockJson() + "," +
+            "\"previous_bytes\":" + IntegerToString((long)existing_size) + "," +
+            "\"limit_bytes\":" + IntegerToString((long)FARM_WIRE_DIAG_ROTATE_BYTES) +
+            "}"
+         );
+      }
+      WriteDiagLine("{\"ev\":\"session_start\"," + DiagClockJson() + "}");
    }
 
    void CloseDiagFile()
@@ -872,6 +912,7 @@ public:
       m_magic = 770001;
       m_verbose = false;
       m_diag_handle = INVALID_HANDLE;
+      m_diag_session_id = "";
       m_broker_time = NULL;
       m_log.Init("wire", false);
    }
@@ -901,6 +942,7 @@ public:
       }
       m_next_connect_tick = 0;
       m_backoff_sec = 1;
+      m_diag_session_id = StringFormat("wire-%I64u-%s", GetTickCount64(), FarmRandomUlidSuffix());
       OpenDiagFile();
       EnterState(WIRE_DISCONNECTED, "Init");
       return true;
