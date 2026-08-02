@@ -29,6 +29,8 @@ packages = [
   "brain.risk",
   "brain.signal",
   "brain.store",
+  "research",
+  "research.quality",
   "farm_contracts",
 ]
 

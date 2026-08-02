@@ -221,6 +221,25 @@ def target_codegen_check() -> TaskResult:
     return _run(["git", "diff", "--exit-code", "--", "contracts/gen"], "codegen-check")
 
 
+def target_quality() -> TaskResult:
+    python = _task_python_or_skip("quality")
+    if isinstance(python, TaskResult):
+        return python
+    return _run(
+        [
+            str(python),
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "--basetemp",
+            str(ROOT / ".tmp-pytest-quality"),
+            "tests/test_quality.py",
+        ],
+        "quality",
+    )
+
+
 def target_mql5_gate() -> TaskResult:
     if platform.system() != "Windows":
         return _skip("mql5-gate", "requires Windows and MetaEditor")
@@ -244,6 +263,7 @@ TARGETS: dict[str, TaskFunc] = {
     "typecheck": target_typecheck,
     "test": target_test,
     "test-all": target_test_all,
+    "quality": target_quality,
     "codegen": target_codegen,
     "codegen-check": target_codegen_check,
     "mql5-gate": target_mql5_gate,
