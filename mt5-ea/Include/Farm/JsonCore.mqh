@@ -54,6 +54,8 @@ string FarmJsonQuoteUtf8(const string raw)
 
 string FarmJsonFormatDouble(const double value)
 {
+   if(value == 0.0)
+      return "0.0";
    string out = DoubleToString(value, 10);
    while(StringLen(out) > 0 && StringFind(out, ".") >= 0
          && StringGetCharacter(out, StringLen(out) - 1) == '0')
@@ -210,6 +212,60 @@ public:
       return "null";
    }
 };
+
+string FarmJsonCanonicalNumber(CFarmJsonValue *value, const bool integer_number)
+{
+   if(value == NULL || value.type != FARM_JSON_NUMBER)
+      return integer_number ? "0" : "0.0";
+   if(integer_number)
+      return IntegerToString(value.integer_value);
+   return FarmJsonFormatDouble(value.number_value);
+}
+
+string FarmJsonCanonicalValue(CFarmJsonValue *value)
+{
+   if(value == NULL)
+      return "null";
+   if(value.type == FARM_JSON_NULL)
+      return "null";
+   if(value.type == FARM_JSON_BOOL)
+      return value.bool_value ? "true" : "false";
+   if(value.type == FARM_JSON_NUMBER)
+      return FarmJsonFormatDouble(value.number_value);
+   if(value.type == FARM_JSON_STRING)
+      return FarmJsonQuoteUtf8(value.string_value);
+   if(value.type == FARM_JSON_ARRAY)
+   {
+      string out = "[";
+      for(int i = 0; i < value.Size(); i++)
+      {
+         if(i > 0)
+            out += ",";
+         out += FarmJsonCanonicalValue(value.At(i));
+      }
+      return out + "]";
+   }
+   if(value.type == FARM_JSON_OBJECT)
+   {
+      string out = "{";
+      for(int i = 0; i < value.Size(); i++)
+      {
+         if(i > 0)
+            out += ",";
+         out += FarmJsonQuoteUtf8(value.KeyAt(i)) + ":" + FarmJsonCanonicalValue(value.At(i));
+      }
+      return out + "}";
+   }
+   return "null";
+}
+
+void FarmJsonAppendFieldPrefix(string &out, bool &first, const string key)
+{
+   if(!first)
+      out += ",";
+   first = false;
+   out += FarmJsonQuoteUtf8(key) + ":";
+}
 
 class CFarmJsonParser
 {
