@@ -76,3 +76,6 @@ Desktop.ini
 
 # pytest temp dirs (สร้างโดย sandbox บางครั้งลบไม่ได้)
 .tmp-pytest/
+
+# soak run logs (detached)
+.soak-churn-run.*
