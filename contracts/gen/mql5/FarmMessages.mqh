@@ -40,12 +40,108 @@ struct FarmPayloadJson
    string raw_json;
 };
 
+struct FarmStatePosition
+{
+   long   ticket;
+   string symbol;
+   string side;
+   double volume;
+   double price_open;
+   bool   sl_is_null;
+   double sl;
+   bool   tp_is_null;
+   double tp;
+   double profit;
+   double swap;
+   long   magic;
+   bool   comment_present;
+   bool   comment_is_null;
+   string comment;
+   string time_open;
+};
+
+struct FarmStatePendingOrder
+{
+   long   ticket;
+   string symbol;
+   string type;
+   double volume;
+   double price_open;
+   bool   sl_present;
+   bool   sl_is_null;
+   double sl;
+   bool   tp_present;
+   bool   tp_is_null;
+   double tp;
+   long   magic;
+   string time_setup;
+   bool   time_expiration_present;
+   bool   time_expiration_is_null;
+   string time_expiration;
+};
+
+struct FarmStateForeignPositions
+{
+   long   count;
+   string symbols[];
+   double total_volume;
+   double margin_estimate;
+
+   void Free()
+   {
+      ArrayResize(symbols, 0);
+   }
+};
+
+struct FarmStateGuard
+{
+   bool   halted;
+   bool   halt_reason_present;
+   bool   halt_reason_is_null;
+   string halt_reason;
+   string mode;
+   long   current_spread_points;
+   bool   internal_hedge_detected;
+   bool   halted_until_present;
+   bool   halted_until_is_null;
+   string halted_until;
+};
+
 struct FarmStatePayload
 {
    string raw_json;
+   double balance;
+   double equity;
+   double margin_used;
+   double margin_free;
    bool   margin_level_pct_present;
    bool   margin_level_pct_is_null;
    double margin_level_pct;
+   double equity_hwm;
+   double day_start_equity;
+   double day_pl;
+   double day_pl_pct;
+   FarmStatePosition positions[];
+   FarmStatePendingOrder pending_orders[];
+   string owned_net_keys[];
+   double owned_net_values[];
+   string owned_ticket_count_keys[];
+   long   owned_ticket_count_values[];
+   FarmStateForeignPositions foreign_positions;
+   string account_margin_mode;
+   FarmStateGuard guard;
+
+   void Free()
+   {
+      raw_json = "";
+      ArrayResize(positions, 0);
+      ArrayResize(pending_orders, 0);
+      ArrayResize(owned_net_keys, 0);
+      ArrayResize(owned_net_values, 0);
+      ArrayResize(owned_ticket_count_keys, 0);
+      ArrayResize(owned_ticket_count_values, 0);
+      foreign_positions.Free();
+   }
 };
 
 struct FarmHelloPayload
@@ -198,9 +294,19 @@ bool FarmRequireObjectKey(CFarmJsonValue *obj, const string key)
 
 bool FarmRequireKeys(CFarmJsonValue *obj, const string &keys[])
 {
+   string missing = "";
    for(int i = 0; i < ArraySize(keys); i++)
    {
-      if(!FarmRequireObjectKey(obj, keys[i])) return false;
+      if(obj == NULL || obj.type != FARM_JSON_OBJECT || !obj.Has(keys[i]))
+      {
+         if(missing != "") missing += ",";
+         missing += keys[i];
+      }
+   }
+   if(missing != "")
+   {
+      FarmJsonSetError("MISSING_REQUIRED", missing);
+      return false;
    }
    return true;
 }
@@ -334,16 +440,153 @@ bool FarmParsePayloadJson(const ENUM_FARM_MSG_TYPE msg_type, const string json, 
    return true;
 }
 
+double FarmJsonNumberValue(CFarmJsonValue *obj, const string key)
+{
+   CFarmJsonValue *v = obj.Get(key);
+   return (v != NULL && v.type == FARM_JSON_NUMBER ? v.number_value : 0.0);
+}
+
+long FarmJsonLongValue(CFarmJsonValue *obj, const string key)
+{
+   CFarmJsonValue *v = obj.Get(key);
+   return (v != NULL && v.type == FARM_JSON_NUMBER ? v.integer_value : 0);
+}
+
+string FarmJsonStringValue(CFarmJsonValue *obj, const string key)
+{
+   CFarmJsonValue *v = obj.Get(key);
+   return (v != NULL && v.type == FARM_JSON_STRING ? v.string_value : "");
+}
+
+bool FarmJsonBoolValue(CFarmJsonValue *obj, const string key)
+{
+   CFarmJsonValue *v = obj.Get(key);
+   return (v != NULL && v.type == FARM_JSON_BOOL && v.bool_value);
+}
+
+void FarmFillStatePosition(CFarmJsonValue *src, FarmStatePosition &out)
+{
+   out.ticket = FarmJsonLongValue(src, "ticket");
+   out.symbol = FarmJsonStringValue(src, "symbol");
+   out.side = FarmJsonStringValue(src, "side");
+   out.volume = FarmJsonNumberValue(src, "volume");
+   out.price_open = FarmJsonNumberValue(src, "price_open");
+   CFarmJsonValue *sl = src.Get("sl");
+   out.sl_is_null = (sl != NULL && sl.type == FARM_JSON_NULL);
+   out.sl = (sl != NULL && sl.type == FARM_JSON_NUMBER ? sl.number_value : 0.0);
+   CFarmJsonValue *tp = src.Get("tp");
+   out.tp_is_null = (tp != NULL && tp.type == FARM_JSON_NULL);
+   out.tp = (tp != NULL && tp.type == FARM_JSON_NUMBER ? tp.number_value : 0.0);
+   out.profit = FarmJsonNumberValue(src, "profit");
+   out.swap = FarmJsonNumberValue(src, "swap");
+   out.magic = FarmJsonLongValue(src, "magic");
+   CFarmJsonValue *comment = src.Get("comment");
+   out.comment_present = (comment != NULL);
+   out.comment_is_null = (comment != NULL && comment.type == FARM_JSON_NULL);
+   out.comment = (comment != NULL && comment.type == FARM_JSON_STRING ? comment.string_value : "");
+   out.time_open = FarmJsonStringValue(src, "time_open");
+}
+
+void FarmFillStatePendingOrder(CFarmJsonValue *src, FarmStatePendingOrder &out)
+{
+   out.ticket = FarmJsonLongValue(src, "ticket");
+   out.symbol = FarmJsonStringValue(src, "symbol");
+   out.type = FarmJsonStringValue(src, "type");
+   out.volume = FarmJsonNumberValue(src, "volume");
+   out.price_open = FarmJsonNumberValue(src, "price_open");
+   CFarmJsonValue *sl = src.Get("sl");
+   out.sl_present = (sl != NULL);
+   out.sl_is_null = (sl != NULL && sl.type == FARM_JSON_NULL);
+   out.sl = (sl != NULL && sl.type == FARM_JSON_NUMBER ? sl.number_value : 0.0);
+   CFarmJsonValue *tp = src.Get("tp");
+   out.tp_present = (tp != NULL);
+   out.tp_is_null = (tp != NULL && tp.type == FARM_JSON_NULL);
+   out.tp = (tp != NULL && tp.type == FARM_JSON_NUMBER ? tp.number_value : 0.0);
+   out.magic = FarmJsonLongValue(src, "magic");
+   out.time_setup = FarmJsonStringValue(src, "time_setup");
+   CFarmJsonValue *exp = src.Get("time_expiration");
+   out.time_expiration_present = (exp != NULL);
+   out.time_expiration_is_null = (exp != NULL && exp.type == FARM_JSON_NULL);
+   out.time_expiration = (exp != NULL && exp.type == FARM_JSON_STRING ? exp.string_value : "");
+}
+
+void FarmFillStringArray(CFarmJsonValue *src, string &out[])
+{
+   ArrayResize(out, src.Size());
+   for(int i = 0; i < src.Size(); i++)
+   {
+      CFarmJsonValue *item = src.At(i);
+      out[i] = (item != NULL && item.type == FARM_JSON_STRING ? item.string_value : "");
+   }
+}
+
+void FarmFillState(CFarmJsonValue *root, FarmStatePayload &out)
+{
+   out.Free();
+   out.raw_json = root.ToJson();
+   out.balance = FarmJsonNumberValue(root, "balance");
+   out.equity = FarmJsonNumberValue(root, "equity");
+   out.margin_used = FarmJsonNumberValue(root, "margin_used");
+   out.margin_free = FarmJsonNumberValue(root, "margin_free");
+   CFarmJsonValue *ml = root.Get("margin_level_pct");
+   out.margin_level_pct_present = (ml != NULL);
+   out.margin_level_pct_is_null = (ml != NULL && ml.type == FARM_JSON_NULL);
+   out.margin_level_pct = (ml != NULL && ml.type == FARM_JSON_NUMBER ? ml.number_value : 0.0);
+   out.equity_hwm = FarmJsonNumberValue(root, "equity_hwm");
+   out.day_start_equity = FarmJsonNumberValue(root, "day_start_equity");
+   out.day_pl = FarmJsonNumberValue(root, "day_pl");
+   out.day_pl_pct = FarmJsonNumberValue(root, "day_pl_pct");
+   CFarmJsonValue *positions = root.Get("positions");
+   ArrayResize(out.positions, positions.Size());
+   for(int i = 0; i < positions.Size(); i++) FarmFillStatePosition(positions.At(i), out.positions[i]);
+   CFarmJsonValue *pending = root.Get("pending_orders");
+   ArrayResize(out.pending_orders, pending.Size());
+   for(int i = 0; i < pending.Size(); i++) FarmFillStatePendingOrder(pending.At(i), out.pending_orders[i]);
+   CFarmJsonValue *owned_net = root.Get("owned_net");
+   ArrayResize(out.owned_net_keys, owned_net.Size());
+   ArrayResize(out.owned_net_values, owned_net.Size());
+   for(int i = 0; i < owned_net.Size(); i++)
+   {
+      out.owned_net_keys[i] = owned_net.KeyAt(i);
+      CFarmJsonValue *v = owned_net.At(i);
+      out.owned_net_values[i] = (v != NULL && v.type == FARM_JSON_NUMBER ? v.number_value : 0.0);
+   }
+   CFarmJsonValue *count = root.Get("owned_ticket_count");
+   ArrayResize(out.owned_ticket_count_keys, count.Size());
+   ArrayResize(out.owned_ticket_count_values, count.Size());
+   for(int i = 0; i < count.Size(); i++)
+   {
+      out.owned_ticket_count_keys[i] = count.KeyAt(i);
+      CFarmJsonValue *v = count.At(i);
+      out.owned_ticket_count_values[i] = (v != NULL && v.type == FARM_JSON_NUMBER ? v.integer_value : 0);
+   }
+   CFarmJsonValue *foreign = root.Get("foreign_positions");
+   out.foreign_positions.count = FarmJsonLongValue(foreign, "count");
+   FarmFillStringArray(foreign.Get("symbols"), out.foreign_positions.symbols);
+   out.foreign_positions.total_volume = FarmJsonNumberValue(foreign, "total_volume");
+   out.foreign_positions.margin_estimate = FarmJsonNumberValue(foreign, "margin_estimate");
+   out.account_margin_mode = FarmJsonStringValue(root, "account_margin_mode");
+   CFarmJsonValue *guard = root.Get("guard");
+   out.guard.halted = FarmJsonBoolValue(guard, "halted");
+   CFarmJsonValue *reason = guard.Get("halt_reason");
+   out.guard.halt_reason_present = (reason != NULL);
+   out.guard.halt_reason_is_null = (reason != NULL && reason.type == FARM_JSON_NULL);
+   out.guard.halt_reason = (reason != NULL && reason.type == FARM_JSON_STRING ? reason.string_value : "");
+   out.guard.mode = FarmJsonStringValue(guard, "mode");
+   out.guard.current_spread_points = FarmJsonLongValue(guard, "current_spread_points");
+   out.guard.internal_hedge_detected = FarmJsonBoolValue(guard, "internal_hedge_detected");
+   CFarmJsonValue *until = guard.Get("halted_until");
+   out.guard.halted_until_present = (until != NULL);
+   out.guard.halted_until_is_null = (until != NULL && until.type == FARM_JSON_NULL);
+   out.guard.halted_until = (until != NULL && until.type == FARM_JSON_STRING ? until.string_value : "");
+}
+
 bool FarmParseState(const string json, FarmStatePayload &out)
 {
    CFarmJsonDoc doc;
    if(!doc.Parse(json)) return false;
    if(!FarmValidateState(doc.Root())) { doc.Free(); return false; }
-   out.raw_json = doc.Root().ToJson();
-   CFarmJsonValue *ml = doc.Root().Get("margin_level_pct");
-   out.margin_level_pct_present = (ml != NULL);
-   out.margin_level_pct_is_null = (ml != NULL && ml.type == FARM_JSON_NULL);
-   out.margin_level_pct = (ml != NULL && ml.type == FARM_JSON_NUMBER ? ml.number_value : 0.0);
+   FarmFillState(doc.Root(), out);
    doc.Free();
    return true;
 }
