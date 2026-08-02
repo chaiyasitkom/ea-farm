@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "brokers": {
+    "IUXMarkets-Demo": {
+      "AUDUSD.iux": "AUDUSD",
+      "EURUSD.iux": "EURUSD",
+      "GBPUSD.iux": "GBPUSD",
+      "USDCAD.iux": "USDCAD",
+      "USDJPY.iux": "USDJPY",
+      "XAUUSD.iux": "XAUUSD"
+    },
+    "XMGlobal-MT5 6": {
+      "EURUSD": "EURUSD",
+      "GBPUSD": "GBPUSD",
+      "GOLD": "XAUUSD",
+      "USDJPY": "USDJPY"
+    }
+  },
+  "canonicals": {
+    "AUDUSD": {
+      "base": "AUD",
+      "quote": "USD",
+      "group": "COMMODITY_FX",
+      "max_spread_points": null,
+      "max_sl_distance_pct": 0.6,
+      "session_policy": "MON_0100_FRI_2000"
+    },
+    "EURUSD": {
+      "base": "EUR",
+      "quote": "USD",
+      "group": "EUROPE",
+      "max_spread_points": null,
+      "max_sl_distance_pct": 0.5,
+      "session_policy": "MON_0100_FRI_2000"
+    },
+    "GBPUSD": {
+      "base": "GBP",
+      "quote": "USD",
+      "group": "EUROPE",
+      "max_spread_points": null,
+      "max_sl_distance_pct": 0.6,
+      "session_policy": "MON_0100_FRI_2000"
+    },
+    "USDCAD": {
+      "base": "USD",
+      "quote": "CAD",
+      "group": "COMMODITY_FX",
+      "max_spread_points": null,
+      "max_sl_distance_pct": 0.6,
+      "session_policy": "MON_0100_FRI_2000"
+    },
+    "USDJPY": {
+      "base": "USD",
+      "quote": "JPY",
+      "group": "JPY",
+      "max_spread_points": null,
+      "max_sl_distance_pct": 0.6,
+      "session_policy": "MON_0100_FRI_2000"
+    },
+    "XAUUSD": {
+      "base": "XAU",
+      "quote": "USD",
+      "group": "METALS",
+      "max_spread_points": null,
+      "max_sl_distance_pct": 1.5,
+      "session_policy": "MON_0100_FRI_2000"
+    }
+  }
+}

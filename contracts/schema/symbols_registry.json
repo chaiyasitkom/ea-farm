@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ea-farm.local/schema/symbols_registry.json",
+  "title": "Symbol registry",
+  "description": "ตาราง (broker, raw) -> canonical + ข้อมูล risk ต่อ canonical · SPEC-064 · Claude เป็นเจ้าของไฟล์ contracts/symbols.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "brokers", "canonicals"],
+  "properties": {
+    "version": {
+      "const": 1,
+      "description": "เพิ่มเลขนี้เมื่อรูปร่างไฟล์เปลี่ยนแบบ breaking เท่านั้น ไม่ใช่ตอนเพิ่ม symbol"
+    },
+    "brokers": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "key คือค่าที่มาจาก HELLO.account.server เป๊ะๆ · ห้าม prefix matching (SPEC-064 §9 Q2)",
+      "propertyNames": { "$ref": "#/$defs/broker_name" },
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 1,
+        "description": "raw symbol ของโบรกนั้น -> canonical · โบรกมี symbol ไม่ครบเท่ากันได้",
+        "propertyNames": { "$ref": "#/$defs/raw_symbol" },
+        "additionalProperties": { "$ref": "#/$defs/canonical_symbol" }
+      }
+    },
+    "canonicals": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/canonical_symbol" },
+      "additionalProperties": { "$ref": "#/$defs/canonical_entry" }
+    }
+  },
+  "$defs": {
+    "broker_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "ชื่อ server ของโบรกเกอร์ เช่น IUXMarkets-Demo หรือ XMGlobal-MT5 6 (มีช่องว่างได้)"
+    },
+    "raw_symbol": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "pattern": "^[A-Za-z0-9]{1,24}(\\.[A-Za-z0-9]{1,8})?$",
+      "description": "ชื่อ symbol ตามที่โบรกใช้จริง เช่น EURUSD.iux หรือ GOLD"
+    },
+    "canonical_symbol": {
+      "type": "string",
+      "pattern": "^[A-Z]{6}$",
+      "description": "ชื่อกลางที่ระบบใช้ภายใน 6 ตัวอักษรพิมพ์ใหญ่ เช่น XAUUSD"
+    },
+    "currency_code": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "รหัสสกุลเงิน 3 ตัว · XAU ไม่ใช่ ISO currency แต่ต้องปฏิบัติเหมือนสกุลเงินใน P3 (03-risk-spec §currency decomposition)"
+    },
+    "correlation_group": {
+      "type": "string",
+      "enum": ["EUROPE", "JPY", "COMMODITY_FX", "METALS"],
+      "description": "กลุ่มสหสัมพันธ์ · SPEC-026 P4 ใช้จำกัด risk รวมต่อกลุ่ม · เพิ่มกลุ่มใหม่ = แก้ schema นี้ด้วย"
+    },
+    "canonical_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base",
+        "quote",
+        "group",
+        "max_spread_points",
+        "max_sl_distance_pct",
+        "session_policy"
+      ],
+      "properties": {
+        "base": { "$ref": "#/$defs/currency_code" },
+        "quote": { "$ref": "#/$defs/currency_code" },
+        "group": { "$ref": "#/$defs/correlation_group" },
+        "max_spread_points": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 100000,
+          "description": "null = ยังไม่ calibrate · ฝั่ง MQL5 คืน -1 (SPEC-064 §4.4) · null ไม่ได้แปลว่าไม่จำกัด แต่แปลว่า symbol นี้ยังไม่ production ready"
+        },
+        "max_sl_distance_pct": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 10,
+          "description": "เพดานระยะ SL เป็น % ของราคา · เป็นค่า risk ตาม R5/R10/R11 จึงห้าม Codex แก้"
+        },
+        "session_policy": {
+          "type": "string",
+          "pattern": "^(MON|TUE|WED|THU|FRI|SAT|SUN)_[0-2][0-9][0-5][0-9]_(MON|TUE|WED|THU|FRI|SAT|SUN)_[0-2][0-9][0-5][0-9]$",
+          "description": "ช่วงที่เรา *อนุญาต* ให้เทรด (นโยบายของเรา ไม่ใช่เวลาเปิดตลาดของโบรก — SPEC-064 §4) เวลาเป็น broker time"
+        }
+      },
+      "$comment": "INVARIANT (schema จับให้ไม่ได้ ต้อง validate ในโค้ด): base != quote · ทุก canonical ที่ถูกอ้างใน brokers ต้องมี entry ที่นี่ · canonical ที่ไม่มีโบรกไหน map ถึงเลย = ตารางค้าง ควรเตือน"
+    }
+  }
+}
