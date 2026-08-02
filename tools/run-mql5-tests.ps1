@@ -34,6 +34,7 @@ $ErrorActionPreference = 'Stop'
 $Repo       = "D:\ea-farm"
 $Common     = "C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\Common\Files"
 $WorkDir    = Join-Path $env:TEMP "ea-farm-compile"
+$FixtureDst = Join-Path $Common "ea-farm-fixtures"
 
 $Targets = @(
     @{
@@ -61,7 +62,8 @@ $Targets = @(
 # suite name -> source path (relative to repo)
 $Suites = @(
     @{ Name = "TestWire"; Source = "tests\mql5\TestWire.mq5" },
-    @{ Name = "TestBrokerTime"; Source = "tests\mql5\TestBrokerTime.mq5" }
+    @{ Name = "TestBrokerTime"; Source = "tests\mql5\TestBrokerTime.mq5" },
+    @{ Name = "TestFarmMessages"; Source = "tests\mql5\TestFarmMessages.mq5" }
 )
 
 $RequiredSuiteNames = @{
@@ -104,6 +106,20 @@ $RequiredSuiteNames = @{
         "test_broker_day_start_across_dst_23h_and_25h",
         "test_is_same_broker_day_across_utc_midnight",
         "test_local_time_comes_from_source"
+    )
+    TestFarmMessages = @(
+        "test_roundtrip_all_valid_fixtures",
+        "test_parse_state_with_nested_positions",
+        "test_parse_duplicate_key_in_nested_object",
+        "test_parse_string_containing_key_like_text",
+        "test_parse_ignores_unknown_field",
+        "test_parse_fails_on_missing_required_names_field",
+        "test_unknown_envelope_type_yields_UNKNOWN_not_error",
+        "test_null_vs_value_vs_absent",
+        "test_serialize_null_emits_null_not_zero",
+        "test_serialize_no_scientific_notation",
+        "test_serialize_escapes_and_utf8_thai_roundtrip",
+        "test_depth_limit_rejected_at_33"
     )
 }
 
@@ -151,7 +167,24 @@ foreach ($t in $Targets) {
     $incDst = Join-Path $Data "MQL5\Include\Farm"
     if (-not (Test-Path $incDst)) { New-Item -ItemType Directory -Path $incDst -Force | Out-Null }
     Copy-Item (Join-Path $Repo "mt5-ea\Include\Farm\*.mqh") $incDst -Force
+    Copy-Item (Join-Path $Repo "contracts\gen\mql5\*.mqh") $incDst -Force
     Write-Output "[deploy] Include\Farm -> $incDst"
+
+    # ---- fixture deploy --------------------------------------------------
+    # MQL5 has no FILE_UTF8 flag. Test EAs read these with FILE_BIN + CP_UTF8.
+    if (Test-Path $FixtureDst) { Remove-Item $FixtureDst -Recurse -Force }
+    New-Item -ItemType Directory -Path $FixtureDst -Force | Out-Null
+    Get-ChildItem (Join-Path $Repo "contracts\fixtures") -File -Filter "*.json" |
+        ForEach-Object { Copy-Item $_.FullName (Join-Path $FixtureDst $_.Name) -Force }
+    Get-ChildItem (Join-Path $Repo "contracts\fixtures\invalid") -File -Filter "*.json" |
+        ForEach-Object { Copy-Item $_.FullName (Join-Path $FixtureDst ("invalid__" + $_.Name)) -Force }
+    $fixtureCount = (Get-ChildItem $FixtureDst -File -Filter "*.json").Count
+    if ($fixtureCount -eq 0) {
+        Write-Output "  [FAIL] fixture deploy produced an empty folder: $FixtureDst"
+        $anyFail = $true
+        continue
+    }
+    Write-Output "[deploy] fixtures -> $FixtureDst ($fixtureCount json files)"
 
     $expDst = Join-Path $Data "MQL5\Experts\FarmTests"
     if (-not (Test-Path $expDst)) { New-Item -ItemType Directory -Path $expDst -Force | Out-Null }
@@ -209,7 +242,8 @@ foreach ($s in $Suites) {
     # plain Name=value -- see header note about the ||||N trap
     @(
         "InpTestGitSha=$sha",
-        "InpTestResultFile=$resultFile"
+        "InpTestResultFile=$resultFile",
+        "InpFixtureDir=ea-farm-fixtures"
     ) -join "`r`n" | Out-File -FilePath (Join-Path $setDir $setName) -Encoding ascii
 
     # ---- 4. run the tester ---------------------------------------------
