@@ -63,7 +63,8 @@ $Targets = @(
 $Suites = @(
     @{ Name = "TestWire"; Source = "tests\mql5\TestWire.mq5" },
     @{ Name = "TestBrokerTime"; Source = "tests\mql5\TestBrokerTime.mq5" },
-    @{ Name = "TestFarmMessages"; Source = "tests\mql5\TestFarmMessages.mq5" }
+    @{ Name = "TestFarmMessages"; Source = "tests\mql5\TestFarmMessages.mq5" },
+    @{ Name = "TestFarmSymbols"; Source = "tests\mql5\TestFarmSymbols.mq5" }
 )
 
 $RequiredSuiteNames = @{
@@ -120,6 +121,15 @@ $RequiredSuiteNames = @{
         "test_serialize_no_scientific_notation",
         "test_serialize_escapes_and_utf8_thai_roundtrip",
         "test_depth_limit_rejected_at_33"
+    )
+    TestFarmSymbols = @(
+        "test_canonical_gold_to_xauusd",
+        "test_canonical_unknown_returns_empty",
+        "test_risk_profile_returns_false_for_unknown",
+        "test_spread_null_encoded_as_minus_one",
+        "test_all_canonicals_have_base_and_quote",
+        "test_production_ready_false_for_uncalibrated",
+        "test_correlation_groups_available"
     )
 }
 

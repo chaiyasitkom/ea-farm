@@ -61,6 +61,13 @@ from .models import (
     SymbolSpec,
     SymbolSpecTradeModeEnum,
 )
+from .symbols import (
+    BROKER_TO_CANONICAL,
+    CANONICALS,
+    REGISTRY_VERSION,
+    CanonicalSymbol,
+    RiskProfile,
+)
 
 __all__ = [
     'PAYLOAD_MODELS',
@@ -121,4 +128,9 @@ __all__ = [
     'StatePayloadPositionsItemSideEnum',
     'SymbolSpec',
     'SymbolSpecTradeModeEnum',
+    'BROKER_TO_CANONICAL',
+    'CANONICALS',
+    'REGISTRY_VERSION',
+    'CanonicalSymbol',
+    'RiskProfile',
 ]
