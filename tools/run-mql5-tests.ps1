@@ -75,7 +75,8 @@ $Suites = @(
     @{ Name = "TestBrokerTime"; Source = "tests\mql5\TestBrokerTime.mq5" },
     @{ Name = "TestFarmMessages"; Source = "tests\mql5\TestFarmMessages.mq5" },
     @{ Name = "TestFarmSymbols"; Source = "tests\mql5\TestFarmSymbols.mq5" },
-    @{ Name = "TestRoundTrip"; Source = "tests\mql5\TestRoundTrip.mq5" }
+    @{ Name = "TestRoundTrip"; Source = "tests\mql5\TestRoundTrip.mq5" },
+    @{ Name = "TestStateReporter"; Source = "tests\mql5\TestStateReporter.mq5" }
 )
 
 $RequiredSuiteNames = @{
@@ -144,6 +145,28 @@ $RequiredSuiteNames = @{
     )
     TestRoundTrip = @(
         "test_manifest_roundtrip_cases"
+    )
+    TestStateReporter = @(
+        "test_backfill_paced_never_exceeds_half_queue",
+        "test_backfill_order_oldest_first",
+        "test_backfill_resumes_after_queue_pressure",
+        "test_backfill_defers_live_bar_until_done",
+        "test_backfill_short_history_warns_not_fails",
+        "test_bar_never_sends_shift_zero",
+        "test_bar_is_final_always_true",
+        "test_spread_avg_not_greater_than_max",
+        "test_spread_no_tick_uses_current",
+        "test_state_null_sl_not_zero",
+        "test_state_margin_level_null_when_no_position",
+        "test_state_ownership_requires_magic_and_symbol",
+        "test_state_owned_net_matches_positions",
+        "test_state_internal_hedge_detected",
+        "test_state_sent_on_position_change_within_1s",
+        "test_state_size_under_64kb_at_64_positions",
+        "test_hwm_persists_across_reinit",
+        "test_day_start_equity_resets_on_broker_day_change",
+        "test_no_send_when_broker_time_invalid",
+        "test_input_control_chars_trimmed_before_use"
     )
 }
 
@@ -310,16 +333,17 @@ foreach ($s in $Suites) {
     $resultFile = "ea-farm-$targetName-$name-result.json"
     $setName    = "farm-$targetName-$name.set"
     # plain Name=value -- see header note about the ||||N trap
-    @(
+    $setText = @(
         "InpTestGitSha=$sha",
         "InpTestResultFile=$resultFile",
         "InpFixtureDir=ea-farm-fixtures",
         "InpRoundTripManifest=$roundTripManifestFile"
-    ) -join "`r`n" | Out-File -FilePath (Join-Path $setDir $setName) -Encoding ascii
+    ) -join "`r`n"
+    [IO.File]::WriteAllText((Join-Path $setDir $setName), $setText, [Text.Encoding]::ASCII)
 
     # ---- 4. run the tester ---------------------------------------------
     $ini = Join-Path $WorkDir "tester-$targetName-$name.ini"
-    @"
+    $iniText = @"
 [Tester]
 Expert=FarmTests\$name
 ExpertParameters=$setName
@@ -334,7 +358,8 @@ Leverage=1:500
 Optimization=0
 Visual=0
 ShutdownTerminal=1
-"@ | Out-File -FilePath $ini -Encoding ascii
+"@
+    [IO.File]::WriteAllText($ini, $iniText, [Text.Encoding]::ASCII)
 
     $resPath = Join-Path $Common $resultFile
     $t0 = Get-Date

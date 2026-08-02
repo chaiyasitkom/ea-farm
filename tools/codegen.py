@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# ruff: noqa: E402, I001
+# ruff: noqa: E402, E501, I001
 
 import argparse
 import json
@@ -107,6 +107,30 @@ class ClassSpec:
     fields: list[FieldSpec]
     comment: str | None
     extra: str
+
+
+@dataclass(frozen=True)
+class Mql5FieldSpec:
+    name: str
+    json_name: str
+    kind: str
+    mql_type: str
+    required: bool
+    nullable: bool
+    comment: str | None
+    item_kind: str | None = None
+    item_type: str | None = None
+    value_kind: str | None = None
+    value_type: str | None = None
+
+
+@dataclass
+class Mql5StructSpec:
+    name: str
+    schema: dict[str, Any]
+    fields: list[Mql5FieldSpec]
+    comment: str | None
+    is_payload: bool
 
 
 class PythonGenerator:
@@ -343,6 +367,8 @@ class PythonGenerator:
 class Mql5Generator:
     def __init__(self, schemas: dict[str, dict[str, Any]]) -> None:
         self.schemas = schemas
+        self.structs: OrderedDict[str, Mql5StructSpec] = OrderedDict()
+        self.enums: OrderedDict[str, list[Any]] = OrderedDict()
 
     def generate(self) -> str:
         msg_types = list(self.schemas["envelope.json"]["properties"]["type"]["enum"])
@@ -360,11 +386,17 @@ class Mql5Generator:
         )
         for msg_type in msg_types:
             lines.append(f"   FARM_MSG_{msg_type},")
+        self._collect_payload_structs()
         lines.extend(
             [
                 "   FARM_MSG_UNKNOWN",
                 "};",
                 "",
+            ]
+        )
+        lines.extend(self._emit_enums())
+        lines.extend(
+            [
                 "struct FarmEnvelope",
                 "{",
                 "   int                v;",
@@ -377,132 +409,533 @@ class Mql5Generator:
                 "   string             payload_json;",
                 "};",
                 "",
-                "struct FarmPayloadJson",
-                "{",
-                "   string raw_json;",
-                "};",
-                "",
-                "struct FarmStatePosition",
-                "{",
-                "   long   ticket;",
-                "   string symbol;",
-                "   string side;",
-                "   double volume;",
-                "   double price_open;",
-                "   bool   sl_is_null;",
-                "   double sl;",
-                "   bool   tp_is_null;",
-                "   double tp;",
-                "   double profit;",
-                "   double swap;",
-                "   long   magic;",
-                "   bool   comment_present;",
-                "   bool   comment_is_null;",
-                "   string comment;",
-                "   string time_open;",
-                "};",
-                "",
-                "struct FarmStatePendingOrder",
-                "{",
-                "   long   ticket;",
-                "   string symbol;",
-                "   string type;",
-                "   double volume;",
-                "   double price_open;",
-                "   bool   sl_present;",
-                "   bool   sl_is_null;",
-                "   double sl;",
-                "   bool   tp_present;",
-                "   bool   tp_is_null;",
-                "   double tp;",
-                "   long   magic;",
-                "   string time_setup;",
-                "   bool   time_expiration_present;",
-                "   bool   time_expiration_is_null;",
-                "   string time_expiration;",
-                "};",
-                "",
-                "struct FarmStateForeignPositions",
-                "{",
-                "   long   count;",
-                "   string symbols[];",
-                "   double total_volume;",
-                "   double margin_estimate;",
-                "",
-                "   void Free()",
-                "   {",
-                "      ArrayResize(symbols, 0);",
-                "   }",
-                "};",
-                "",
-                "struct FarmStateGuard",
-                "{",
-                "   bool   halted;",
-                "   bool   halt_reason_present;",
-                "   bool   halt_reason_is_null;",
-                "   string halt_reason;",
-                "   string mode;",
-                "   long   current_spread_points;",
-                "   bool   internal_hedge_detected;",
-                "   bool   halted_until_present;",
-                "   bool   halted_until_is_null;",
-                "   string halted_until;",
-                "};",
-                "",
-                "struct FarmStatePayload",
-                "{",
-                "   string raw_json;",
-                "   double balance;",
-                "   double equity;",
-                "   double margin_used;",
-                "   double margin_free;",
-                "   bool   margin_level_pct_present;",
-                "   bool   margin_level_pct_is_null;",
-                "   double margin_level_pct;",
-                "   double equity_hwm;",
-                "   double day_start_equity;",
-                "   double day_pl;",
-                "   double day_pl_pct;",
-                "   FarmStatePosition positions[];",
-                "   FarmStatePendingOrder pending_orders[];",
-                "   string owned_net_keys[];",
-                "   double owned_net_values[];",
-                "   string owned_ticket_count_keys[];",
-                "   long   owned_ticket_count_values[];",
-                "   FarmStateForeignPositions foreign_positions;",
-                "   string account_margin_mode;",
-                "   FarmStateGuard guard;",
-                "",
-                "   void Free()",
-                "   {",
-                "      raw_json = \"\";",
-                "      ArrayResize(positions, 0);",
-                "      ArrayResize(pending_orders, 0);",
-                "      ArrayResize(owned_net_keys, 0);",
-                "      ArrayResize(owned_net_values, 0);",
-                "      ArrayResize(owned_ticket_count_keys, 0);",
-                "      ArrayResize(owned_ticket_count_values, 0);",
-                "      foreign_positions.Free();",
-                "   }",
-                "};",
-                "",
             ]
         )
-        for payload in TYPE_TO_PAYLOAD.values():
-            if payload == "StatePayload":
-                continue
-            lines.extend(
-                [
-                    f"struct Farm{payload}",
-                    "{",
-                    "   string raw_json;",
-                    "};",
-                    "",
-                ]
-            )
+        lines.extend(self._emit_structs())
         lines.extend(self._helpers(msg_types))
         lines.append("#endif")
         return "\n".join(lines).rstrip() + "\n"
+
+    def _collect_payload_structs(self) -> None:
+        self.structs.clear()
+        self.enums.clear()
+        for schema_name in PAYLOAD_FILES:
+            struct_name = f"Farm{PythonGenerator._payload_class_name(schema_name)}"
+            self._add_struct(struct_name, self.schemas[f"{schema_name}.json"], f"{schema_name}.json", True)
+
+    def _add_struct(
+        self, struct_name: str, schema: dict[str, Any], source_file: str, is_payload: bool
+    ) -> str:
+        schema = resolve_ref(schema, self.schemas, source_file)
+        if struct_name in self.structs:
+            return struct_name
+        required = list(schema.get("required", []))
+        properties = schema.get("properties", {})
+        names = [name for name in required if name in properties]
+        names.extend(sorted(name for name in properties if name not in required))
+        spec = Mql5StructSpec(
+            name=struct_name,
+            schema=schema,
+            fields=[],
+            comment=schema.get("$comment"),
+            is_payload=is_payload,
+        )
+        self.structs[struct_name] = spec
+        for field_name in names:
+            field_schema = properties[field_name]
+            field = self._field_spec(
+                struct_name, field_name, field_schema, source_file, field_name in required
+            )
+            spec.fields.append(field)
+        return struct_name
+
+    def _field_spec(
+        self,
+        struct_name: str,
+        field_name: str,
+        schema: dict[str, Any],
+        source_file: str,
+        required: bool,
+    ) -> Mql5FieldSpec:
+        resolved = resolve_ref(schema, self.schemas, source_file)
+        nullable = False
+        if "oneOf" in resolved:
+            non_null = [item for item in resolved["oneOf"] if item.get("type") != "null"]
+            nullable = len(non_null) != len(resolved["oneOf"])
+            if len(non_null) != 1 or not nullable:
+                raise ValueError(f"unsupported oneOf for {struct_name}.{field_name}")
+            resolved = resolve_ref(non_null[0], self.schemas, source_file)
+        schema_type = resolved.get("type")
+        if isinstance(schema_type, list):
+            non_null_types = [item for item in schema_type if item != "null"]
+            nullable = nullable or "null" in schema_type
+            if len(non_null_types) != 1:
+                raise ValueError(f"unsupported union for {struct_name}.{field_name}")
+            resolved = {**resolved, "type": non_null_types[0]}
+            schema_type = resolved["type"]
+        if "const" in resolved:
+            const_type = type(resolved["const"])
+            if const_type is bool:
+                schema_type = "boolean"
+            elif const_type is int:
+                schema_type = "integer"
+            elif const_type is float:
+                schema_type = "number"
+            else:
+                schema_type = "string"
+        if "enum" in resolved:
+            enum_name = self._enum_name(f"{struct_name.removeprefix('Farm')}_{field_name}")
+            if enum_name not in self.enums:
+                self.enums[enum_name] = [value for value in resolved["enum"] if value is not None]
+            return Mql5FieldSpec(
+                name=field_name,
+                json_name=field_name,
+                kind="enum",
+                mql_type=enum_name,
+                required=required,
+                nullable=nullable,
+                comment=resolved.get("description"),
+            )
+        if schema_type in ("string", "integer", "number", "boolean"):
+            return Mql5FieldSpec(
+                name=field_name,
+                json_name=field_name,
+                kind=str(schema_type),
+                mql_type=self._mql_scalar_type(str(schema_type)),
+                required=required,
+                nullable=nullable,
+                comment=resolved.get("description"),
+            )
+        if schema_type == "object":
+            properties = resolved.get("properties", {})
+            additional = resolved.get("additionalProperties")
+            if properties:
+                child_name = f"{struct_name}{PythonGenerator._class_name(field_name)}"
+                self._add_struct(child_name, resolved, source_file, False)
+                return Mql5FieldSpec(
+                    name=field_name,
+                    json_name=field_name,
+                    kind="object",
+                    mql_type=child_name,
+                    required=required,
+                    nullable=nullable,
+                    comment=resolved.get("description"),
+                )
+            if isinstance(additional, dict):
+                value_kind, value_type = self._map_value_type(
+                    struct_name, field_name, additional, source_file
+                )
+                return Mql5FieldSpec(
+                    name=field_name,
+                    json_name=field_name,
+                    kind="map",
+                    mql_type="",
+                    required=required,
+                    nullable=nullable,
+                    comment=resolved.get("description"),
+                    value_kind=value_kind,
+                    value_type=value_type,
+                )
+            if additional is True:
+                return Mql5FieldSpec(
+                    name=field_name,
+                    json_name=field_name,
+                    kind="map",
+                    mql_type="",
+                    required=required,
+                    nullable=nullable,
+                    comment=resolved.get("description"),
+                    value_kind="raw",
+                    value_type="string",
+                )
+        if schema_type == "array":
+            item_schema = resolve_ref(resolved.get("items", {}), self.schemas, source_file)
+            item_nullable = False
+            item_type_raw = item_schema.get("type")
+            if isinstance(item_type_raw, list):
+                non_null = [item for item in item_type_raw if item != "null"]
+                item_nullable = "null" in item_type_raw
+                if len(non_null) != 1:
+                    raise ValueError(f"unsupported array union for {struct_name}.{field_name}")
+                item_schema = {**item_schema, "type": non_null[0]}
+                item_type_raw = item_schema["type"]
+            if item_nullable:
+                raise ValueError(f"nullable array items are unsupported for {struct_name}.{field_name}")
+            if "enum" in item_schema:
+                enum_name = self._enum_name(f"{struct_name.removeprefix('Farm')}_{field_name}_item")
+                if enum_name not in self.enums:
+                    self.enums[enum_name] = [value for value in item_schema["enum"] if value is not None]
+                return Mql5FieldSpec(
+                    name=field_name,
+                    json_name=field_name,
+                    kind="array",
+                    mql_type=enum_name,
+                    required=required,
+                    nullable=nullable,
+                    comment=resolved.get("description"),
+                    item_kind="enum",
+                    item_type=enum_name,
+                )
+            if item_type_raw == "object" and item_schema.get("properties"):
+                child_name = f"{struct_name}{PythonGenerator._class_name(field_name)}Item"
+                self._add_struct(child_name, item_schema, source_file, False)
+                return Mql5FieldSpec(
+                    name=field_name,
+                    json_name=field_name,
+                    kind="array",
+                    mql_type=child_name,
+                    required=required,
+                    nullable=nullable,
+                    comment=resolved.get("description"),
+                    item_kind="object",
+                    item_type=child_name,
+                )
+            return Mql5FieldSpec(
+                name=field_name,
+                json_name=field_name,
+                kind="array",
+                mql_type=self._mql_scalar_type(str(item_type_raw)),
+                required=required,
+                nullable=nullable,
+                comment=resolved.get("description"),
+                item_kind=str(item_type_raw),
+                item_type=self._mql_scalar_type(str(item_type_raw)),
+            )
+        raise ValueError(f"unsupported MQL5 schema for {struct_name}.{field_name}: {resolved}")
+
+    def _map_value_type(
+        self, struct_name: str, field_name: str, schema: dict[str, Any], source_file: str
+    ) -> tuple[str, str]:
+        resolved = resolve_ref(schema, self.schemas, source_file)
+        if "enum" in resolved:
+            enum_name = self._enum_name(f"{struct_name.removeprefix('Farm')}_{field_name}_value")
+            if enum_name not in self.enums:
+                self.enums[enum_name] = [value for value in resolved["enum"] if value is not None]
+            return "enum", enum_name
+        schema_type = resolved.get("type")
+        if isinstance(schema_type, list):
+            non_null = [item for item in schema_type if item != "null"]
+            if len(non_null) != 1:
+                raise ValueError(f"unsupported map union for {struct_name}.{field_name}")
+            schema_type = non_null[0]
+        return str(schema_type), self._mql_scalar_type(str(schema_type))
+
+    def _emit_enums(self) -> list[str]:
+        lines: list[str] = []
+        for enum_name, values in self.enums.items():
+            lines.extend([f"enum {enum_name}", "{"])
+            for value in values:
+                lines.append(f"   {self._enum_member(enum_name, str(value))},")
+            lines.append(f"   {enum_name}_UNRECOGNIZED")
+            lines.extend(["};", ""])
+            lines.extend([f"string {self._enum_func_prefix(enum_name)}ToString(const {enum_name} v)", "{", "   switch(v)", "   {"])
+            for value in values:
+                lines.append(f"      case {self._enum_member(enum_name, str(value))}: return {mql_quote(str(value))};")
+            lines.extend(["      default: return \"UNKNOWN\";", "   }", "}", ""])
+            lines.extend([f"{enum_name} {self._enum_func_prefix(enum_name)}FromString(const string s, bool &ok)", "{", "   ok = true;"])
+            for value in values:
+                lines.append(f"   if(s == {mql_quote(str(value))}) return {self._enum_member(enum_name, str(value))};")
+            lines.extend(["   ok = false;", f"   return {enum_name}_UNRECOGNIZED;", "}", ""])
+        return lines
+
+    def _emit_structs(self) -> list[str]:
+        lines: list[str] = []
+        ordered_specs = sorted(self.structs.values(), key=lambda item: item.name, reverse=True)
+        for spec in ordered_specs:
+            if spec.comment:
+                for line in spec.comment.splitlines():
+                    lines.append(f"// {line}")
+            lines.extend([f"struct {spec.name}", "{"])
+            if spec.is_payload:
+                lines.append("   string raw_json;")
+            for field in spec.fields:
+                if field.comment:
+                    for line in field.comment.splitlines():
+                        lines.append(f"   // {line}")
+                if not field.required:
+                    lines.append(f"   bool   {field.name}_present;")
+                if field.nullable:
+                    lines.append(f"   bool   {field.name}_is_null;")
+                if field.kind == "map":
+                    lines.append(f"   string {field.name}_keys[];")
+                    lines.append(f"   {self._align_type(field.value_type or 'string')} {field.name}_values[];")
+                elif field.kind == "array":
+                    lines.append(f"   {self._align_type(field.item_type or field.mql_type)} {field.name}[];")
+                else:
+                    lines.append(f"   {self._align_type(field.mql_type)} {field.name};")
+            lines.extend(["", "   void Free()", "   {"])
+            if spec.is_payload:
+                lines.append("      raw_json = \"\";")
+            for field in spec.fields:
+                if not field.required:
+                    lines.append(f"      {field.name}_present = false;")
+                if field.nullable:
+                    lines.append(f"      {field.name}_is_null = false;")
+                if field.kind == "map":
+                    lines.append(f"      ArrayResize({field.name}_keys, 0);")
+                    lines.append(f"      ArrayResize({field.name}_values, 0);")
+                elif field.kind == "array":
+                    if field.item_kind == "object":
+                        lines.append(f"      for(int i = 0; i < ArraySize({field.name}); i++) {field.name}[i].Free();")
+                    lines.append(f"      ArrayResize({field.name}, 0);")
+                elif field.kind == "object":
+                    lines.append(f"      {field.name}.Free();")
+            lines.extend(["   }", "};", ""])
+        return lines
+
+    def _emit_fill_helpers(self) -> list[str]:
+        lines: list[str] = []
+        ordered_specs = sorted(self.structs.values(), key=lambda item: item.name, reverse=True)
+        for spec in ordered_specs:
+            lines.extend([f"void FarmFill{spec.name.removeprefix('Farm')}(CFarmJsonValue *root, {spec.name} &out)", "{", "   out.Free();"])
+            if spec.is_payload:
+                canonical = spec.name.removeprefix("Farm").removesuffix("Payload")
+                lines.append(f"   out.raw_json = FarmCanonical{canonical}(root);")
+            for field in spec.fields:
+                var = f"v_{field.name}"
+                lines.append(f"   CFarmJsonValue *{var} = (root != NULL ? root.Get({mql_quote(field.json_name)}) : NULL);")
+                if not field.required:
+                    lines.append(f"   out.{field.name}_present = ({var} != NULL);")
+                    lines.append(f"   if({var} == NULL) {{ }}")
+                    lines.append("   else")
+                    lines.append("   {")
+                    inner_indent = "      "
+                else:
+                    inner_indent = "   "
+                if field.nullable:
+                    lines.append(f"{inner_indent}out.{field.name}_is_null = ({var} != NULL && {var}.type == FARM_JSON_NULL);")
+                    lines.append(f"{inner_indent}if(out.{field.name}_is_null) {{ }}")
+                    lines.append(f"{inner_indent}else")
+                    lines.append(f"{inner_indent}{{")
+                    inner_indent += "   "
+                self._emit_fill_field(lines, field, var, inner_indent)
+                if field.nullable:
+                    inner_indent = inner_indent[:-3]
+                    lines.append(f"{inner_indent}}}")
+                if not field.required:
+                    lines.append("   }")
+            lines.extend(["}", ""])
+        return lines
+
+    def _emit_render_helpers(self) -> list[str]:
+        lines: list[str] = []
+        ordered_specs = sorted(self.structs.values(), key=lambda item: item.name, reverse=True)
+        for spec in ordered_specs:
+            lines.extend([f"string FarmRender{spec.name.removeprefix('Farm')}(const {spec.name} &src)", "{"])
+            lines.append('   string out = "{";')
+            lines.append("   bool first = true;")
+            for field in spec.fields:
+                if not field.required:
+                    lines.append(f"   if(src.{field.name}_present)")
+                    lines.append("   {")
+                    indent = "      "
+                else:
+                    indent = "   "
+                lines.append(f"{indent}FarmJsonAppendFieldPrefix(out, first, {mql_quote(field.json_name)});")
+                if field.nullable:
+                    lines.append(f"{indent}if(src.{field.name}_is_null)")
+                    lines.append(f'{indent}   out += "null";')
+                    lines.append(f"{indent}else")
+                    lines.append(f"{indent}{{")
+                    self._emit_render_field(lines, field, indent + "   ")
+                    lines.append(f"{indent}}}")
+                else:
+                    self._emit_render_field(lines, field, indent)
+                if not field.required:
+                    lines.append("   }")
+            lines.append('   out += "}";')
+            lines.append("   return out;")
+            lines.extend(["}", ""])
+        return lines
+
+    def _emit_render_field(
+        self, lines: list[str], field: Mql5FieldSpec, indent: str
+    ) -> None:
+        if field.kind == "string":
+            lines.append(f"{indent}out += FarmJsonQuoteUtf8(src.{field.name});")
+        elif field.kind == "integer":
+            lines.append(f"{indent}out += IntegerToString(src.{field.name});")
+        elif field.kind == "number":
+            lines.append(f"{indent}out += FarmJsonFormatDouble(src.{field.name});")
+        elif field.kind == "boolean":
+            lines.append(f'{indent}out += (src.{field.name} ? "true" : "false");')
+        elif field.kind == "enum":
+            lines.append(
+                f"{indent}out += FarmJsonQuoteUtf8({self._enum_func_prefix(field.mql_type)}ToString(src.{field.name}));"
+            )
+        elif field.kind == "object":
+            lines.append(f"{indent}out += FarmRender{field.mql_type.removeprefix('Farm')}(src.{field.name});")
+        elif field.kind == "array":
+            lines.append(f'{indent}out += "[";')
+            lines.append(f"{indent}for(int i = 0; i < ArraySize(src.{field.name}); i++)")
+            lines.append(f"{indent}{{")
+            lines.append(f'{indent}   if(i > 0) out += ",";')
+            self._emit_render_array_item(lines, field, indent + "   ")
+            lines.append(f"{indent}}}")
+            lines.append(f'{indent}out += "]";')
+        elif field.kind == "map":
+            lines.append(f'{indent}out += "{{";')
+            lines.append(f"{indent}for(int i = 0; i < ArraySize(src.{field.name}_keys); i++)")
+            lines.append(f"{indent}{{")
+            lines.append(f'{indent}   if(i > 0) out += ",";')
+            lines.append(f"{indent}   out += FarmJsonQuoteUtf8(src.{field.name}_keys[i]) + \":\";")
+            self._emit_render_value(
+                lines,
+                f"src.{field.name}_values[i]",
+                field.value_kind or "string",
+                field.value_type or "string",
+                indent + "   ",
+            )
+            lines.append(f"{indent}}}")
+            lines.append(f'{indent}out += "}}";')
+
+    def _emit_render_array_item(
+        self, lines: list[str], field: Mql5FieldSpec, indent: str
+    ) -> None:
+        if field.item_kind == "object":
+            lines.append(f"{indent}out += FarmRender{(field.item_type or '').removeprefix('Farm')}(src.{field.name}[i]);")
+            return
+        self._emit_render_value(
+            lines,
+            f"src.{field.name}[i]",
+            field.item_kind or "string",
+            field.item_type or "string",
+            indent,
+        )
+
+    def _emit_render_value(
+        self,
+        lines: list[str],
+        expr: str,
+        kind: str,
+        mql_type: str,
+        indent: str,
+    ) -> None:
+        if kind == "string":
+            lines.append(f"{indent}out += FarmJsonQuoteUtf8({expr});")
+        elif kind == "integer":
+            lines.append(f"{indent}out += IntegerToString({expr});")
+        elif kind == "number":
+            lines.append(f"{indent}out += FarmJsonFormatDouble({expr});")
+        elif kind == "boolean":
+            lines.append(f'{indent}out += ({expr} ? "true" : "false");')
+        elif kind == "enum":
+            lines.append(
+                f"{indent}out += FarmJsonQuoteUtf8({self._enum_func_prefix(mql_type)}ToString({expr}));"
+            )
+        elif kind == "raw":
+            lines.append(f"{indent}out += {expr};")
+
+    def _emit_fill_field(
+        self, lines: list[str], field: Mql5FieldSpec, value_var: str, indent: str
+    ) -> None:
+        if field.kind == "string":
+            lines.append(f"{indent}out.{field.name} = ({value_var} != NULL && {value_var}.type == FARM_JSON_STRING ? {value_var}.string_value : \"\");")
+        elif field.kind == "integer":
+            lines.append(f"{indent}out.{field.name} = ({value_var} != NULL && {value_var}.type == FARM_JSON_NUMBER ? {value_var}.integer_value : 0);")
+        elif field.kind == "number":
+            lines.append(f"{indent}out.{field.name} = ({value_var} != NULL && {value_var}.type == FARM_JSON_NUMBER ? {value_var}.number_value : 0.0);")
+        elif field.kind == "boolean":
+            lines.append(f"{indent}out.{field.name} = ({value_var} != NULL && {value_var}.type == FARM_JSON_BOOL && {value_var}.bool_value);")
+        elif field.kind == "enum":
+            ok_name = f"ok_{field.name}"
+            lines.append(f"{indent}bool {ok_name} = false;")
+            lines.append(f"{indent}out.{field.name} = {self._enum_func_prefix(field.mql_type)}FromString(({value_var} != NULL && {value_var}.type == FARM_JSON_STRING ? {value_var}.string_value : \"\"), {ok_name});")
+        elif field.kind == "object":
+            lines.append(f"{indent}FarmFill{field.mql_type.removeprefix('Farm')}({value_var}, out.{field.name});")
+        elif field.kind == "array":
+            lines.append(f"{indent}const int n_{field.name} = ({value_var} != NULL && {value_var}.type == FARM_JSON_ARRAY ? {value_var}.Size() : 0);")
+            lines.append(f"{indent}ArrayResize(out.{field.name}, n_{field.name});")
+            lines.append(f"{indent}for(int i = 0; i < n_{field.name}; i++)")
+            lines.append(f"{indent}{{")
+            lines.append(f"{indent}   CFarmJsonValue *item = {value_var}.At(i);")
+            self._emit_fill_array_item(lines, field, "item", indent + "   ")
+            lines.append(f"{indent}}}")
+        elif field.kind == "map":
+            lines.append(f"{indent}const int n_{field.name} = ({value_var} != NULL && {value_var}.type == FARM_JSON_OBJECT ? {value_var}.Size() : 0);")
+            lines.append(f"{indent}ArrayResize(out.{field.name}_keys, n_{field.name});")
+            lines.append(f"{indent}ArrayResize(out.{field.name}_values, n_{field.name});")
+            lines.append(f"{indent}for(int i = 0; i < n_{field.name}; i++)")
+            lines.append(f"{indent}{{")
+            lines.append(f"{indent}   out.{field.name}_keys[i] = {value_var}.KeyAt(i);")
+            lines.append(f"{indent}   CFarmJsonValue *item = {value_var}.At(i);")
+            self._emit_fill_value_assignment(
+                lines,
+                f"out.{field.name}_values[i]",
+                field.value_kind or "string",
+                field.value_type or "string",
+                "item",
+                indent + "   ",
+            )
+            lines.append(f"{indent}}}")
+
+    def _emit_fill_array_item(
+        self, lines: list[str], field: Mql5FieldSpec, value_var: str, indent: str
+    ) -> None:
+        if field.item_kind == "object":
+            lines.append(f"{indent}FarmFill{(field.item_type or '').removeprefix('Farm')}({value_var}, out.{field.name}[i]);")
+            return
+        self._emit_fill_value_assignment(
+            lines,
+            f"out.{field.name}[i]",
+            field.item_kind or "string",
+            field.item_type or "string",
+            value_var,
+            indent,
+        )
+
+    def _emit_fill_value_assignment(
+        self,
+        lines: list[str],
+        target: str,
+        kind: str,
+        mql_type: str,
+        value_var: str,
+        indent: str,
+    ) -> None:
+        if kind == "string":
+            lines.append(f"{indent}{target} = ({value_var} != NULL && {value_var}.type == FARM_JSON_STRING ? {value_var}.string_value : \"\");")
+        elif kind == "integer":
+            lines.append(f"{indent}{target} = ({value_var} != NULL && {value_var}.type == FARM_JSON_NUMBER ? {value_var}.integer_value : 0);")
+        elif kind == "number":
+            lines.append(f"{indent}{target} = ({value_var} != NULL && {value_var}.type == FARM_JSON_NUMBER ? {value_var}.number_value : 0.0);")
+        elif kind == "boolean":
+            lines.append(f"{indent}{target} = ({value_var} != NULL && {value_var}.type == FARM_JSON_BOOL && {value_var}.bool_value);")
+        elif kind == "enum":
+            lines.append(f"{indent}bool ok = false;")
+            lines.append(f"{indent}{target} = {self._enum_func_prefix(mql_type)}FromString(({value_var} != NULL && {value_var}.type == FARM_JSON_STRING ? {value_var}.string_value : \"\"), ok);")
+        elif kind == "raw":
+            lines.append(f"{indent}{target} = ({value_var} != NULL ? {value_var}.ToJson() : \"null\");")
+
+    @staticmethod
+    def _mql_scalar_type(schema_type: str) -> str:
+        if schema_type == "integer":
+            return "long"
+        if schema_type == "number":
+            return "double"
+        if schema_type == "boolean":
+            return "bool"
+        return "string"
+
+    @staticmethod
+    def _align_type(mql_type: str) -> str:
+        return mql_type
+
+    @staticmethod
+    def _enum_name(raw: str) -> str:
+        value = re.sub(r"[^A-Za-z0-9]+", "_", raw).upper().strip("_")
+        return "ENUM_FARM_" + value
+
+    @staticmethod
+    def _enum_member(enum_name: str, value: str) -> str:
+        member = re.sub(r"[^A-Za-z0-9]+", "_", value).upper().strip("_")
+        if not member or member[0].isdigit():
+            member = "V_" + member
+        return enum_name.removeprefix("ENUM_") + "_" + member
+
+    @staticmethod
+    def _enum_func_prefix(enum_name: str) -> str:
+        return "".join(part.capitalize() for part in enum_name.removeprefix("ENUM_").lower().split("_"))
 
     def _helpers(self, msg_types: list[str]) -> list[str]:
         lines: list[str] = [
@@ -728,231 +1161,15 @@ class Mql5Generator:
         )
         lines.extend(self._canonical_payload_prototypes())
         lines.extend(self._canonical_payload_helpers())
-        lines.extend(
-            [
-                "bool FarmParsePayloadJson(const ENUM_FARM_MSG_TYPE msg_type, const string json, string &out_json)",  # noqa: E501
-                "{",
-                "   CFarmJsonDoc doc;",
-                "   if(!doc.Parse(json)) return false;",
-                "   if(!FarmValidatePayload(msg_type, doc.Root())) { doc.Free(); return false; }",
-                "   out_json = FarmCanonicalizePayloadJson(msg_type, doc.Root());",
-                "   doc.Free();",
-                "   return true;",
-                "}",
-                "",
-                "double FarmJsonNumberValue(CFarmJsonValue *obj, const string key)",
-                "{",
-                "   CFarmJsonValue *v = obj.Get(key);",
-                "   return (v != NULL && v.type == FARM_JSON_NUMBER ? v.number_value : 0.0);",
-                "}",
-                "",
-                "long FarmJsonLongValue(CFarmJsonValue *obj, const string key)",
-                "{",
-                "   CFarmJsonValue *v = obj.Get(key);",
-                "   return (v != NULL && v.type == FARM_JSON_NUMBER ? v.integer_value : 0);",
-                "}",
-                "",
-                "string FarmJsonStringValue(CFarmJsonValue *obj, const string key)",
-                "{",
-                "   CFarmJsonValue *v = obj.Get(key);",
-                "   return (v != NULL && v.type == FARM_JSON_STRING ? v.string_value : \"\");",
-                "}",
-                "",
-                "bool FarmJsonBoolValue(CFarmJsonValue *obj, const string key)",
-                "{",
-                "   CFarmJsonValue *v = obj.Get(key);",
-                "   return (v != NULL && v.type == FARM_JSON_BOOL && v.bool_value);",
-                "}",
-                "",
-                "void FarmFillStatePosition(CFarmJsonValue *src, FarmStatePosition &out)",
-                "{",
-                "   out.ticket = FarmJsonLongValue(src, \"ticket\");",
-                "   out.symbol = FarmJsonStringValue(src, \"symbol\");",
-                "   out.side = FarmJsonStringValue(src, \"side\");",
-                "   out.volume = FarmJsonNumberValue(src, \"volume\");",
-                "   out.price_open = FarmJsonNumberValue(src, \"price_open\");",
-                "   CFarmJsonValue *sl = src.Get(\"sl\");",
-                "   out.sl_is_null = (sl != NULL && sl.type == FARM_JSON_NULL);",
-                "   out.sl = (sl != NULL && sl.type == FARM_JSON_NUMBER ? sl.number_value : 0.0);",
-                "   CFarmJsonValue *tp = src.Get(\"tp\");",
-                "   out.tp_is_null = (tp != NULL && tp.type == FARM_JSON_NULL);",
-                "   out.tp = (tp != NULL && tp.type == FARM_JSON_NUMBER ? tp.number_value : 0.0);",
-                "   out.profit = FarmJsonNumberValue(src, \"profit\");",
-                "   out.swap = FarmJsonNumberValue(src, \"swap\");",
-                "   out.magic = FarmJsonLongValue(src, \"magic\");",
-                "   CFarmJsonValue *comment = src.Get(\"comment\");",
-                "   out.comment_present = (comment != NULL);",
-                "   out.comment_is_null = (comment != NULL && comment.type == FARM_JSON_NULL);",
-                (
-                    "   out.comment = (comment != NULL && comment.type == FARM_JSON_STRING "
-                    "? comment.string_value : \"\");"
-                ),
-                "   out.time_open = FarmJsonStringValue(src, \"time_open\");",
-                "}",
-                "",
-                "void FarmFillStatePendingOrder(CFarmJsonValue *src, FarmStatePendingOrder &out)",
-                "{",
-                "   out.ticket = FarmJsonLongValue(src, \"ticket\");",
-                "   out.symbol = FarmJsonStringValue(src, \"symbol\");",
-                "   out.type = FarmJsonStringValue(src, \"type\");",
-                "   out.volume = FarmJsonNumberValue(src, \"volume\");",
-                "   out.price_open = FarmJsonNumberValue(src, \"price_open\");",
-                "   CFarmJsonValue *sl = src.Get(\"sl\");",
-                "   out.sl_present = (sl != NULL);",
-                "   out.sl_is_null = (sl != NULL && sl.type == FARM_JSON_NULL);",
-                "   out.sl = (sl != NULL && sl.type == FARM_JSON_NUMBER ? sl.number_value : 0.0);",
-                "   CFarmJsonValue *tp = src.Get(\"tp\");",
-                "   out.tp_present = (tp != NULL);",
-                "   out.tp_is_null = (tp != NULL && tp.type == FARM_JSON_NULL);",
-                "   out.tp = (tp != NULL && tp.type == FARM_JSON_NUMBER ? tp.number_value : 0.0);",
-                "   out.magic = FarmJsonLongValue(src, \"magic\");",
-                "   out.time_setup = FarmJsonStringValue(src, \"time_setup\");",
-                "   CFarmJsonValue *exp = src.Get(\"time_expiration\");",
-                "   out.time_expiration_present = (exp != NULL);",
-                "   out.time_expiration_is_null = (exp != NULL && exp.type == FARM_JSON_NULL);",
-                (
-                    "   out.time_expiration = (exp != NULL && exp.type == FARM_JSON_STRING "
-                    "? exp.string_value : \"\");"
-                ),
-                "}",
-                "",
-                "void FarmFillStringArray(CFarmJsonValue *src, string &out[])",
-                "{",
-                "   ArrayResize(out, src.Size());",
-                "   for(int i = 0; i < src.Size(); i++)",
-                "   {",
-                "      CFarmJsonValue *item = src.At(i);",
-                (
-                    "      out[i] = (item != NULL && item.type == FARM_JSON_STRING "
-                    "? item.string_value : \"\");"
-                ),
-                "   }",
-                "}",
-                "",
-                "void FarmFillState(CFarmJsonValue *root, FarmStatePayload &out)",
-                "{",
-                "   out.Free();",
-                "   out.raw_json = FarmCanonicalState(root);",
-                "   out.balance = FarmJsonNumberValue(root, \"balance\");",
-                "   out.equity = FarmJsonNumberValue(root, \"equity\");",
-                "   out.margin_used = FarmJsonNumberValue(root, \"margin_used\");",
-                "   out.margin_free = FarmJsonNumberValue(root, \"margin_free\");",
-                "   CFarmJsonValue *ml = root.Get(\"margin_level_pct\");",
-                "   out.margin_level_pct_present = (ml != NULL);",
-                "   out.margin_level_pct_is_null = (ml != NULL && ml.type == FARM_JSON_NULL);",
-                (
-                    "   out.margin_level_pct = (ml != NULL && ml.type == FARM_JSON_NUMBER "
-                    "? ml.number_value : 0.0);"
-                ),
-                "   out.equity_hwm = FarmJsonNumberValue(root, \"equity_hwm\");",
-                "   out.day_start_equity = FarmJsonNumberValue(root, \"day_start_equity\");",
-                "   out.day_pl = FarmJsonNumberValue(root, \"day_pl\");",
-                "   out.day_pl_pct = FarmJsonNumberValue(root, \"day_pl_pct\");",
-                "   CFarmJsonValue *positions = root.Get(\"positions\");",
-                "   ArrayResize(out.positions, positions.Size());",
-                (
-                    "   for(int i = 0; i < positions.Size(); i++) "
-                    "FarmFillStatePosition(positions.At(i), out.positions[i]);"
-                ),
-                "   CFarmJsonValue *pending = root.Get(\"pending_orders\");",
-                "   ArrayResize(out.pending_orders, pending.Size());",
-                (
-                    "   for(int i = 0; i < pending.Size(); i++) "
-                    "FarmFillStatePendingOrder(pending.At(i), out.pending_orders[i]);"
-                ),
-                "   CFarmJsonValue *owned_net = root.Get(\"owned_net\");",
-                "   ArrayResize(out.owned_net_keys, owned_net.Size());",
-                "   ArrayResize(out.owned_net_values, owned_net.Size());",
-                "   for(int i = 0; i < owned_net.Size(); i++)",
-                "   {",
-                "      out.owned_net_keys[i] = owned_net.KeyAt(i);",
-                "      CFarmJsonValue *v = owned_net.At(i);",
-                (
-                    "      out.owned_net_values[i] = (v != NULL && v.type == FARM_JSON_NUMBER "
-                    "? v.number_value : 0.0);"
-                ),
-                "   }",
-                "   CFarmJsonValue *count = root.Get(\"owned_ticket_count\");",
-                "   ArrayResize(out.owned_ticket_count_keys, count.Size());",
-                "   ArrayResize(out.owned_ticket_count_values, count.Size());",
-                "   for(int i = 0; i < count.Size(); i++)",
-                "   {",
-                "      out.owned_ticket_count_keys[i] = count.KeyAt(i);",
-                "      CFarmJsonValue *v = count.At(i);",
-                (
-                    "      out.owned_ticket_count_values[i] = "
-                    "(v != NULL && v.type == FARM_JSON_NUMBER ? v.integer_value : 0);"
-                ),
-                "   }",
-                "   CFarmJsonValue *foreign = root.Get(\"foreign_positions\");",
-                "   out.foreign_positions.count = FarmJsonLongValue(foreign, \"count\");",
-                "   FarmFillStringArray(foreign.Get(\"symbols\"), out.foreign_positions.symbols);",
-                (
-                    "   out.foreign_positions.total_volume = "
-                    "FarmJsonNumberValue(foreign, \"total_volume\");"
-                ),
-                (
-                    "   out.foreign_positions.margin_estimate = "
-                    "FarmJsonNumberValue(foreign, \"margin_estimate\");"
-                ),
-                "   out.account_margin_mode = FarmJsonStringValue(root, \"account_margin_mode\");",
-                "   CFarmJsonValue *guard = root.Get(\"guard\");",
-                "   out.guard.halted = FarmJsonBoolValue(guard, \"halted\");",
-                "   CFarmJsonValue *reason = guard.Get(\"halt_reason\");",
-                "   out.guard.halt_reason_present = (reason != NULL);",
-                (
-                    "   out.guard.halt_reason_is_null = "
-                    "(reason != NULL && reason.type == FARM_JSON_NULL);"
-                ),
-                (
-                    "   out.guard.halt_reason = (reason != NULL && reason.type == FARM_JSON_STRING "
-                    "? reason.string_value : \"\");"
-                ),
-                "   out.guard.mode = FarmJsonStringValue(guard, \"mode\");",
-                (
-                    "   out.guard.current_spread_points = "
-                    "FarmJsonLongValue(guard, \"current_spread_points\");"
-                ),
-                (
-                    "   out.guard.internal_hedge_detected = "
-                    "FarmJsonBoolValue(guard, \"internal_hedge_detected\");"
-                ),
-                "   CFarmJsonValue *until = guard.Get(\"halted_until\");",
-                "   out.guard.halted_until_present = (until != NULL);",
-                (
-                    "   out.guard.halted_until_is_null = "
-                    "(until != NULL && until.type == FARM_JSON_NULL);"
-                ),
-                (
-                    "   out.guard.halted_until = (until != NULL && until.type == FARM_JSON_STRING "
-                    "? until.string_value : \"\");"
-                ),
-                "}",
-                "",
-                "bool FarmParseState(const string json, FarmStatePayload &out)",
-                "{",
-                "   CFarmJsonDoc doc;",
-                "   if(!doc.Parse(json)) return false;",
-                "   if(!FarmValidateState(doc.Root())) { doc.Free(); return false; }",
-                "   FarmFillState(doc.Root(), out);",
-                "   doc.Free();",
-                "   return true;",
-                "}",
-                "",
-                "bool FarmSerializeState(const FarmStatePayload &src, string &out_json)",
-                "{",
-                "   out_json = src.raw_json;",
-                "   return out_json != \"\";",
-                "}",
-                "",
-            ]
-        )
+        lines.extend(self._emit_fill_helpers())
+        lines.extend(self._emit_render_helpers())
         payload_functions = {
             "Hello": "HELLO",
             "HelloAck": "HELLO_ACK",
             "Heartbeat": "HEARTBEAT",
             "HeartbeatAck": "HEARTBEAT_ACK",
             "Bar": "BAR",
+            "State": "STATE",
             "Intent": "INTENT",
             "IntentAck": "INTENT_ACK",
             "ExecReport": "EXEC_REPORT",
@@ -965,13 +1182,18 @@ class Mql5Generator:
                 [
                     f"bool FarmParse{name}(const string json, Farm{name}Payload &out)",
                     "{",
-                    f"   return FarmParsePayloadJson(FARM_MSG_{msg_type}, json, out.raw_json);",
+                    "   CFarmJsonDoc doc;",
+                    "   if(!doc.Parse(json)) return false;",
+                    f"   if(!FarmValidatePayload(FARM_MSG_{msg_type}, doc.Root())) {{ doc.Free(); return false; }}",
+                    f"   FarmFill{name}Payload(doc.Root(), out);",
+                    "   doc.Free();",
+                    "   return true;",
                     "}",
                     "",
                     f"bool FarmSerialize{name}(const Farm{name}Payload &src, string &out_json)",
                     "{",
-                    "   out_json = src.raw_json;",
-                    "   return out_json != \"\";",
+                    f"   out_json = FarmRender{name}Payload(src);",
+                    "   return true;",
                     "}",
                     "",
                 ]

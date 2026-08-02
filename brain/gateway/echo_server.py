@@ -8,7 +8,14 @@ import random
 import signal
 import time
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+from pydantic import ValidationError
+
+if TYPE_CHECKING:
+    from contracts.gen.python import PAYLOAD_MODELS
+else:
+    from farm_contracts import PAYLOAD_MODELS
 
 PROTOCOL_VERSION = 1
 MAX_FRAME_BYTES = 64 * 1024
@@ -55,6 +62,8 @@ class EchoGateway:
     close_every_sec: float | None = None
     stop_reading: bool = False
     sessions: set[str] = field(default_factory=set)
+    backfill_counts: dict[str, int] = field(default_factory=dict)
+    last_bar_time: dict[str, str] = field(default_factory=dict)
     server: asyncio.Server | None = None
 
     def log_event(self, event: str, **fields: Any) -> None:
@@ -141,6 +150,7 @@ class EchoGateway:
                 payload = message.get("payload")
                 if not isinstance(payload, dict):
                     payload = {}
+                self._validate_payload(session_id, str(message_type), payload)
 
                 if message_type == "HELLO":
                     await self._handle_hello(writer, session_id, payload)
@@ -156,6 +166,14 @@ class EchoGateway:
                         "brain_healthy": True,
                     }))
                     await writer.drain()
+                elif message_type == "BAR":
+                    self._handle_bar(session_id, payload)
+                    writer.write(raw if raw.endswith(b"\n") else raw + b"\n")
+                    await writer.drain()
+                elif message_type == "STATE":
+                    self._handle_state(session_id, payload)
+                    writer.write(raw if raw.endswith(b"\n") else raw + b"\n")
+                    await writer.drain()
                 else:
                     writer.write(raw if raw.endswith(b"\n") else raw + b"\n")
                     await writer.drain()
@@ -166,6 +184,50 @@ class EchoGateway:
                 self.log_event("disconnect", session_id=session_id)
             writer.close()
             await writer.wait_closed()
+
+    def _validate_payload(
+        self, session_id: str, message_type: str, payload: dict[str, Any]
+    ) -> None:
+        model = PAYLOAD_MODELS.get(message_type)
+        if model is None:
+            return
+        try:
+            model.model_validate(payload)
+        except ValidationError as exc:
+            self.log_event(
+                "payload_invalid",
+                session_id=session_id,
+                type=message_type,
+                error=str(exc),
+            )
+            raise
+        self.log_event("payload_valid", session_id=session_id, type=message_type)
+
+    def _handle_bar(self, session_id: str, payload: dict[str, Any]) -> None:
+        bar_time = str(payload.get("bar_time") or "")
+        previous = self.last_bar_time.get(session_id)
+        in_order = previous is None or previous < bar_time
+        contiguous = previous is None or previous != bar_time
+        self.last_bar_time[session_id] = bar_time
+        count = self.backfill_counts.get(session_id, 0) + 1
+        self.backfill_counts[session_id] = count
+        self.log_event(
+            "bar",
+            session_id=session_id,
+            bar_time=bar_time,
+            count=count,
+            in_order=in_order,
+            contiguous=contiguous,
+        )
+
+    def _handle_state(self, session_id: str, payload: dict[str, Any]) -> None:
+        self.log_event(
+            "state",
+            session_id=session_id,
+            positions=len(payload.get("positions", [])),
+            owned_net=payload.get("owned_net", {}),
+            owned_ticket_count=payload.get("owned_ticket_count", {}),
+        )
 
     async def _handle_hello(
         self, writer: asyncio.StreamWriter, session_id: str, payload: dict[str, Any]

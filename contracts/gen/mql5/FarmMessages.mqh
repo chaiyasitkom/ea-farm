@@ -23,6 +23,799 @@ enum ENUM_FARM_MSG_TYPE
    FARM_MSG_UNKNOWN
 };
 
+enum ENUM_FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE
+{
+   FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_RETAIL_HEDGING,
+   FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_RETAIL_NETTING,
+   FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_EXCHANGE,
+   FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_UNKNOWN,
+   ENUM_FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_UNRECOGNIZED
+};
+
+string FarmHellopayloadaccountMarginModeToString(const ENUM_FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE v)
+{
+   switch(v)
+   {
+      case FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_RETAIL_HEDGING: return "RETAIL_HEDGING";
+      case FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_RETAIL_NETTING: return "RETAIL_NETTING";
+      case FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_EXCHANGE: return "EXCHANGE";
+      case FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_UNKNOWN: return "UNKNOWN";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE FarmHellopayloadaccountMarginModeFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "RETAIL_HEDGING") return FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_RETAIL_HEDGING;
+   if(s == "RETAIL_NETTING") return FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_RETAIL_NETTING;
+   if(s == "EXCHANGE") return FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_EXCHANGE;
+   if(s == "UNKNOWN") return FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_UNKNOWN;
+   ok = false;
+   return ENUM_FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_HELLOPAYLOADSYMBOL_TRADE_MODE
+{
+   FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_FULL,
+   FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_DISABLED,
+   FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_CLOSE_ONLY,
+   FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_LONG_ONLY,
+   FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_SHORT_ONLY,
+   FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_UNKNOWN,
+   ENUM_FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_UNRECOGNIZED
+};
+
+string FarmHellopayloadsymbolTradeModeToString(const ENUM_FARM_HELLOPAYLOADSYMBOL_TRADE_MODE v)
+{
+   switch(v)
+   {
+      case FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_FULL: return "FULL";
+      case FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_DISABLED: return "DISABLED";
+      case FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_CLOSE_ONLY: return "CLOSE_ONLY";
+      case FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_LONG_ONLY: return "LONG_ONLY";
+      case FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_SHORT_ONLY: return "SHORT_ONLY";
+      case FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_UNKNOWN: return "UNKNOWN";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_HELLOPAYLOADSYMBOL_TRADE_MODE FarmHellopayloadsymbolTradeModeFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "FULL") return FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_FULL;
+   if(s == "DISABLED") return FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_DISABLED;
+   if(s == "CLOSE_ONLY") return FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_CLOSE_ONLY;
+   if(s == "LONG_ONLY") return FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_LONG_ONLY;
+   if(s == "SHORT_ONLY") return FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_SHORT_ONLY;
+   if(s == "UNKNOWN") return FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_UNKNOWN;
+   ok = false;
+   return ENUM_FARM_HELLOPAYLOADSYMBOL_TRADE_MODE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_HELLOPAYLOAD_TIMEFRAME
+{
+   FARM_HELLOPAYLOAD_TIMEFRAME_M1,
+   FARM_HELLOPAYLOAD_TIMEFRAME_M5,
+   FARM_HELLOPAYLOAD_TIMEFRAME_M10,
+   FARM_HELLOPAYLOAD_TIMEFRAME_M15,
+   FARM_HELLOPAYLOAD_TIMEFRAME_M30,
+   FARM_HELLOPAYLOAD_TIMEFRAME_H1,
+   FARM_HELLOPAYLOAD_TIMEFRAME_H4,
+   ENUM_FARM_HELLOPAYLOAD_TIMEFRAME_UNRECOGNIZED
+};
+
+string FarmHellopayloadTimeframeToString(const ENUM_FARM_HELLOPAYLOAD_TIMEFRAME v)
+{
+   switch(v)
+   {
+      case FARM_HELLOPAYLOAD_TIMEFRAME_M1: return "M1";
+      case FARM_HELLOPAYLOAD_TIMEFRAME_M5: return "M5";
+      case FARM_HELLOPAYLOAD_TIMEFRAME_M10: return "M10";
+      case FARM_HELLOPAYLOAD_TIMEFRAME_M15: return "M15";
+      case FARM_HELLOPAYLOAD_TIMEFRAME_M30: return "M30";
+      case FARM_HELLOPAYLOAD_TIMEFRAME_H1: return "H1";
+      case FARM_HELLOPAYLOAD_TIMEFRAME_H4: return "H4";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_HELLOPAYLOAD_TIMEFRAME FarmHellopayloadTimeframeFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "M1") return FARM_HELLOPAYLOAD_TIMEFRAME_M1;
+   if(s == "M5") return FARM_HELLOPAYLOAD_TIMEFRAME_M5;
+   if(s == "M10") return FARM_HELLOPAYLOAD_TIMEFRAME_M10;
+   if(s == "M15") return FARM_HELLOPAYLOAD_TIMEFRAME_M15;
+   if(s == "M30") return FARM_HELLOPAYLOAD_TIMEFRAME_M30;
+   if(s == "H1") return FARM_HELLOPAYLOAD_TIMEFRAME_H1;
+   if(s == "H4") return FARM_HELLOPAYLOAD_TIMEFRAME_H4;
+   ok = false;
+   return ENUM_FARM_HELLOPAYLOAD_TIMEFRAME_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_HELLOPAYLOADBROKERTIME_SOURCE
+{
+   FARM_HELLOPAYLOADBROKERTIME_SOURCE_INFERRED_SERVER_MINUS_GMT,
+   FARM_HELLOPAYLOADBROKERTIME_SOURCE_PLATFORM_API,
+   ENUM_FARM_HELLOPAYLOADBROKERTIME_SOURCE_UNRECOGNIZED
+};
+
+string FarmHellopayloadbrokertimeSourceToString(const ENUM_FARM_HELLOPAYLOADBROKERTIME_SOURCE v)
+{
+   switch(v)
+   {
+      case FARM_HELLOPAYLOADBROKERTIME_SOURCE_INFERRED_SERVER_MINUS_GMT: return "INFERRED_SERVER_MINUS_GMT";
+      case FARM_HELLOPAYLOADBROKERTIME_SOURCE_PLATFORM_API: return "PLATFORM_API";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_HELLOPAYLOADBROKERTIME_SOURCE FarmHellopayloadbrokertimeSourceFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "INFERRED_SERVER_MINUS_GMT") return FARM_HELLOPAYLOADBROKERTIME_SOURCE_INFERRED_SERVER_MINUS_GMT;
+   if(s == "PLATFORM_API") return FARM_HELLOPAYLOADBROKERTIME_SOURCE_PLATFORM_API;
+   ok = false;
+   return ENUM_FARM_HELLOPAYLOADBROKERTIME_SOURCE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE
+{
+   FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_NORMAL,
+   FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_SCALED,
+   FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_REDUCE_ONLY,
+   FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_FLATTEN,
+   FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_HALT,
+   ENUM_FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_UNRECOGNIZED
+};
+
+string FarmHelloackpayloadinitialdirectiveModeToString(const ENUM_FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE v)
+{
+   switch(v)
+   {
+      case FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_NORMAL: return "NORMAL";
+      case FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_SCALED: return "SCALED";
+      case FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_REDUCE_ONLY: return "REDUCE_ONLY";
+      case FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_FLATTEN: return "FLATTEN";
+      case FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_HALT: return "HALT";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE FarmHelloackpayloadinitialdirectiveModeFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "NORMAL") return FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_NORMAL;
+   if(s == "SCALED") return FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_SCALED;
+   if(s == "REDUCE_ONLY") return FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_REDUCE_ONLY;
+   if(s == "FLATTEN") return FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_FLATTEN;
+   if(s == "HALT") return FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_HALT;
+   ok = false;
+   return ENUM_FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_HELLOACKPAYLOAD_REJECT_REASON
+{
+   FARM_HELLOACKPAYLOAD_REJECT_REASON_BAD_TOKEN,
+   FARM_HELLOACKPAYLOAD_REJECT_REASON_VERSION_MISMATCH,
+   FARM_HELLOACKPAYLOAD_REJECT_REASON_DUPLICATE_SESSION,
+   FARM_HELLOACKPAYLOAD_REJECT_REASON_ACCOUNT_NOT_REGISTERED,
+   FARM_HELLOACKPAYLOAD_REJECT_REASON_MARGIN_MODE_NOT_HEDGING,
+   FARM_HELLOACKPAYLOAD_REJECT_REASON_SYMBOL_NOT_IN_REGISTRY,
+   ENUM_FARM_HELLOACKPAYLOAD_REJECT_REASON_UNRECOGNIZED
+};
+
+string FarmHelloackpayloadRejectReasonToString(const ENUM_FARM_HELLOACKPAYLOAD_REJECT_REASON v)
+{
+   switch(v)
+   {
+      case FARM_HELLOACKPAYLOAD_REJECT_REASON_BAD_TOKEN: return "BAD_TOKEN";
+      case FARM_HELLOACKPAYLOAD_REJECT_REASON_VERSION_MISMATCH: return "VERSION_MISMATCH";
+      case FARM_HELLOACKPAYLOAD_REJECT_REASON_DUPLICATE_SESSION: return "DUPLICATE_SESSION";
+      case FARM_HELLOACKPAYLOAD_REJECT_REASON_ACCOUNT_NOT_REGISTERED: return "ACCOUNT_NOT_REGISTERED";
+      case FARM_HELLOACKPAYLOAD_REJECT_REASON_MARGIN_MODE_NOT_HEDGING: return "MARGIN_MODE_NOT_HEDGING";
+      case FARM_HELLOACKPAYLOAD_REJECT_REASON_SYMBOL_NOT_IN_REGISTRY: return "SYMBOL_NOT_IN_REGISTRY";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_HELLOACKPAYLOAD_REJECT_REASON FarmHelloackpayloadRejectReasonFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "BAD_TOKEN") return FARM_HELLOACKPAYLOAD_REJECT_REASON_BAD_TOKEN;
+   if(s == "VERSION_MISMATCH") return FARM_HELLOACKPAYLOAD_REJECT_REASON_VERSION_MISMATCH;
+   if(s == "DUPLICATE_SESSION") return FARM_HELLOACKPAYLOAD_REJECT_REASON_DUPLICATE_SESSION;
+   if(s == "ACCOUNT_NOT_REGISTERED") return FARM_HELLOACKPAYLOAD_REJECT_REASON_ACCOUNT_NOT_REGISTERED;
+   if(s == "MARGIN_MODE_NOT_HEDGING") return FARM_HELLOACKPAYLOAD_REJECT_REASON_MARGIN_MODE_NOT_HEDGING;
+   if(s == "SYMBOL_NOT_IN_REGISTRY") return FARM_HELLOACKPAYLOAD_REJECT_REASON_SYMBOL_NOT_IN_REGISTRY;
+   ok = false;
+   return ENUM_FARM_HELLOACKPAYLOAD_REJECT_REASON_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_HEARTBEATPAYLOADWIRE_STATE
+{
+   FARM_HEARTBEATPAYLOADWIRE_STATE_DISCONNECTED,
+   FARM_HEARTBEATPAYLOADWIRE_STATE_CONNECTING,
+   FARM_HEARTBEATPAYLOADWIRE_STATE_CONNECTED,
+   FARM_HEARTBEATPAYLOADWIRE_STATE_AUTHENTICATING,
+   FARM_HEARTBEATPAYLOADWIRE_STATE_READY,
+   FARM_HEARTBEATPAYLOADWIRE_STATE_FAILED_AUTH,
+   ENUM_FARM_HEARTBEATPAYLOADWIRE_STATE_UNRECOGNIZED
+};
+
+string FarmHeartbeatpayloadwireStateToString(const ENUM_FARM_HEARTBEATPAYLOADWIRE_STATE v)
+{
+   switch(v)
+   {
+      case FARM_HEARTBEATPAYLOADWIRE_STATE_DISCONNECTED: return "DISCONNECTED";
+      case FARM_HEARTBEATPAYLOADWIRE_STATE_CONNECTING: return "CONNECTING";
+      case FARM_HEARTBEATPAYLOADWIRE_STATE_CONNECTED: return "CONNECTED";
+      case FARM_HEARTBEATPAYLOADWIRE_STATE_AUTHENTICATING: return "AUTHENTICATING";
+      case FARM_HEARTBEATPAYLOADWIRE_STATE_READY: return "READY";
+      case FARM_HEARTBEATPAYLOADWIRE_STATE_FAILED_AUTH: return "FAILED_AUTH";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_HEARTBEATPAYLOADWIRE_STATE FarmHeartbeatpayloadwireStateFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "DISCONNECTED") return FARM_HEARTBEATPAYLOADWIRE_STATE_DISCONNECTED;
+   if(s == "CONNECTING") return FARM_HEARTBEATPAYLOADWIRE_STATE_CONNECTING;
+   if(s == "CONNECTED") return FARM_HEARTBEATPAYLOADWIRE_STATE_CONNECTED;
+   if(s == "AUTHENTICATING") return FARM_HEARTBEATPAYLOADWIRE_STATE_AUTHENTICATING;
+   if(s == "READY") return FARM_HEARTBEATPAYLOADWIRE_STATE_READY;
+   if(s == "FAILED_AUTH") return FARM_HEARTBEATPAYLOADWIRE_STATE_FAILED_AUTH;
+   ok = false;
+   return ENUM_FARM_HEARTBEATPAYLOADWIRE_STATE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_BARPAYLOAD_TIMEFRAME
+{
+   FARM_BARPAYLOAD_TIMEFRAME_M1,
+   FARM_BARPAYLOAD_TIMEFRAME_M5,
+   FARM_BARPAYLOAD_TIMEFRAME_M10,
+   FARM_BARPAYLOAD_TIMEFRAME_M15,
+   FARM_BARPAYLOAD_TIMEFRAME_M30,
+   FARM_BARPAYLOAD_TIMEFRAME_H1,
+   FARM_BARPAYLOAD_TIMEFRAME_H4,
+   ENUM_FARM_BARPAYLOAD_TIMEFRAME_UNRECOGNIZED
+};
+
+string FarmBarpayloadTimeframeToString(const ENUM_FARM_BARPAYLOAD_TIMEFRAME v)
+{
+   switch(v)
+   {
+      case FARM_BARPAYLOAD_TIMEFRAME_M1: return "M1";
+      case FARM_BARPAYLOAD_TIMEFRAME_M5: return "M5";
+      case FARM_BARPAYLOAD_TIMEFRAME_M10: return "M10";
+      case FARM_BARPAYLOAD_TIMEFRAME_M15: return "M15";
+      case FARM_BARPAYLOAD_TIMEFRAME_M30: return "M30";
+      case FARM_BARPAYLOAD_TIMEFRAME_H1: return "H1";
+      case FARM_BARPAYLOAD_TIMEFRAME_H4: return "H4";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_BARPAYLOAD_TIMEFRAME FarmBarpayloadTimeframeFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "M1") return FARM_BARPAYLOAD_TIMEFRAME_M1;
+   if(s == "M5") return FARM_BARPAYLOAD_TIMEFRAME_M5;
+   if(s == "M10") return FARM_BARPAYLOAD_TIMEFRAME_M10;
+   if(s == "M15") return FARM_BARPAYLOAD_TIMEFRAME_M15;
+   if(s == "M30") return FARM_BARPAYLOAD_TIMEFRAME_M30;
+   if(s == "H1") return FARM_BARPAYLOAD_TIMEFRAME_H1;
+   if(s == "H4") return FARM_BARPAYLOAD_TIMEFRAME_H4;
+   ok = false;
+   return ENUM_FARM_BARPAYLOAD_TIMEFRAME_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_STATEPAYLOADPOSITIONSITEM_SIDE
+{
+   FARM_STATEPAYLOADPOSITIONSITEM_SIDE_BUY,
+   FARM_STATEPAYLOADPOSITIONSITEM_SIDE_SELL,
+   ENUM_FARM_STATEPAYLOADPOSITIONSITEM_SIDE_UNRECOGNIZED
+};
+
+string FarmStatepayloadpositionsitemSideToString(const ENUM_FARM_STATEPAYLOADPOSITIONSITEM_SIDE v)
+{
+   switch(v)
+   {
+      case FARM_STATEPAYLOADPOSITIONSITEM_SIDE_BUY: return "BUY";
+      case FARM_STATEPAYLOADPOSITIONSITEM_SIDE_SELL: return "SELL";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_STATEPAYLOADPOSITIONSITEM_SIDE FarmStatepayloadpositionsitemSideFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "BUY") return FARM_STATEPAYLOADPOSITIONSITEM_SIDE_BUY;
+   if(s == "SELL") return FARM_STATEPAYLOADPOSITIONSITEM_SIDE_SELL;
+   ok = false;
+   return ENUM_FARM_STATEPAYLOADPOSITIONSITEM_SIDE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE
+{
+   FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_BUY_LIMIT,
+   FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_SELL_LIMIT,
+   FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_BUY_STOP,
+   FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_SELL_STOP,
+   FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_BUY_STOP_LIMIT,
+   FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_SELL_STOP_LIMIT,
+   ENUM_FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_UNRECOGNIZED
+};
+
+string FarmStatepayloadpendingordersitemTypeToString(const ENUM_FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE v)
+{
+   switch(v)
+   {
+      case FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_BUY_LIMIT: return "BUY_LIMIT";
+      case FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_SELL_LIMIT: return "SELL_LIMIT";
+      case FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_BUY_STOP: return "BUY_STOP";
+      case FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_SELL_STOP: return "SELL_STOP";
+      case FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_BUY_STOP_LIMIT: return "BUY_STOP_LIMIT";
+      case FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_SELL_STOP_LIMIT: return "SELL_STOP_LIMIT";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE FarmStatepayloadpendingordersitemTypeFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "BUY_LIMIT") return FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_BUY_LIMIT;
+   if(s == "SELL_LIMIT") return FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_SELL_LIMIT;
+   if(s == "BUY_STOP") return FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_BUY_STOP;
+   if(s == "SELL_STOP") return FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_SELL_STOP;
+   if(s == "BUY_STOP_LIMIT") return FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_BUY_STOP_LIMIT;
+   if(s == "SELL_STOP_LIMIT") return FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_SELL_STOP_LIMIT;
+   ok = false;
+   return ENUM_FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE
+{
+   FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_RETAIL_HEDGING,
+   FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_RETAIL_NETTING,
+   FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_EXCHANGE,
+   FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_UNKNOWN,
+   ENUM_FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_UNRECOGNIZED
+};
+
+string FarmStatepayloadAccountMarginModeToString(const ENUM_FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE v)
+{
+   switch(v)
+   {
+      case FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_RETAIL_HEDGING: return "RETAIL_HEDGING";
+      case FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_RETAIL_NETTING: return "RETAIL_NETTING";
+      case FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_EXCHANGE: return "EXCHANGE";
+      case FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_UNKNOWN: return "UNKNOWN";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE FarmStatepayloadAccountMarginModeFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "RETAIL_HEDGING") return FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_RETAIL_HEDGING;
+   if(s == "RETAIL_NETTING") return FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_RETAIL_NETTING;
+   if(s == "EXCHANGE") return FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_EXCHANGE;
+   if(s == "UNKNOWN") return FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_UNKNOWN;
+   ok = false;
+   return ENUM_FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_STATEPAYLOADGUARD_MODE
+{
+   FARM_STATEPAYLOADGUARD_MODE_NORMAL,
+   FARM_STATEPAYLOADGUARD_MODE_SCALED,
+   FARM_STATEPAYLOADGUARD_MODE_REDUCE_ONLY,
+   FARM_STATEPAYLOADGUARD_MODE_FLATTEN,
+   FARM_STATEPAYLOADGUARD_MODE_HALT,
+   ENUM_FARM_STATEPAYLOADGUARD_MODE_UNRECOGNIZED
+};
+
+string FarmStatepayloadguardModeToString(const ENUM_FARM_STATEPAYLOADGUARD_MODE v)
+{
+   switch(v)
+   {
+      case FARM_STATEPAYLOADGUARD_MODE_NORMAL: return "NORMAL";
+      case FARM_STATEPAYLOADGUARD_MODE_SCALED: return "SCALED";
+      case FARM_STATEPAYLOADGUARD_MODE_REDUCE_ONLY: return "REDUCE_ONLY";
+      case FARM_STATEPAYLOADGUARD_MODE_FLATTEN: return "FLATTEN";
+      case FARM_STATEPAYLOADGUARD_MODE_HALT: return "HALT";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_STATEPAYLOADGUARD_MODE FarmStatepayloadguardModeFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "NORMAL") return FARM_STATEPAYLOADGUARD_MODE_NORMAL;
+   if(s == "SCALED") return FARM_STATEPAYLOADGUARD_MODE_SCALED;
+   if(s == "REDUCE_ONLY") return FARM_STATEPAYLOADGUARD_MODE_REDUCE_ONLY;
+   if(s == "FLATTEN") return FARM_STATEPAYLOADGUARD_MODE_FLATTEN;
+   if(s == "HALT") return FARM_STATEPAYLOADGUARD_MODE_HALT;
+   ok = false;
+   return ENUM_FARM_STATEPAYLOADGUARD_MODE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_STATEPAYLOADGUARD_HALT_REASON
+{
+   FARM_STATEPAYLOADGUARD_HALT_REASON_R6_DAILY_LOSS,
+   FARM_STATEPAYLOADGUARD_HALT_REASON_R7_MAX_DD_HARD,
+   FARM_STATEPAYLOADGUARD_HALT_REASON_R8_MARGIN_LEVEL,
+   FARM_STATEPAYLOADGUARD_HALT_REASON_R13_KILL_FILE,
+   FARM_STATEPAYLOADGUARD_HALT_REASON_R14_CONSECUTIVE_LOSS,
+   FARM_STATEPAYLOADGUARD_HALT_REASON_R16_BRAIN_TIMEOUT,
+   FARM_STATEPAYLOADGUARD_HALT_REASON_R17_ORDER_STORM,
+   FARM_STATEPAYLOADGUARD_HALT_REASON_MANUAL,
+   ENUM_FARM_STATEPAYLOADGUARD_HALT_REASON_UNRECOGNIZED
+};
+
+string FarmStatepayloadguardHaltReasonToString(const ENUM_FARM_STATEPAYLOADGUARD_HALT_REASON v)
+{
+   switch(v)
+   {
+      case FARM_STATEPAYLOADGUARD_HALT_REASON_R6_DAILY_LOSS: return "R6_DAILY_LOSS";
+      case FARM_STATEPAYLOADGUARD_HALT_REASON_R7_MAX_DD_HARD: return "R7_MAX_DD_HARD";
+      case FARM_STATEPAYLOADGUARD_HALT_REASON_R8_MARGIN_LEVEL: return "R8_MARGIN_LEVEL";
+      case FARM_STATEPAYLOADGUARD_HALT_REASON_R13_KILL_FILE: return "R13_KILL_FILE";
+      case FARM_STATEPAYLOADGUARD_HALT_REASON_R14_CONSECUTIVE_LOSS: return "R14_CONSECUTIVE_LOSS";
+      case FARM_STATEPAYLOADGUARD_HALT_REASON_R16_BRAIN_TIMEOUT: return "R16_BRAIN_TIMEOUT";
+      case FARM_STATEPAYLOADGUARD_HALT_REASON_R17_ORDER_STORM: return "R17_ORDER_STORM";
+      case FARM_STATEPAYLOADGUARD_HALT_REASON_MANUAL: return "MANUAL";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_STATEPAYLOADGUARD_HALT_REASON FarmStatepayloadguardHaltReasonFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "R6_DAILY_LOSS") return FARM_STATEPAYLOADGUARD_HALT_REASON_R6_DAILY_LOSS;
+   if(s == "R7_MAX_DD_HARD") return FARM_STATEPAYLOADGUARD_HALT_REASON_R7_MAX_DD_HARD;
+   if(s == "R8_MARGIN_LEVEL") return FARM_STATEPAYLOADGUARD_HALT_REASON_R8_MARGIN_LEVEL;
+   if(s == "R13_KILL_FILE") return FARM_STATEPAYLOADGUARD_HALT_REASON_R13_KILL_FILE;
+   if(s == "R14_CONSECUTIVE_LOSS") return FARM_STATEPAYLOADGUARD_HALT_REASON_R14_CONSECUTIVE_LOSS;
+   if(s == "R16_BRAIN_TIMEOUT") return FARM_STATEPAYLOADGUARD_HALT_REASON_R16_BRAIN_TIMEOUT;
+   if(s == "R17_ORDER_STORM") return FARM_STATEPAYLOADGUARD_HALT_REASON_R17_ORDER_STORM;
+   if(s == "MANUAL") return FARM_STATEPAYLOADGUARD_HALT_REASON_MANUAL;
+   ok = false;
+   return ENUM_FARM_STATEPAYLOADGUARD_HALT_REASON_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_INTENTPAYLOAD_URGENCY
+{
+   FARM_INTENTPAYLOAD_URGENCY_NORMAL,
+   FARM_INTENTPAYLOAD_URGENCY_IMMEDIATE,
+   FARM_INTENTPAYLOAD_URGENCY_PASSIVE,
+   ENUM_FARM_INTENTPAYLOAD_URGENCY_UNRECOGNIZED
+};
+
+string FarmIntentpayloadUrgencyToString(const ENUM_FARM_INTENTPAYLOAD_URGENCY v)
+{
+   switch(v)
+   {
+      case FARM_INTENTPAYLOAD_URGENCY_NORMAL: return "NORMAL";
+      case FARM_INTENTPAYLOAD_URGENCY_IMMEDIATE: return "IMMEDIATE";
+      case FARM_INTENTPAYLOAD_URGENCY_PASSIVE: return "PASSIVE";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_INTENTPAYLOAD_URGENCY FarmIntentpayloadUrgencyFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "NORMAL") return FARM_INTENTPAYLOAD_URGENCY_NORMAL;
+   if(s == "IMMEDIATE") return FARM_INTENTPAYLOAD_URGENCY_IMMEDIATE;
+   if(s == "PASSIVE") return FARM_INTENTPAYLOAD_URGENCY_PASSIVE;
+   ok = false;
+   return ENUM_FARM_INTENTPAYLOAD_URGENCY_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE
+{
+   FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_CLEAR,
+   FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_PRE_EVENT,
+   FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_IN_EVENT,
+   FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_POST_EVENT,
+   FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_UNKNOWN,
+   ENUM_FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_UNRECOGNIZED
+};
+
+string FarmIntentpayloadprovenanceNewsStateToString(const ENUM_FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE v)
+{
+   switch(v)
+   {
+      case FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_CLEAR: return "CLEAR";
+      case FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_PRE_EVENT: return "PRE_EVENT";
+      case FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_IN_EVENT: return "IN_EVENT";
+      case FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_POST_EVENT: return "POST_EVENT";
+      case FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_UNKNOWN: return "UNKNOWN";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE FarmIntentpayloadprovenanceNewsStateFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "CLEAR") return FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_CLEAR;
+   if(s == "PRE_EVENT") return FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_PRE_EVENT;
+   if(s == "IN_EVENT") return FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_IN_EVENT;
+   if(s == "POST_EVENT") return FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_POST_EVENT;
+   if(s == "UNKNOWN") return FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_UNKNOWN;
+   ok = false;
+   return ENUM_FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_INTENTACKPAYLOAD_STATUS
+{
+   FARM_INTENTACKPAYLOAD_STATUS_ACCEPTED,
+   FARM_INTENTACKPAYLOAD_STATUS_NOOP,
+   FARM_INTENTACKPAYLOAD_STATUS_EXPIRED,
+   FARM_INTENTACKPAYLOAD_STATUS_DUPLICATE,
+   FARM_INTENTACKPAYLOAD_STATUS_REJECTED_BY_GUARD,
+   FARM_INTENTACKPAYLOAD_STATUS_REJECTED_MARKET_CLOSED,
+   FARM_INTENTACKPAYLOAD_STATUS_REJECTED_INVALID,
+   FARM_INTENTACKPAYLOAD_STATUS_ANOMALY_INTERNAL_HEDGE,
+   ENUM_FARM_INTENTACKPAYLOAD_STATUS_UNRECOGNIZED
+};
+
+string FarmIntentackpayloadStatusToString(const ENUM_FARM_INTENTACKPAYLOAD_STATUS v)
+{
+   switch(v)
+   {
+      case FARM_INTENTACKPAYLOAD_STATUS_ACCEPTED: return "ACCEPTED";
+      case FARM_INTENTACKPAYLOAD_STATUS_NOOP: return "NOOP";
+      case FARM_INTENTACKPAYLOAD_STATUS_EXPIRED: return "EXPIRED";
+      case FARM_INTENTACKPAYLOAD_STATUS_DUPLICATE: return "DUPLICATE";
+      case FARM_INTENTACKPAYLOAD_STATUS_REJECTED_BY_GUARD: return "REJECTED_BY_GUARD";
+      case FARM_INTENTACKPAYLOAD_STATUS_REJECTED_MARKET_CLOSED: return "REJECTED_MARKET_CLOSED";
+      case FARM_INTENTACKPAYLOAD_STATUS_REJECTED_INVALID: return "REJECTED_INVALID";
+      case FARM_INTENTACKPAYLOAD_STATUS_ANOMALY_INTERNAL_HEDGE: return "ANOMALY_INTERNAL_HEDGE";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_INTENTACKPAYLOAD_STATUS FarmIntentackpayloadStatusFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "ACCEPTED") return FARM_INTENTACKPAYLOAD_STATUS_ACCEPTED;
+   if(s == "NOOP") return FARM_INTENTACKPAYLOAD_STATUS_NOOP;
+   if(s == "EXPIRED") return FARM_INTENTACKPAYLOAD_STATUS_EXPIRED;
+   if(s == "DUPLICATE") return FARM_INTENTACKPAYLOAD_STATUS_DUPLICATE;
+   if(s == "REJECTED_BY_GUARD") return FARM_INTENTACKPAYLOAD_STATUS_REJECTED_BY_GUARD;
+   if(s == "REJECTED_MARKET_CLOSED") return FARM_INTENTACKPAYLOAD_STATUS_REJECTED_MARKET_CLOSED;
+   if(s == "REJECTED_INVALID") return FARM_INTENTACKPAYLOAD_STATUS_REJECTED_INVALID;
+   if(s == "ANOMALY_INTERNAL_HEDGE") return FARM_INTENTACKPAYLOAD_STATUS_ANOMALY_INTERNAL_HEDGE;
+   ok = false;
+   return ENUM_FARM_INTENTACKPAYLOAD_STATUS_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP
+{
+   FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_OPEN,
+   FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_CLOSE,
+   FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_CLOSE_PARTIAL,
+   FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_MODIFY_SLTP,
+   FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_CLOSE_BY,
+   ENUM_FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_UNRECOGNIZED
+};
+
+string FarmIntentackpayloadactionsplanneditemOpToString(const ENUM_FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP v)
+{
+   switch(v)
+   {
+      case FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_OPEN: return "OPEN";
+      case FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_CLOSE: return "CLOSE";
+      case FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_CLOSE_PARTIAL: return "CLOSE_PARTIAL";
+      case FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_MODIFY_SLTP: return "MODIFY_SLTP";
+      case FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_CLOSE_BY: return "CLOSE_BY";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP FarmIntentackpayloadactionsplanneditemOpFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "OPEN") return FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_OPEN;
+   if(s == "CLOSE") return FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_CLOSE;
+   if(s == "CLOSE_PARTIAL") return FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_CLOSE_PARTIAL;
+   if(s == "MODIFY_SLTP") return FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_MODIFY_SLTP;
+   if(s == "CLOSE_BY") return FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_CLOSE_BY;
+   ok = false;
+   return ENUM_FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_SIDE
+{
+   FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_SIDE_BUY,
+   FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_SIDE_SELL,
+   ENUM_FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_SIDE_UNRECOGNIZED
+};
+
+string FarmIntentackpayloadactionsplanneditemSideToString(const ENUM_FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_SIDE v)
+{
+   switch(v)
+   {
+      case FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_SIDE_BUY: return "BUY";
+      case FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_SIDE_SELL: return "SELL";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_SIDE FarmIntentackpayloadactionsplanneditemSideFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "BUY") return FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_SIDE_BUY;
+   if(s == "SELL") return FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_SIDE_SELL;
+   ok = false;
+   return ENUM_FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_SIDE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_EXECREPORTPAYLOAD_OP
+{
+   FARM_EXECREPORTPAYLOAD_OP_OPEN,
+   FARM_EXECREPORTPAYLOAD_OP_CLOSE,
+   FARM_EXECREPORTPAYLOAD_OP_CLOSE_PARTIAL,
+   FARM_EXECREPORTPAYLOAD_OP_MODIFY_SLTP,
+   FARM_EXECREPORTPAYLOAD_OP_CLOSE_BY,
+   ENUM_FARM_EXECREPORTPAYLOAD_OP_UNRECOGNIZED
+};
+
+string FarmExecreportpayloadOpToString(const ENUM_FARM_EXECREPORTPAYLOAD_OP v)
+{
+   switch(v)
+   {
+      case FARM_EXECREPORTPAYLOAD_OP_OPEN: return "OPEN";
+      case FARM_EXECREPORTPAYLOAD_OP_CLOSE: return "CLOSE";
+      case FARM_EXECREPORTPAYLOAD_OP_CLOSE_PARTIAL: return "CLOSE_PARTIAL";
+      case FARM_EXECREPORTPAYLOAD_OP_MODIFY_SLTP: return "MODIFY_SLTP";
+      case FARM_EXECREPORTPAYLOAD_OP_CLOSE_BY: return "CLOSE_BY";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_EXECREPORTPAYLOAD_OP FarmExecreportpayloadOpFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "OPEN") return FARM_EXECREPORTPAYLOAD_OP_OPEN;
+   if(s == "CLOSE") return FARM_EXECREPORTPAYLOAD_OP_CLOSE;
+   if(s == "CLOSE_PARTIAL") return FARM_EXECREPORTPAYLOAD_OP_CLOSE_PARTIAL;
+   if(s == "MODIFY_SLTP") return FARM_EXECREPORTPAYLOAD_OP_MODIFY_SLTP;
+   if(s == "CLOSE_BY") return FARM_EXECREPORTPAYLOAD_OP_CLOSE_BY;
+   ok = false;
+   return ENUM_FARM_EXECREPORTPAYLOAD_OP_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_EXECREPORTPAYLOAD_RESULT
+{
+   FARM_EXECREPORTPAYLOAD_RESULT_FILLED,
+   FARM_EXECREPORTPAYLOAD_RESULT_PARTIAL,
+   FARM_EXECREPORTPAYLOAD_RESULT_REJECTED,
+   FARM_EXECREPORTPAYLOAD_RESULT_TIMEOUT,
+   FARM_EXECREPORTPAYLOAD_RESULT_RETRYING,
+   ENUM_FARM_EXECREPORTPAYLOAD_RESULT_UNRECOGNIZED
+};
+
+string FarmExecreportpayloadResultToString(const ENUM_FARM_EXECREPORTPAYLOAD_RESULT v)
+{
+   switch(v)
+   {
+      case FARM_EXECREPORTPAYLOAD_RESULT_FILLED: return "FILLED";
+      case FARM_EXECREPORTPAYLOAD_RESULT_PARTIAL: return "PARTIAL";
+      case FARM_EXECREPORTPAYLOAD_RESULT_REJECTED: return "REJECTED";
+      case FARM_EXECREPORTPAYLOAD_RESULT_TIMEOUT: return "TIMEOUT";
+      case FARM_EXECREPORTPAYLOAD_RESULT_RETRYING: return "RETRYING";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_EXECREPORTPAYLOAD_RESULT FarmExecreportpayloadResultFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "FILLED") return FARM_EXECREPORTPAYLOAD_RESULT_FILLED;
+   if(s == "PARTIAL") return FARM_EXECREPORTPAYLOAD_RESULT_PARTIAL;
+   if(s == "REJECTED") return FARM_EXECREPORTPAYLOAD_RESULT_REJECTED;
+   if(s == "TIMEOUT") return FARM_EXECREPORTPAYLOAD_RESULT_TIMEOUT;
+   if(s == "RETRYING") return FARM_EXECREPORTPAYLOAD_RESULT_RETRYING;
+   ok = false;
+   return ENUM_FARM_EXECREPORTPAYLOAD_RESULT_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_EXECREPORTPAYLOAD_SIDE
+{
+   FARM_EXECREPORTPAYLOAD_SIDE_BUY,
+   FARM_EXECREPORTPAYLOAD_SIDE_SELL,
+   ENUM_FARM_EXECREPORTPAYLOAD_SIDE_UNRECOGNIZED
+};
+
+string FarmExecreportpayloadSideToString(const ENUM_FARM_EXECREPORTPAYLOAD_SIDE v)
+{
+   switch(v)
+   {
+      case FARM_EXECREPORTPAYLOAD_SIDE_BUY: return "BUY";
+      case FARM_EXECREPORTPAYLOAD_SIDE_SELL: return "SELL";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_EXECREPORTPAYLOAD_SIDE FarmExecreportpayloadSideFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "BUY") return FARM_EXECREPORTPAYLOAD_SIDE_BUY;
+   if(s == "SELL") return FARM_EXECREPORTPAYLOAD_SIDE_SELL;
+   ok = false;
+   return ENUM_FARM_EXECREPORTPAYLOAD_SIDE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_RISKDIRECTIVEPAYLOAD_MODE
+{
+   FARM_RISKDIRECTIVEPAYLOAD_MODE_NORMAL,
+   FARM_RISKDIRECTIVEPAYLOAD_MODE_SCALED,
+   FARM_RISKDIRECTIVEPAYLOAD_MODE_REDUCE_ONLY,
+   FARM_RISKDIRECTIVEPAYLOAD_MODE_FLATTEN,
+   FARM_RISKDIRECTIVEPAYLOAD_MODE_HALT,
+   ENUM_FARM_RISKDIRECTIVEPAYLOAD_MODE_UNRECOGNIZED
+};
+
+string FarmRiskdirectivepayloadModeToString(const ENUM_FARM_RISKDIRECTIVEPAYLOAD_MODE v)
+{
+   switch(v)
+   {
+      case FARM_RISKDIRECTIVEPAYLOAD_MODE_NORMAL: return "NORMAL";
+      case FARM_RISKDIRECTIVEPAYLOAD_MODE_SCALED: return "SCALED";
+      case FARM_RISKDIRECTIVEPAYLOAD_MODE_REDUCE_ONLY: return "REDUCE_ONLY";
+      case FARM_RISKDIRECTIVEPAYLOAD_MODE_FLATTEN: return "FLATTEN";
+      case FARM_RISKDIRECTIVEPAYLOAD_MODE_HALT: return "HALT";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_RISKDIRECTIVEPAYLOAD_MODE FarmRiskdirectivepayloadModeFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "NORMAL") return FARM_RISKDIRECTIVEPAYLOAD_MODE_NORMAL;
+   if(s == "SCALED") return FARM_RISKDIRECTIVEPAYLOAD_MODE_SCALED;
+   if(s == "REDUCE_ONLY") return FARM_RISKDIRECTIVEPAYLOAD_MODE_REDUCE_ONLY;
+   if(s == "FLATTEN") return FARM_RISKDIRECTIVEPAYLOAD_MODE_FLATTEN;
+   if(s == "HALT") return FARM_RISKDIRECTIVEPAYLOAD_MODE_HALT;
+   ok = false;
+   return ENUM_FARM_RISKDIRECTIVEPAYLOAD_MODE_UNRECOGNIZED;
+}
+
+enum ENUM_FARM_ERRORPAYLOAD_SEVERITY
+{
+   FARM_ERRORPAYLOAD_SEVERITY_WARN,
+   FARM_ERRORPAYLOAD_SEVERITY_ERROR,
+   FARM_ERRORPAYLOAD_SEVERITY_FATAL,
+   ENUM_FARM_ERRORPAYLOAD_SEVERITY_UNRECOGNIZED
+};
+
+string FarmErrorpayloadSeverityToString(const ENUM_FARM_ERRORPAYLOAD_SEVERITY v)
+{
+   switch(v)
+   {
+      case FARM_ERRORPAYLOAD_SEVERITY_WARN: return "WARN";
+      case FARM_ERRORPAYLOAD_SEVERITY_ERROR: return "ERROR";
+      case FARM_ERRORPAYLOAD_SEVERITY_FATAL: return "FATAL";
+      default: return "UNKNOWN";
+   }
+}
+
+ENUM_FARM_ERRORPAYLOAD_SEVERITY FarmErrorpayloadSeverityFromString(const string s, bool &ok)
+{
+   ok = true;
+   if(s == "WARN") return FARM_ERRORPAYLOAD_SEVERITY_WARN;
+   if(s == "ERROR") return FARM_ERRORPAYLOAD_SEVERITY_ERROR;
+   if(s == "FATAL") return FARM_ERRORPAYLOAD_SEVERITY_FATAL;
+   ok = false;
+   return ENUM_FARM_ERRORPAYLOAD_SEVERITY_UNRECOGNIZED;
+}
+
 struct FarmEnvelope
 {
    int                v;
@@ -35,56 +828,114 @@ struct FarmEnvelope
    string             payload_json;
 };
 
-struct FarmPayloadJson
+struct FarmStatePayloadPositionsItem
 {
-   string raw_json;
-};
-
-struct FarmStatePosition
-{
-   long   ticket;
+   long ticket;
+   // ชื่อ symbol ตามที่โบรกเกอร์ใช้ **รวม suffix** เช่น EURUSD.iux — ห้าม normalize ที่ชั้น wire. เจตนาไม่ทำเป็น enum เพราะรายชื่อที่อนุญาตเป็น config ไม่ใช่ protocol (ดู SPEC-064 SymbolRegistry)
    string symbol;
-   string side;
+   ENUM_FARM_STATEPAYLOADPOSITIONSITEM_SIDE side;
+   // บวกเสมอ — ทิศทางอยู่ที่ side
    double volume;
+   // ราคา — ต้องมากกว่า 0 เสมอ
    double price_open;
+   // R9 บังคับให้มีค่า และต้องเป็น **broker-side** — G5 ตรวจด้วยการ kill terminal ทั้งตัวแล้วดูว่า SL ยังอยู่ฝั่งโบรกเกอร์
    bool   sl_is_null;
    double sl;
+   // ราคาที่อาจไม่มี (ไม่ตั้ง SL/TP) — null ไม่ใช่ 0. 0 แปลว่า 'ราคาศูนย์' ซึ่งเป็นไปไม่ได้ จึงต้องแยกให้ชัด
    bool   tp_is_null;
    double tp;
+   // จำนวนเงินในสกุลของบัญชี — ติดลบได้ (ขาดทุน/commission/swap)
    double profit;
+   // จำนวนเงินในสกุลของบัญชี — ติดลบได้ (ขาดทุน/commission/swap)
    double swap;
-   long   magic;
+   long magic;
+   // ใช้เรียง FIFO ตอนเลือกไม้ปิด — tie-break ด้วย ticket น้อยสุด (ADR-001)
+   string time_open;
+   // MT5 จำกัด 31 ตัวอักษร — ใส่ intent_id **ย่อ** ไม่ใช่ ULID เต็ม 26 ตัว เพราะต้องมี prefix ด้วย. รูปแบบ i:<12 ตัวแรกของ ULID>
    bool   comment_present;
    bool   comment_is_null;
    string comment;
-   string time_open;
+
+   void Free()
+   {
+      sl_is_null = false;
+      tp_is_null = false;
+      comment_present = false;
+      comment_is_null = false;
+   }
 };
 
-struct FarmStatePendingOrder
+struct FarmStatePayloadPendingOrdersItem
 {
-   long   ticket;
+   long ticket;
+   // ชื่อ symbol ตามที่โบรกเกอร์ใช้ **รวม suffix** เช่น EURUSD.iux — ห้าม normalize ที่ชั้น wire. เจตนาไม่ทำเป็น enum เพราะรายชื่อที่อนุญาตเป็น config ไม่ใช่ protocol (ดู SPEC-064 SymbolRegistry)
    string symbol;
-   string type;
+   ENUM_FARM_STATEPAYLOADPENDINGORDERSITEM_TYPE type;
+   // ปริมาณเป็น lot **ค่าเป็นบวกเสมอ** — ทิศทางอยู่ที่ field side. ห้ามเทียบด้วย == ให้ใช้ tolerance volume_step/2
    double volume;
+   // ราคา — ต้องมากกว่า 0 เสมอ
    double price_open;
+   long magic;
+   // ISO-8601 UTC ลงท้าย Z เท่านั้น — ห้าม offset แบบ +07:00 และห้ามไม่มี timezone. เศษวินาที 0–3 หลัก
+   string time_setup;
+   // ราคาที่อาจไม่มี (ไม่ตั้ง SL/TP) — null ไม่ใช่ 0. 0 แปลว่า 'ราคาศูนย์' ซึ่งเป็นไปไม่ได้ จึงต้องแยกให้ชัด
    bool   sl_present;
    bool   sl_is_null;
    double sl;
-   bool   tp_present;
-   bool   tp_is_null;
-   double tp;
-   long   magic;
-   string time_setup;
+   // ISO-8601 UTC ลงท้าย Z เท่านั้น — ห้าม offset แบบ +07:00 และห้ามไม่มี timezone. เศษวินาที 0–3 หลัก
    bool   time_expiration_present;
    bool   time_expiration_is_null;
    string time_expiration;
+   // ราคาที่อาจไม่มี (ไม่ตั้ง SL/TP) — null ไม่ใช่ 0. 0 แปลว่า 'ราคาศูนย์' ซึ่งเป็นไปไม่ได้ จึงต้องแยกให้ชัด
+   bool   tp_present;
+   bool   tp_is_null;
+   double tp;
+
+   void Free()
+   {
+      sl_present = false;
+      sl_is_null = false;
+      time_expiration_present = false;
+      time_expiration_is_null = false;
+      tp_present = false;
+      tp_is_null = false;
+   }
 };
 
-struct FarmStateForeignPositions
+struct FarmStatePayloadGuard
 {
-   long   count;
+   // **ต้อง persist ข้าม restart** — restart EA แล้วต้องยัง halt อยู่ถ้ายังในวันเดียวกัน
+   bool halted;
+   // ค่าที่ **มีผลจริง** = เข้มที่สุดระหว่าง local guard กับ RISK_DIRECTIVE ล่าสุด
+   ENUM_FARM_STATEPAYLOADGUARD_MODE mode;
+   // ระยะเป็น point (ไม่ใช่ pip) — 1 pip = 10 point บน symbol 5 หลัก
+   long current_spread_points;
+   // R18 · true = พบไม้ long+short พร้อมกันใน symbol เดียวใต้ magic เดียว = **ANOMALY** ไม่ใช่สถานะปกติ ต้อง net ออกทันที + alert
+   bool internal_hedge_detected;
+   bool   halt_reason_present;
+   bool   halt_reason_is_null;
+   ENUM_FARM_STATEPAYLOADGUARD_HALT_REASON halt_reason;
+   // ISO-8601 UTC ลงท้าย Z เท่านั้น — ห้าม offset แบบ +07:00 และห้ามไม่มี timezone. เศษวินาที 0–3 หลัก
+   bool   halted_until_present;
+   bool   halted_until_is_null;
+   string halted_until;
+
+   void Free()
+   {
+      halt_reason_present = false;
+      halt_reason_is_null = false;
+      halted_until_present = false;
+      halted_until_is_null = false;
+   }
+};
+
+struct FarmStatePayloadForeignPositions
+{
+   long count;
    string symbols[];
+   // ปริมาณเป็น lot **ค่าเป็นบวกเสมอ** — ทิศทางอยู่ที่ field side. ห้ามเทียบด้วย == ให้ใช้ tolerance volume_step/2
    double total_volume;
+   // จำนวนเงินในสกุลของบัญชี — ติดลบได้ (ขาดทุน/commission/swap)
    double margin_estimate;
 
    void Free()
@@ -93,110 +944,644 @@ struct FarmStateForeignPositions
    }
 };
 
-struct FarmStateGuard
-{
-   bool   halted;
-   bool   halt_reason_present;
-   bool   halt_reason_is_null;
-   string halt_reason;
-   string mode;
-   long   current_spread_points;
-   bool   internal_hedge_detected;
-   bool   halted_until_present;
-   bool   halted_until_is_null;
-   string halted_until;
-};
-
+// invariant ที่ต้อง validate ในโค้ด: owned_net คำนวณจาก positions[] ได้ตรงกัน · owned_ticket_count ตรงกับจำนวน positions[] ต่อ symbol · ทุก position.magic ต้องเท่ากับ magic ที่ส่งใน HELLO · internal_hedge_detected ต้องเป็น true ถ้า positions[] มีทั้ง BUY และ SELL ใน symbol เดียว
 struct FarmStatePayload
 {
    string raw_json;
+   // จำนวนเงินในสกุลของบัญชี — ติดลบได้ (ขาดทุน/commission/swap)
    double balance;
+   // ทั้งบัญชี รวมไม้ foreign — R7 max DD ต้องใช้ค่านี้ ไม่ใช่ผลรวม POSITION_PROFIT ของไม้ที่เป็นเจ้าของ
    double equity;
+   // จำนวนเงินในสกุลของบัญชี — ติดลบได้ (ขาดทุน/commission/swap)
    double margin_used;
+   // จำนวนเงินในสกุลของบัญชี — ติดลบได้ (ขาดทุน/commission/swap)
    double margin_free;
-   bool   margin_level_pct_present;
+   // R8 · null เมื่อ margin_used = 0 (MT5 คืน 0 ซึ่งกำกวมกับ 'margin level 0% = ใกล้ล้าง') — ต้องส่ง null ไม่ใช่ 0
    bool   margin_level_pct_is_null;
    double margin_level_pct;
+   // high-water mark ของ equity — **ต้อง persist ข้ามการ restart EA** (ไฟล์/GlobalVariable) ไม่ใช่ตัวแปรใน memory
    double equity_hwm;
+   // equity ณ 00:00 **broker time** — ต้องรอด DST/timezone เปลี่ยน (SPEC-063)
    double day_start_equity;
+   // จำนวนเงินในสกุลของบัญชี — ติดลบได้ (ขาดทุน/commission/swap)
    double day_pl;
+   // R6 วัดจาก equity ไม่ใช่ closed P/L
    double day_pl_pct;
-   FarmStatePosition positions[];
-   FarmStatePendingOrder pending_orders[];
+   // R4 max_total_tickets = 8 → ปกติ ≤ 8 · เพดาน 64 เป็น headroom. ★ ห้ามขึ้นไปถึงหลักร้อย เพราะ 1 position ≈ 250 byte JSON และ frame ทั้ง message จำกัดที่ 64 KB — 512 ไม้จะสร้าง frame ที่ส่งไม่ได้เลย
+   FarmStatePayloadPositionsItem positions[];
+   // ว่างตลอดใน Phase 1–5 (urgency PASSIVE/limit order เริ่ม Phase 6)
+   FarmStatePayloadPendingOrdersItem pending_orders[];
+   // map symbol → net volume เช่น {"EURUSD.iux": 0.20}
    string owned_net_keys[];
    double owned_net_values[];
+   // hedging มีได้หลาย ticket ต่อ symbol — R3b คุมไม่ให้เกิน
    string owned_ticket_count_keys[];
-   long   owned_ticket_count_values[];
-   FarmStateForeignPositions foreign_positions;
-   string account_margin_mode;
-   FarmStateGuard guard;
+   long owned_ticket_count_values[];
+   // R19 · ไม้บนบัญชีที่ไม่ใช่ของ EA (เทรดมือ / EA อื่น / magic ชนกัน) — EA ห้ามแตะ แต่ต้องรายงานเพราะกินมาร์จิ้นและกระทบ equity จริง. count > 0 บนบัญชีในฟาร์ม = ต้อง alert
+   FarmStatePayloadForeignPositions foreign_positions;
+   // ADR-001 บังคับ RETAIL_HEDGING เท่านั้น. เจตนาไม่ทำเป็น const เพื่อให้ค่าที่ผิดส่งขึ้นมาได้ → gateway reject session พร้อม log ค่าจริง ดีกว่า schema parse error ที่ไม่บอกว่าเจออะไร
+   ENUM_FARM_STATEPAYLOAD_ACCOUNT_MARGIN_MODE account_margin_mode;
+   FarmStatePayloadGuard guard;
 
    void Free()
    {
       raw_json = "";
+      margin_level_pct_is_null = false;
+      for(int i = 0; i < ArraySize(positions); i++) positions[i].Free();
       ArrayResize(positions, 0);
+      for(int i = 0; i < ArraySize(pending_orders); i++) pending_orders[i].Free();
       ArrayResize(pending_orders, 0);
       ArrayResize(owned_net_keys, 0);
       ArrayResize(owned_net_values, 0);
       ArrayResize(owned_ticket_count_keys, 0);
       ArrayResize(owned_ticket_count_values, 0);
       foreign_positions.Free();
+      guard.Free();
    }
 };
 
+// invariant: mode=SCALED → scale_factor < 1.0 (ไม่งั้นไม่มีความหมาย) · mode=HALT → expires_at ต้องเป็น null · mode=FLATTEN → EA ต้องวนปิดทุก ticket ไม่ใช่ส่ง order สวน 1 ไม้ (จะกลายเป็น internal hedge ละเมิด R18)
+struct FarmRiskDirectivePayload
+{
+   string raw_json;
+   // ULID 26 ตัวอักษร Crockford base32 (ไม่มี I L O U) = 48-bit ms timestamp + 80-bit random. ต้อง monotonic ต่อ session และ **ไม่ซ้ำข้าม EA restart** เพราะเป็น dedupe key
+   string directive_id;
+   // เรียงจากผ่อนไปเข้ม. กฎเหล็ก: brain สั่งเข้มกว่า EA ได้ แต่ผ่อนกว่าไม่ได้ — effective = max(strictness)
+   ENUM_FARM_RISKDIRECTIVEPAYLOAD_MODE mode;
+   // คูณทุก target_volume · **สูงสุด 1.0** — เกิน 1 จะเป็นการ 'ผ่อน' ซึ่งผิดกฎเหล็ก จึงบังคับเพดานที่ schema · มีผลเฉพาะ mode SCALED
+   double scale_factor;
+   // รหัสกฎที่ตรวจได้ เช่น P1_FARM_DAILY_LOSS_WARNING, P2_FARM_MAX_DD_BREACH, P4_CORRELATED_RISK — ห้ามเป็นข้อความอิสระ ต้องจับคู่กับ risk_events.rule ใน DB
+   string reason;
+   // อ่านให้คนเข้าใจ เช่น 'farm day_pl = -1.6% (warn at -1.5%)'
+   bool   detail_present;
+   bool   detail_is_null;
+   string detail;
+   // ISO-8601 UTC ลงท้าย Z เท่านั้น — ห้าม offset แบบ +07:00 และห้ามไม่มี timezone. เศษวินาที 0–3 หลัก
+   bool   expires_at_present;
+   bool   expires_at_is_null;
+   string expires_at;
+   // ใช้เฉพาะ mode FLATTEN · **array ว่าง = ทุก symbol** (ไม่ใช่ไม่ทำอะไร) — จุดที่พลาดง่ายที่สุดใน message นี้
+   bool   flatten_symbols_present;
+   string flatten_symbols[];
+
+   void Free()
+   {
+      raw_json = "";
+      detail_present = false;
+      detail_is_null = false;
+      expires_at_present = false;
+      expires_at_is_null = false;
+      flatten_symbols_present = false;
+      ArrayResize(flatten_symbols, 0);
+   }
+};
+
+struct FarmIntentPayloadProvenance
+{
+   string strategy_id;
+   // เวลาที่ brain ตัดสินใจ — ใช้วัด decision→fill latency
+   string decided_at;
+   // P9 sanity: ต้องอยู่ใน [0,1] เท่านั้น นอกช่วง = model เพี้ยน reject + alert
+   bool   confidence_present;
+   bool   confidence_is_null;
+   double confidence;
+   // hash ของ feature vector ที่ใช้ตัดสิน — runtime ต้อง assert ว่าตรงกับตอน train (SPEC-031)
+   bool   feature_hash_present;
+   bool   feature_hash_is_null;
+   string feature_hash;
+   // null = rule-based ไม่มี model (เช่น ema_baseline ใน Phase 1)
+   bool   model_version_present;
+   bool   model_version_is_null;
+   string model_version;
+   bool   news_state_present;
+   bool   news_state_is_null;
+   ENUM_FARM_INTENTPAYLOADPROVENANCE_NEWS_STATE news_state;
+   bool   regime_present;
+   bool   regime_is_null;
+   string regime;
+   // scale_factor ที่ถูกคูณไปแล้ว (P7 regime × RISK_DIRECTIVE) — บันทึกไว้เพื่อย้อนดูว่าโดนหั่นเท่าไร
+   bool   risk_scale_applied_present;
+   bool   risk_scale_applied_is_null;
+   double risk_scale_applied;
+
+   void Free()
+   {
+      confidence_present = false;
+      confidence_is_null = false;
+      feature_hash_present = false;
+      feature_hash_is_null = false;
+      model_version_present = false;
+      model_version_is_null = false;
+      news_state_present = false;
+      news_state_is_null = false;
+      regime_present = false;
+      regime_is_null = false;
+      risk_scale_applied_present = false;
+      risk_scale_applied_is_null = false;
+   }
+};
+
+// invariant ที่ schema บังคับไม่ได้: sl_price ต้องอยู่ฝั่งถูกของราคาปัจจุบัน (long → sl < price · short → sl > price) และห่างเกิน stops_level — P9 ต้องเช็คก่อนส่ง ไม่ใช่ปล่อยให้โบรกเกอร์ reject
+struct FarmIntentPayload
+{
+   string raw_json;
+   // dedupe key — EA เก็บ cache ≥ 1000 รายการ · id ซ้ำ → ทิ้งแล้วตอบ DUPLICATE **ห้ามทำซ้ำ** เพราะทำซ้ำ = order ซ้ำ = เงินหาย
+   string intent_id;
+   // ชื่อ symbol ตามที่โบรกเกอร์ใช้ **รวม suffix** เช่น EURUSD.iux — ห้าม normalize ที่ชั้น wire. เจตนาไม่ทำเป็น enum เพราะรายชื่อที่อนุญาตเป็น config ไม่ใช่ protocol (ดู SPEC-064 SymbolRegistry)
+   string symbol;
+   // **net position ที่ต้องการ** ไม่ใช่ขนาด order · บวก = long · ลบ = short · 0 = flatten symbol นี้ทั้งหมด. เทียบกับ owned_net ด้วย tolerance volume_step/2 ห้ามใช้ ==
+   double target_volume;
+   // R15 · เกินแล้ว **ยกเลิก ห้าม retry**
+   long max_slippage_points;
+   // R9 บังคับมีค่าเมื่อ target_volume ≠ 0 · apply ค่าเดียวกันกับ **ทุก ticket** ที่เป็นเจ้าของใน symbol นี้ (ADR-001 §5) · null เมื่อ target_volume = 0
+   bool   sl_price_is_null;
+   double sl_price;
+   // ราคาที่อาจไม่มี (ไม่ตั้ง SL/TP) — null ไม่ใช่ 0. 0 แปลว่า 'ราคาศูนย์' ซึ่งเป็นไปไม่ได้ จึงต้องแยกให้ชัด
+   bool   tp_price_is_null;
+   double tp_price;
+   // เลยแล้ว → ทิ้ง intent ตอบ EXPIRED. เทียบกับ **ts_server** ไม่ใช่เวลา local · ห้าม retry ขั้นที่ 2 ของ flip หลังเลยเวลานี้
+   string valid_until;
+   // NORMAL = รอ spread ปกติได้ ≤ 30s · IMMEDIATE = ส่งเลย · PASSIVE = limit order **Phase 6+ ยังไม่ implement** ได้รับตอนนี้ให้ตอบ REJECTED_INVALID
+   ENUM_FARM_INTENTPAYLOAD_URGENCY urgency;
+   // **ต้องบันทึกลง DB ทุกครั้ง** เพื่อย้อนได้ว่า trade นี้มาจาก model ไหน — เป็นหลักฐาน audit ห้าม UPDATE/DELETE
+   FarmIntentPayloadProvenance provenance;
+
+   void Free()
+   {
+      raw_json = "";
+      sl_price_is_null = false;
+      tp_price_is_null = false;
+      provenance.Free();
+   }
+};
+
+struct FarmIntentAckPayloadActionsPlannedItem
+{
+   // CLOSE_BY ใช้ได้เฉพาะเมื่อ symbol.order_mode_closeby = true
+   ENUM_FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_OP op;
+   ENUM_FARM_INTENTACKPAYLOADACTIONSPLANNEDITEM_SIDE side;
+   // ปริมาณเป็น lot **ค่าเป็นบวกเสมอ** — ทิศทางอยู่ที่ field side. ห้ามเทียบด้วย == ให้ใช้ tolerance volume_step/2
+   double volume;
+   // null เมื่อ op = OPEN (ยังไม่มี ticket) · ต้องไม่ null สำหรับ CLOSE/CLOSE_PARTIAL/MODIFY_SLTP
+   bool   ticket_is_null;
+   long ticket;
+
+   void Free()
+   {
+      ticket_is_null = false;
+   }
+};
+
+// invariant: status=ACCEPTED → actions_planned ต้องไม่ว่าง · status=NOOP → actions_planned ต้องว่าง · ผลรวมของ actions ต้องทำให้ owned_net ไปถึง volume_clamped_to (หรือ volume_target ถ้าไม่ clamp) ภายใน tolerance volume_step/2
+struct FarmIntentAckPayload
+{
+   string raw_json;
+   // echo กลับจาก INTENT (หรือ directive_id จาก RISK_DIRECTIVE)
+   string intent_id;
+   // NOOP = target ตรงกับ owned_net อยู่แล้ว ห้ามส่ง order · ANOMALY_INTERNAL_HEDGE = พบ long+short พร้อมกัน (R18) ต้อง net ออกแล้ว alert
+   ENUM_FARM_INTENTACKPAYLOAD_STATUS status;
+   // owned_net ก่อนทำ (N)
+   double volume_before;
+   // target_volume ที่ขอมา (T)
+   double volume_target;
+   // ลดเกินที่สั่งเพราะ leftover guard (ADR-001 §7: เหลือ < volume_min → ปิดทั้งใบ) · 0.0 ถ้าไม่มี · overshoot = ปลอดภัยกว่า ยอมรับได้ · undershoot = ไม่ยอมรับ
+   double overshoot_volume;
+   // **เรียงตามลำดับที่จะทำจริง** — flip ต้องเป็น CLOSE ก่อน OPEN เสมอ ห้ามสลับ (ADR-001 §2) · ว่างได้เมื่อ status = NOOP/EXPIRED/DUPLICATE/REJECTED_*
+   FarmIntentAckPayloadActionsPlannedItem actions_planned[];
+   // ต้องไม่ null เมื่อ status ขึ้นต้นด้วย REJECTED_ หรือเป็น ANOMALY_* · ใช้ rule id ที่ตรวจได้ เช่น R1_RISK_TOO_SMALL_FOR_MIN_LOT, R5_SPREAD_TOO_WIDE, R9_MISSING_SL
+   bool   reason_present;
+   bool   reason_is_null;
+   string reason;
+   // net position: บวก = long · ลบ = short · 0 = flat. ใช้เฉพาะ INTENT.target_volume และ STATE.owned_net
+   bool   volume_clamped_to_present;
+   bool   volume_clamped_to_is_null;
+   double volume_clamped_to;
+
+   void Free()
+   {
+      raw_json = "";
+      for(int i = 0; i < ArraySize(actions_planned); i++) actions_planned[i].Free();
+      ArrayResize(actions_planned, 0);
+      reason_present = false;
+      reason_is_null = false;
+      volume_clamped_to_present = false;
+      volume_clamped_to_is_null = false;
+   }
+};
+
+struct FarmHelloPayloadSymbol
+{
+   // ชื่อ symbol ตามที่โบรกเกอร์ใช้ **รวม suffix** เช่น EURUSD.iux — ห้าม normalize ที่ชั้น wire. เจตนาไม่ทำเป็น enum เพราะรายชื่อที่อนุญาตเป็น config ไม่ใช่ protocol (ดู SPEC-064 SymbolRegistry)
+   string name;
+   long digits;
+   double point;
+   double tick_size;
+   // มูลค่า 1 tick ต่อ 1 lot ในสกุลของบัญชี — ⚠️ คู่ที่ quote currency ≠ สกุลบัญชี (USDJPY, USDCAD) ค่านี้แปรตาม rate ห้ามใช้ตรงๆ
+   double tick_value;
+   // FX = 100000 · XAUUSD = 100 oz — ต่างกันคนละ order of magnitude
+   double contract_size;
+   // ปริมาณเป็น lot **ค่าเป็นบวกเสมอ** — ทิศทางอยู่ที่ field side. ห้ามเทียบด้วย == ให้ใช้ tolerance volume_step/2
+   double volume_min;
+   // ปริมาณเป็น lot **ค่าเป็นบวกเสมอ** — ทิศทางอยู่ที่ field side. ห้ามเทียบด้วย == ให้ใช้ tolerance volume_step/2
+   double volume_max;
+   double volume_step;
+   // ระยะเป็น point (ไม่ใช่ pip) — 1 pip = 10 point บน symbol 5 หลัก
+   long stops_level;
+   // ระยะเป็น point (ไม่ใช่ pip) — 1 pip = 10 point บน symbol 5 หลัก
+   long freeze_level;
+   double swap_long;
+   double swap_short;
+   ENUM_FARM_HELLOPAYLOADSYMBOL_TRADE_MODE trade_mode;
+   // SYMBOL_ORDER_MODE & SYMBOL_ORDER_CLOSEBY — SPEC-011 ใช้ตอน net internal hedge (ADR-001)
+   bool order_mode_closeby;
+
+   void Free()
+   {
+   }
+};
+
+struct FarmHelloPayloadLocalLimits
+{
+   // R2
+   double max_lot_per_order;
+   // R3a — เพดาน |owned_net| ต่อ symbol
+   double max_net_volume_per_symbol;
+   // R3b — anti-bug guard ไม่ใช่กฎ risk
+   long max_tickets_per_symbol;
+   // R4 — นับ ticket ทั้งบัญชีที่เป็นเจ้าของ
+   long max_total_tickets;
+   // R5 — ต่อ symbol
+   long max_spread_points;
+   // R6
+   double daily_loss_pct;
+   // R7 soft
+   double max_dd_pct;
+
+   void Free()
+   {
+   }
+};
+
+struct FarmHelloPayloadBrokerTime
+{
+   // broker − UTC เป็นวินาที · บวก = broker เร็วกว่า UTC (เช่น +10800 = GMT+3) · ปัดเป็นทวีคูณของ 900 แล้ว
+   long utc_offset_sec;
+   // ISO-8601 UTC ลงท้าย Z เท่านั้น — ห้าม offset แบบ +07:00 และห้ามไม่มี timezone. เศษวินาที 0–3 หลัก
+   string detected_at;
+   // INFERRED_SERVER_MINUS_GMT = TimeTradeServer() − TimeGMT() แล้วปัด (วิธีมาตรฐาน) · PLATFORM_API สงวนไว้ถ้าอนาคตมี API ตรงๆ — ห้ามใช้จนกว่าจะได้อนุมัติ (SPEC-063 Q1)
+   ENUM_FARM_HELLOPAYLOADBROKERTIME_SOURCE source;
+   // TimeDaylightSavings() ของเครื่อง VPS — diagnostic เท่านั้น เหตุผลเดียวกับ local_gmt_offset_sec
+   bool   local_dst_sec_present;
+   bool   local_dst_sec_is_null;
+   long local_dst_sec;
+   // TimeGMTOffset() ของ **เครื่อง VPS ไม่ใช่ของ broker** — ส่งขึ้นมาเพื่อ diagnose นาฬิกา VPS ผิด ห้ามใช้คำนวณเวลา broker
+   bool   local_gmt_offset_sec_present;
+   bool   local_gmt_offset_sec_is_null;
+   long local_gmt_offset_sec;
+
+   void Free()
+   {
+      local_dst_sec_present = false;
+      local_dst_sec_is_null = false;
+      local_gmt_offset_sec_present = false;
+      local_gmt_offset_sec_is_null = false;
+   }
+};
+
+struct FarmHelloPayloadAccount
+{
+   long login;
+   string server;
+   string currency;
+   long leverage;
+   // จำนวนเงินในสกุลของบัญชี — ติดลบได้ (ขาดทุน/commission/swap)
+   double balance;
+   // จำนวนเงินในสกุลของบัญชี — ติดลบได้ (ขาดทุน/commission/swap)
+   double equity;
+   bool is_demo;
+   // ADR-001 บังคับ RETAIL_HEDGING เท่านั้น. เจตนาไม่ทำเป็น const เพื่อให้ค่าที่ผิดส่งขึ้นมาได้ → gateway reject session พร้อม log ค่าจริง ดีกว่า schema parse error ที่ไม่บอกว่าเจออะไร
+   ENUM_FARM_HELLOPAYLOADACCOUNT_MARGIN_MODE margin_mode;
+
+   void Free()
+   {
+   }
+};
+
+// broker_time เป็น optional (ไม่อยู่ใน required) เพราะเพิ่มมาทีหลังใน SPEC-063 — ตาม §7 การเพิ่ม optional field ไม่ breaking ไม่ต้อง bump v. เมื่อ SPEC-063 merge แล้วให้ย้ายเข้า required ในการ bump ครั้งถัดไป
 struct FarmHelloPayload
 {
    string raw_json;
+   // เทียบกับ env FARM_TOKEN ฝั่ง gateway. ⚠️ ห้าม log ค่านี้ทั้งสองฝั่ง — mask เป็น *** ตอน log
+   string token;
+   string ea_version;
+   // MetaEditor/terminal build — ต่ำกว่า 3800 ไม่รองรับ
+   long terminal_build;
+   FarmHelloPayloadAccount account;
+   // สเปกจริงจากโบรกเกอร์ ณ เวลา HELLO — ต้องอ่านจาก SymbolInfoDouble()/SymbolInfoInteger() ทุกครั้ง ห้าม hardcode (ADR-002 §2.6)
+   FarmHelloPayloadSymbol symbol;
+   // ชุดที่ตัดสินใน ADR-002. ⚠️ MQL5 EnumToString(PERIOD_H1) คืน "PERIOD_H1" — ต้องตัด prefix "PERIOD_" ออกก่อนส่ง. เพิ่มค่าใหม่ = ไม่ breaking (ไม่ต้อง bump v)
+   ENUM_FARM_HELLOPAYLOAD_TIMEFRAME timeframe;
+   // ตัวเล็ก + _ เท่านั้น ใช้เป็น key ใน P6 strategy_allocation
+   string strategy_id;
+   // POSITION_MAGIC ที่ EA เป็นเจ้าของ — ownership ทั้งหมดตัดสินจาก (magic, symbol) ตาม ADR-001
+   long magic;
+   // ค่า R-rule ที่ EA บังคับอยู่ ส่งขึ้นเพื่อให้ brain **รู้** เท่านั้น — brain แก้ไม่ได้ ค่ามาจาก EA input เท่านั้น
+   FarmHelloPayloadLocalLimits local_limits;
+   // ผลการตรวจ timezone ของ broker จาก CBrokerTime (SPEC-063) — **EA เป็นผู้ตรวจแหล่งเดียว brain ห้ามคำนวณเอง** (ปิดช่องว่าง G6)
+   bool   broker_time_present;
+   FarmHelloPayloadBrokerTime broker_time;
+
+   void Free()
+   {
+      raw_json = "";
+      account.Free();
+      symbol.Free();
+      local_limits.Free();
+      broker_time_present = false;
+      broker_time.Free();
+   }
+};
+
+struct FarmHelloAckPayloadInitialDirective
+{
+   // เรียงจากผ่อนไปเข้ม. กฎเหล็ก: brain สั่งเข้มกว่า EA ได้ แต่ผ่อนกว่าไม่ได้ — effective = max(strictness)
+   ENUM_FARM_HELLOACKPAYLOADINITIALDIRECTIVE_MODE mode;
+   double scale_factor;
+
+   void Free()
+   {
+   }
 };
 
 struct FarmHelloAckPayload
 {
    string raw_json;
+   bool accepted;
+   // ISO-8601 UTC ลงท้าย Z เท่านั้น — ห้าม offset แบบ +07:00 และห้ามไม่มี timezone. เศษวินาที 0–3 หลัก
+   string server_time;
+   string brain_version;
+   // acct-{login}-{symbol}-{timeframe} เช่น acct-8123456-EURUSD.iux-H1
+   bool   assigned_session_id_present;
+   bool   assigned_session_id_is_null;
+   string assigned_session_id;
+   // โหมดเริ่มต้นตอนต่อ — EA ต้อง apply ทันทีก่อนเทรด ห้ามสมมติว่าเป็น NORMAL
+   bool   initial_directive_present;
+   FarmHelloAckPayloadInitialDirective initial_directive;
+   bool   reject_reason_present;
+   bool   reject_reason_is_null;
+   ENUM_FARM_HELLOACKPAYLOAD_REJECT_REASON reject_reason;
+
+   void Free()
+   {
+      raw_json = "";
+      assigned_session_id_present = false;
+      assigned_session_id_is_null = false;
+      initial_directive_present = false;
+      initial_directive.Free();
+      reject_reason_present = false;
+      reject_reason_is_null = false;
+   }
+};
+
+struct FarmHeartbeatPayloadWire
+{
+   // ค่าที่ส่งมาได้จริงมีแต่ READY (ส่งได้ก็ต่อเมื่อ connected) — ค่าอื่นมีไว้ให้ log/replay ใช้
+   ENUM_FARM_HEARTBEATPAYLOADWIRE_STATE state;
+   long send_queue_depth;
+   long messages_sent;
+   long messages_recv;
+   // เพิ่มขึ้นเรื่อยๆ = ท่อไม่นิ่ง ต้อง alert
+   long reconnect_count;
+   // > 0 = queue เต็มจนต้อง drop ตัวเก่าสุด = ข้อมูลหาย ต้อง alert
+   long bytes_dropped;
+   // ใช้กับ R16 brain timeout
+   long seconds_since_last_inbound;
+   // optional (SPEC-063) — offset ที่ CBrokerTime ตรวจได้ · ส่งทุก heartbeat เพื่อให้ brain เห็น DST เปลี่ยนทันทีไม่ต้องรอ HELLO ใหม่ · null = IsValid()=false ซึ่งแปลว่า EA ห้ามเทรด. ★ brain ต้องอ่านค่านี้ **ห้ามเดา offset เอง** (G6 — แหล่งความจริงเดียว)
+   bool   broker_utc_offset_sec_present;
+   bool   broker_utc_offset_sec_is_null;
+   long broker_utc_offset_sec;
+   // optional — Pump() p99 หน่วยไมโครวินาที ต้อง < 20000 ตาม SPEC-001 §6
+   bool   pump_p99_us_present;
+   long pump_p99_us;
+
+   void Free()
+   {
+      broker_utc_offset_sec_present = false;
+      broker_utc_offset_sec_is_null = false;
+      pump_p99_us_present = false;
+   }
 };
 
 struct FarmHeartbeatPayload
 {
    string raw_json;
+   // นับขึ้นต่อ session เริ่มที่ 1 — brain ใช้ตรวจว่าขาดช่วงไหม (gap = packet loss หรือ EA หยุด)
+   long seq;
+   // metric ของชั้น transport — ใช้ debug และขึ้น dashboard
+   FarmHeartbeatPayloadWire wire;
+
+   void Free()
+   {
+      raw_json = "";
+      wire.Free();
+   }
 };
 
 struct FarmHeartbeatAckPayload
 {
    string raw_json;
+   // echo กลับ seq เดิม — EA จับคู่เพื่อนับว่าขาด ack กี่ครั้ง ห้ามนับแค่จำนวน ack ที่ได้
+   long seq;
+   // ISO-8601 UTC ลงท้าย Z เท่านั้น — ห้าม offset แบบ +07:00 และห้ามไม่มี timezone. เศษวินาที 0–3 หลัก
+   string server_time;
+   // optional · false = brain ยังตอบได้แต่รู้ตัวว่าไม่พร้อมตัดสินใจ (เช่น feature store ค้าง) → EA ควรเข้า SafeMode ไม่ใช่รอ timeout ครบ 10s
+   bool   brain_healthy_present;
+   bool brain_healthy;
+
+   void Free()
+   {
+      raw_json = "";
+      brain_healthy_present = false;
+   }
 };
 
-struct FarmBarPayload
-{
-   string raw_json;
-};
-
-struct FarmIntentPayload
-{
-   string raw_json;
-};
-
-struct FarmIntentAckPayload
-{
-   string raw_json;
-};
-
+// invariant: result=FILLED → volume_filled == volume_requested (tolerance volume_step/2) และ ticket ไม่ null · result=REJECTED → volume_filled == 0 · result=PARTIAL → 0 < volume_filled < volume_requested
 struct FarmExecReportPayload
 {
    string raw_json;
+   // ULID 26 ตัวอักษร Crockford base32 (ไม่มี I L O U) = 48-bit ms timestamp + 80-bit random. ต้อง monotonic ต่อ session และ **ไม่ซ้ำข้าม EA restart** เพราะเป็น dedupe key
+   string intent_id;
+   ENUM_FARM_EXECREPORTPAYLOAD_OP op;
+   // PARTIAL ที่เกิดจาก flip ล้มขั้น 2 = อยู่ที่ flat ซึ่งปลอดภัยกว่าเป้าหมาย → ยอมรับได้ ให้ brain ตัดสินใจส่ง intent ใหม่ **ห้าม EA retry เอง**
+   ENUM_FARM_EXECREPORTPAYLOAD_RESULT result;
+   // MT5 trade retcode เช่น 10009 = TRADE_RETCODE_DONE · **ต้องบันทึกค่าดิบ** ไม่ใช่แปลงเป็น bool สำเร็จ/ไม่สำเร็จ เพราะแต่ละ code ต้องจัดการต่างกัน
+   long retcode;
+   // ชื่อ constant เช่น TRADE_RETCODE_DONE — ให้คนอ่าน log เข้าใจไม่ต้องเปิดตาราง
+   string retcode_text;
+   ENUM_FARM_EXECREPORTPAYLOAD_SIDE side;
+   // ปริมาณเป็น lot **ค่าเป็นบวกเสมอ** — ทิศทางอยู่ที่ field side. ห้ามเทียบด้วย == ให้ใช้ tolerance volume_step/2
+   double volume_requested;
+   // 0 เมื่อ REJECTED · < requested เมื่อ PARTIAL
+   double volume_filled;
+   // ครั้งที่เท่าไร เริ่มที่ 1 · R17 นับ order ที่ **ส่ง** ไม่ใช่ที่สำเร็จ — bug ที่ reject แล้ว retry รัวคือเคสที่ต้องกัน
+   long attempt;
+   // จำนวนเงินในสกุลของบัญชี — ติดลบได้ (ขาดทุน/commission/swap)
+   bool   commission_present;
+   double commission;
+   // ต้องไม่ null เมื่อ result เป็น REJECTED/TIMEOUT
+   bool   error_present;
+   bool   error_is_null;
+   string error;
+   // เวลาจากส่ง order ถึงได้ผล — SPEC-001 §6 กำหนด p95 intent→filled < 500ms
+   bool   latency_ms_present;
+   bool   latency_ms_is_null;
+   long latency_ms;
+   // null เมื่อไม่ได้ fill
+   bool   price_filled_present;
+   bool   price_filled_is_null;
+   double price_filled;
+   // ราคาที่อาจไม่มี (ไม่ตั้ง SL/TP) — null ไม่ใช่ 0. 0 แปลว่า 'ราคาศูนย์' ซึ่งเป็นไปไม่ได้ จึงต้องแยกให้ชัด
+   bool   price_requested_present;
+   bool   price_requested_is_null;
+   double price_requested;
+   // **มีเครื่องหมายได้** — ลบ = ได้ราคาดีกว่าที่ขอ. ถ้าเก็บเป็น abs จะมองไม่เห็นว่าโบรกเกอร์ให้ slippage ข้างเดียวหรือไม่ ซึ่งเป็นสัญญาณโบรกเกอร์ไม่ดี
+   bool   slippage_points_present;
+   bool   slippage_points_is_null;
+   long slippage_points;
+   // ระยะเป็น point (ไม่ใช่ pip) — 1 pip = 10 point บน symbol 5 หลัก
+   bool   spread_at_send_points_present;
+   long spread_at_send_points;
+   // จำนวนเงินในสกุลของบัญชี — ติดลบได้ (ขาดทุน/commission/swap)
+   bool   swap_present;
+   double swap;
+   // null เมื่อ order ไม่เกิด (REJECTED/TIMEOUT) — ⚠️ TIMEOUT + ticket null **ไม่ได้แปลว่า order ไม่เข้า** อาจเข้าแล้วแต่ตอบกลับไม่ทัน ต้อง reconcile ตอน OnInit (SPEC-017)
+   bool   ticket_present;
+   bool   ticket_is_null;
+   long ticket;
+
+   void Free()
+   {
+      raw_json = "";
+      commission_present = false;
+      error_present = false;
+      error_is_null = false;
+      latency_ms_present = false;
+      latency_ms_is_null = false;
+      price_filled_present = false;
+      price_filled_is_null = false;
+      price_requested_present = false;
+      price_requested_is_null = false;
+      slippage_points_present = false;
+      slippage_points_is_null = false;
+      spread_at_send_points_present = false;
+      swap_present = false;
+      ticket_present = false;
+      ticket_is_null = false;
+   }
 };
 
-struct FarmRiskDirectivePayload
-{
-   string raw_json;
-};
-
-struct FarmConfigUpdatePayload
-{
-   string raw_json;
-};
-
+// invariant: severity=FATAL → fatal=true · severity=WARN → fatal=false · JSON ที่ parse ไม่ได้ให้ log WARN แล้วข้ามบรรทัดนั้น **ห้ามปิด connection** (SPEC-001 §4)
 struct FarmErrorPayload
 {
    string raw_json;
+   // รหัสคงที่ UPPER_SNAKE — ใช้ group/alert ได้. ที่ใช้แล้ว: PROTOCOL_FRAME_TOO_LARGE · PROTOCOL_VERSION_MISMATCH · JSON_PARSE_FAILED · EA_SHUTDOWN · SOCKET_SEND_FAILED · SEND_QUEUE_OVERFLOW · HELLO_ACK_TIMEOUT · MARGIN_MODE_INVALID · SYMBOL_SELECT_FAILED
+   string code;
+   ENUM_FARM_ERRORPAYLOAD_SEVERITY severity;
+   // ต้องมี **ตัวเลขจริงที่วัดได้** เช่น 'frame 71204 bytes exceeds 65536' ไม่ใช่ 'frame too large' — ข้อความที่ไม่มีตัวเลข debug ไม่ได้
+   string message;
+   // true → ปิด session ทันทีหลังส่ง. ต้องสอดคล้องกับ severity: severity=FATAL → fatal=true
+   bool fatal;
+   // ข้อมูลประกอบ เช่น {"type":"BAR"} · ⚠️ ห้ามใส่ token หรือข้อมูลลับ
+   bool   context_present;
+   bool   context_is_null;
+   string context_keys[];
+   string context_values[];
+
+   void Free()
+   {
+      raw_json = "";
+      context_present = false;
+      context_is_null = false;
+      ArrayResize(context_keys, 0);
+      ArrayResize(context_values, 0);
+   }
+};
+
+struct FarmConfigUpdatePayloadSettings
+{
+   bool   bar_backfill_count_present;
+   long bar_backfill_count;
+   bool   heartbeat_sec_present;
+   long heartbeat_sec;
+   bool   state_interval_sec_present;
+   long state_interval_sec;
+   // เท่ากับ InpVerboseLog
+   bool   verbose_log_present;
+   bool verbose_log;
+
+   void Free()
+   {
+      bar_backfill_count_present = false;
+      heartbeat_sec_present = false;
+      state_interval_sec_present = false;
+      verbose_log_present = false;
+   }
+};
+
+// ★ กฎเหล็ก: settings ห้ามมี risk parameter ใดๆ เลย (R1–R19, lot, SL, spread, daily loss, DD, magic) — ค่าเหล่านั้นมาจาก EA input **เท่านั้น** ตาม 02-contracts §4.1 และ 03-risk-spec L1. ถ้าอนาคตอยากให้ brain สั่งเข้มขึ้น ให้ใช้ RISK_DIRECTIVE ซึ่งเข้มได้แต่ผ่อนไม่ได้ ไม่ใช่ CONFIG_UPDATE ที่เปลี่ยนค่าได้อิสระทั้งสองทาง
+struct FarmConfigUpdatePayload
+{
+   string raw_json;
+   // ULID 26 ตัวอักษร Crockford base32 (ไม่มี I L O U) = 48-bit ms timestamp + 80-bit random. ต้อง monotonic ต่อ session และ **ไม่ซ้ำข้าม EA restart** เพราะเป็น dedupe key
+   string config_id;
+   // ⚠️ **additionalProperties=false โดยเจตนา — ต่างจาก message อื่นทั้งหมด** เพราะที่นี่ unknown field = ความพยายามเปลี่ยนค่าที่ไม่ได้อนุญาต ต้อง reject ไม่ใช่ข้าม
+   FarmConfigUpdatePayloadSettings settings;
+   // ISO-8601 UTC ลงท้าย Z เท่านั้น — ห้าม offset แบบ +07:00 และห้ามไม่มี timezone. เศษวินาที 0–3 หลัก
+   bool   apply_at_present;
+   bool   apply_at_is_null;
+   string apply_at;
+
+   void Free()
+   {
+      raw_json = "";
+      settings.Free();
+      apply_at_present = false;
+      apply_at_is_null = false;
+   }
+};
+
+// invariant ที่ schema บังคับไม่ได้ ต้อง validate ในโค้ด: low <= open <= high · low <= close <= high · spread_points_avg <= spread_points_max · bar_time ต้องหารลงตัวด้วยขนาด timeframe
+struct FarmBarPayload
+{
+   string raw_json;
+   // ชื่อ symbol ตามที่โบรกเกอร์ใช้ **รวม suffix** เช่น EURUSD.iux — ห้าม normalize ที่ชั้น wire. เจตนาไม่ทำเป็น enum เพราะรายชื่อที่อนุญาตเป็น config ไม่ใช่ protocol (ดู SPEC-064 SymbolRegistry)
+   string symbol;
+   // ชุดที่ตัดสินใน ADR-002. ⚠️ MQL5 EnumToString(PERIOD_H1) คืน "PERIOD_H1" — ต้องตัด prefix "PERIOD_" ออกก่อนส่ง. เพิ่มค่าใหม่ = ไม่ breaking (ไม่ต้อง bump v)
+   ENUM_FARM_BARPAYLOAD_TIMEFRAME timeframe;
+   // เวลาเปิด bar (ไม่ใช่เวลาปิด) แปลงเป็น UTC จริงแล้ว — เป็นส่วนของ primary key ใน DB (broker, symbol, timeframe, bar_time)
+   string bar_time;
+   // ราคา — ต้องมากกว่า 0 เสมอ
+   double open;
+   // ราคา — ต้องมากกว่า 0 เสมอ
+   double high;
+   // ราคา — ต้องมากกว่า 0 เสมอ
+   double low;
+   // ราคา — ต้องมากกว่า 0 เสมอ
+   double close;
+   long tick_volume;
+   // 0 บนบัญชี FX retail ปกติ — โบรกเกอร์ไม่ให้ volume จริง
+   long real_volume;
+   // EA เก็บสถิติเองจาก tick ระหว่าง bar
+   long spread_points_avg;
+   // ใช้ตั้งเพดาน R5 จากข้อมูลจริง ไม่ใช่ค่าโฆษณาโบรกเกอร์
+   long spread_points_max;
+   // Phase 1–3 ส่งได้เฉพาะ true. ตั้งเป็น const เพื่อกันการส่ง bar ที่ยังไม่ปิดเข้า feature pipeline ซึ่งเป็นต้นเหตุ look-ahead bias. จะรองรับ false ต้อง bump v
+   bool is_final;
+
+   void Free()
+   {
+      raw_json = "";
+   }
 };
 
 string FarmMsgTypeToString(const ENUM_FARM_MSG_TYPE v)
@@ -1983,292 +3368,2111 @@ string FarmCanonicalizePayloadJson(const ENUM_FARM_MSG_TYPE msg_type, CFarmJsonV
    return FarmJsonCanonicalValue(payload);
 }
 
-bool FarmParsePayloadJson(const ENUM_FARM_MSG_TYPE msg_type, const string json, string &out_json)
+void FarmFillStatePayloadPositionsItem(CFarmJsonValue *root, FarmStatePayloadPositionsItem &out)
+{
+   out.Free();
+   CFarmJsonValue *v_ticket = (root != NULL ? root.Get("ticket") : NULL);
+   out.ticket = (v_ticket != NULL && v_ticket.type == FARM_JSON_NUMBER ? v_ticket.integer_value : 0);
+   CFarmJsonValue *v_symbol = (root != NULL ? root.Get("symbol") : NULL);
+   out.symbol = (v_symbol != NULL && v_symbol.type == FARM_JSON_STRING ? v_symbol.string_value : "");
+   CFarmJsonValue *v_side = (root != NULL ? root.Get("side") : NULL);
+   bool ok_side = false;
+   out.side = FarmStatepayloadpositionsitemSideFromString((v_side != NULL && v_side.type == FARM_JSON_STRING ? v_side.string_value : ""), ok_side);
+   CFarmJsonValue *v_volume = (root != NULL ? root.Get("volume") : NULL);
+   out.volume = (v_volume != NULL && v_volume.type == FARM_JSON_NUMBER ? v_volume.number_value : 0.0);
+   CFarmJsonValue *v_price_open = (root != NULL ? root.Get("price_open") : NULL);
+   out.price_open = (v_price_open != NULL && v_price_open.type == FARM_JSON_NUMBER ? v_price_open.number_value : 0.0);
+   CFarmJsonValue *v_sl = (root != NULL ? root.Get("sl") : NULL);
+   out.sl_is_null = (v_sl != NULL && v_sl.type == FARM_JSON_NULL);
+   if(out.sl_is_null) { }
+   else
+   {
+      out.sl = (v_sl != NULL && v_sl.type == FARM_JSON_NUMBER ? v_sl.number_value : 0.0);
+   }
+   CFarmJsonValue *v_tp = (root != NULL ? root.Get("tp") : NULL);
+   out.tp_is_null = (v_tp != NULL && v_tp.type == FARM_JSON_NULL);
+   if(out.tp_is_null) { }
+   else
+   {
+      out.tp = (v_tp != NULL && v_tp.type == FARM_JSON_NUMBER ? v_tp.number_value : 0.0);
+   }
+   CFarmJsonValue *v_profit = (root != NULL ? root.Get("profit") : NULL);
+   out.profit = (v_profit != NULL && v_profit.type == FARM_JSON_NUMBER ? v_profit.number_value : 0.0);
+   CFarmJsonValue *v_swap = (root != NULL ? root.Get("swap") : NULL);
+   out.swap = (v_swap != NULL && v_swap.type == FARM_JSON_NUMBER ? v_swap.number_value : 0.0);
+   CFarmJsonValue *v_magic = (root != NULL ? root.Get("magic") : NULL);
+   out.magic = (v_magic != NULL && v_magic.type == FARM_JSON_NUMBER ? v_magic.integer_value : 0);
+   CFarmJsonValue *v_time_open = (root != NULL ? root.Get("time_open") : NULL);
+   out.time_open = (v_time_open != NULL && v_time_open.type == FARM_JSON_STRING ? v_time_open.string_value : "");
+   CFarmJsonValue *v_comment = (root != NULL ? root.Get("comment") : NULL);
+   out.comment_present = (v_comment != NULL);
+   if(v_comment == NULL) { }
+   else
+   {
+      out.comment_is_null = (v_comment != NULL && v_comment.type == FARM_JSON_NULL);
+      if(out.comment_is_null) { }
+      else
+      {
+         out.comment = (v_comment != NULL && v_comment.type == FARM_JSON_STRING ? v_comment.string_value : "");
+      }
+   }
+}
+
+void FarmFillStatePayloadPendingOrdersItem(CFarmJsonValue *root, FarmStatePayloadPendingOrdersItem &out)
+{
+   out.Free();
+   CFarmJsonValue *v_ticket = (root != NULL ? root.Get("ticket") : NULL);
+   out.ticket = (v_ticket != NULL && v_ticket.type == FARM_JSON_NUMBER ? v_ticket.integer_value : 0);
+   CFarmJsonValue *v_symbol = (root != NULL ? root.Get("symbol") : NULL);
+   out.symbol = (v_symbol != NULL && v_symbol.type == FARM_JSON_STRING ? v_symbol.string_value : "");
+   CFarmJsonValue *v_type = (root != NULL ? root.Get("type") : NULL);
+   bool ok_type = false;
+   out.type = FarmStatepayloadpendingordersitemTypeFromString((v_type != NULL && v_type.type == FARM_JSON_STRING ? v_type.string_value : ""), ok_type);
+   CFarmJsonValue *v_volume = (root != NULL ? root.Get("volume") : NULL);
+   out.volume = (v_volume != NULL && v_volume.type == FARM_JSON_NUMBER ? v_volume.number_value : 0.0);
+   CFarmJsonValue *v_price_open = (root != NULL ? root.Get("price_open") : NULL);
+   out.price_open = (v_price_open != NULL && v_price_open.type == FARM_JSON_NUMBER ? v_price_open.number_value : 0.0);
+   CFarmJsonValue *v_magic = (root != NULL ? root.Get("magic") : NULL);
+   out.magic = (v_magic != NULL && v_magic.type == FARM_JSON_NUMBER ? v_magic.integer_value : 0);
+   CFarmJsonValue *v_time_setup = (root != NULL ? root.Get("time_setup") : NULL);
+   out.time_setup = (v_time_setup != NULL && v_time_setup.type == FARM_JSON_STRING ? v_time_setup.string_value : "");
+   CFarmJsonValue *v_sl = (root != NULL ? root.Get("sl") : NULL);
+   out.sl_present = (v_sl != NULL);
+   if(v_sl == NULL) { }
+   else
+   {
+      out.sl_is_null = (v_sl != NULL && v_sl.type == FARM_JSON_NULL);
+      if(out.sl_is_null) { }
+      else
+      {
+         out.sl = (v_sl != NULL && v_sl.type == FARM_JSON_NUMBER ? v_sl.number_value : 0.0);
+      }
+   }
+   CFarmJsonValue *v_time_expiration = (root != NULL ? root.Get("time_expiration") : NULL);
+   out.time_expiration_present = (v_time_expiration != NULL);
+   if(v_time_expiration == NULL) { }
+   else
+   {
+      out.time_expiration_is_null = (v_time_expiration != NULL && v_time_expiration.type == FARM_JSON_NULL);
+      if(out.time_expiration_is_null) { }
+      else
+      {
+         out.time_expiration = (v_time_expiration != NULL && v_time_expiration.type == FARM_JSON_STRING ? v_time_expiration.string_value : "");
+      }
+   }
+   CFarmJsonValue *v_tp = (root != NULL ? root.Get("tp") : NULL);
+   out.tp_present = (v_tp != NULL);
+   if(v_tp == NULL) { }
+   else
+   {
+      out.tp_is_null = (v_tp != NULL && v_tp.type == FARM_JSON_NULL);
+      if(out.tp_is_null) { }
+      else
+      {
+         out.tp = (v_tp != NULL && v_tp.type == FARM_JSON_NUMBER ? v_tp.number_value : 0.0);
+      }
+   }
+}
+
+void FarmFillStatePayloadGuard(CFarmJsonValue *root, FarmStatePayloadGuard &out)
+{
+   out.Free();
+   CFarmJsonValue *v_halted = (root != NULL ? root.Get("halted") : NULL);
+   out.halted = (v_halted != NULL && v_halted.type == FARM_JSON_BOOL && v_halted.bool_value);
+   CFarmJsonValue *v_mode = (root != NULL ? root.Get("mode") : NULL);
+   bool ok_mode = false;
+   out.mode = FarmStatepayloadguardModeFromString((v_mode != NULL && v_mode.type == FARM_JSON_STRING ? v_mode.string_value : ""), ok_mode);
+   CFarmJsonValue *v_current_spread_points = (root != NULL ? root.Get("current_spread_points") : NULL);
+   out.current_spread_points = (v_current_spread_points != NULL && v_current_spread_points.type == FARM_JSON_NUMBER ? v_current_spread_points.integer_value : 0);
+   CFarmJsonValue *v_internal_hedge_detected = (root != NULL ? root.Get("internal_hedge_detected") : NULL);
+   out.internal_hedge_detected = (v_internal_hedge_detected != NULL && v_internal_hedge_detected.type == FARM_JSON_BOOL && v_internal_hedge_detected.bool_value);
+   CFarmJsonValue *v_halt_reason = (root != NULL ? root.Get("halt_reason") : NULL);
+   out.halt_reason_present = (v_halt_reason != NULL);
+   if(v_halt_reason == NULL) { }
+   else
+   {
+      out.halt_reason_is_null = (v_halt_reason != NULL && v_halt_reason.type == FARM_JSON_NULL);
+      if(out.halt_reason_is_null) { }
+      else
+      {
+         bool ok_halt_reason = false;
+         out.halt_reason = FarmStatepayloadguardHaltReasonFromString((v_halt_reason != NULL && v_halt_reason.type == FARM_JSON_STRING ? v_halt_reason.string_value : ""), ok_halt_reason);
+      }
+   }
+   CFarmJsonValue *v_halted_until = (root != NULL ? root.Get("halted_until") : NULL);
+   out.halted_until_present = (v_halted_until != NULL);
+   if(v_halted_until == NULL) { }
+   else
+   {
+      out.halted_until_is_null = (v_halted_until != NULL && v_halted_until.type == FARM_JSON_NULL);
+      if(out.halted_until_is_null) { }
+      else
+      {
+         out.halted_until = (v_halted_until != NULL && v_halted_until.type == FARM_JSON_STRING ? v_halted_until.string_value : "");
+      }
+   }
+}
+
+void FarmFillStatePayloadForeignPositions(CFarmJsonValue *root, FarmStatePayloadForeignPositions &out)
+{
+   out.Free();
+   CFarmJsonValue *v_count = (root != NULL ? root.Get("count") : NULL);
+   out.count = (v_count != NULL && v_count.type == FARM_JSON_NUMBER ? v_count.integer_value : 0);
+   CFarmJsonValue *v_symbols = (root != NULL ? root.Get("symbols") : NULL);
+   const int n_symbols = (v_symbols != NULL && v_symbols.type == FARM_JSON_ARRAY ? v_symbols.Size() : 0);
+   ArrayResize(out.symbols, n_symbols);
+   for(int i = 0; i < n_symbols; i++)
+   {
+      CFarmJsonValue *item = v_symbols.At(i);
+      out.symbols[i] = (item != NULL && item.type == FARM_JSON_STRING ? item.string_value : "");
+   }
+   CFarmJsonValue *v_total_volume = (root != NULL ? root.Get("total_volume") : NULL);
+   out.total_volume = (v_total_volume != NULL && v_total_volume.type == FARM_JSON_NUMBER ? v_total_volume.number_value : 0.0);
+   CFarmJsonValue *v_margin_estimate = (root != NULL ? root.Get("margin_estimate") : NULL);
+   out.margin_estimate = (v_margin_estimate != NULL && v_margin_estimate.type == FARM_JSON_NUMBER ? v_margin_estimate.number_value : 0.0);
+}
+
+void FarmFillStatePayload(CFarmJsonValue *root, FarmStatePayload &out)
+{
+   out.Free();
+   out.raw_json = FarmCanonicalState(root);
+   CFarmJsonValue *v_balance = (root != NULL ? root.Get("balance") : NULL);
+   out.balance = (v_balance != NULL && v_balance.type == FARM_JSON_NUMBER ? v_balance.number_value : 0.0);
+   CFarmJsonValue *v_equity = (root != NULL ? root.Get("equity") : NULL);
+   out.equity = (v_equity != NULL && v_equity.type == FARM_JSON_NUMBER ? v_equity.number_value : 0.0);
+   CFarmJsonValue *v_margin_used = (root != NULL ? root.Get("margin_used") : NULL);
+   out.margin_used = (v_margin_used != NULL && v_margin_used.type == FARM_JSON_NUMBER ? v_margin_used.number_value : 0.0);
+   CFarmJsonValue *v_margin_free = (root != NULL ? root.Get("margin_free") : NULL);
+   out.margin_free = (v_margin_free != NULL && v_margin_free.type == FARM_JSON_NUMBER ? v_margin_free.number_value : 0.0);
+   CFarmJsonValue *v_margin_level_pct = (root != NULL ? root.Get("margin_level_pct") : NULL);
+   out.margin_level_pct_is_null = (v_margin_level_pct != NULL && v_margin_level_pct.type == FARM_JSON_NULL);
+   if(out.margin_level_pct_is_null) { }
+   else
+   {
+      out.margin_level_pct = (v_margin_level_pct != NULL && v_margin_level_pct.type == FARM_JSON_NUMBER ? v_margin_level_pct.number_value : 0.0);
+   }
+   CFarmJsonValue *v_equity_hwm = (root != NULL ? root.Get("equity_hwm") : NULL);
+   out.equity_hwm = (v_equity_hwm != NULL && v_equity_hwm.type == FARM_JSON_NUMBER ? v_equity_hwm.number_value : 0.0);
+   CFarmJsonValue *v_day_start_equity = (root != NULL ? root.Get("day_start_equity") : NULL);
+   out.day_start_equity = (v_day_start_equity != NULL && v_day_start_equity.type == FARM_JSON_NUMBER ? v_day_start_equity.number_value : 0.0);
+   CFarmJsonValue *v_day_pl = (root != NULL ? root.Get("day_pl") : NULL);
+   out.day_pl = (v_day_pl != NULL && v_day_pl.type == FARM_JSON_NUMBER ? v_day_pl.number_value : 0.0);
+   CFarmJsonValue *v_day_pl_pct = (root != NULL ? root.Get("day_pl_pct") : NULL);
+   out.day_pl_pct = (v_day_pl_pct != NULL && v_day_pl_pct.type == FARM_JSON_NUMBER ? v_day_pl_pct.number_value : 0.0);
+   CFarmJsonValue *v_positions = (root != NULL ? root.Get("positions") : NULL);
+   const int n_positions = (v_positions != NULL && v_positions.type == FARM_JSON_ARRAY ? v_positions.Size() : 0);
+   ArrayResize(out.positions, n_positions);
+   for(int i = 0; i < n_positions; i++)
+   {
+      CFarmJsonValue *item = v_positions.At(i);
+      FarmFillStatePayloadPositionsItem(item, out.positions[i]);
+   }
+   CFarmJsonValue *v_pending_orders = (root != NULL ? root.Get("pending_orders") : NULL);
+   const int n_pending_orders = (v_pending_orders != NULL && v_pending_orders.type == FARM_JSON_ARRAY ? v_pending_orders.Size() : 0);
+   ArrayResize(out.pending_orders, n_pending_orders);
+   for(int i = 0; i < n_pending_orders; i++)
+   {
+      CFarmJsonValue *item = v_pending_orders.At(i);
+      FarmFillStatePayloadPendingOrdersItem(item, out.pending_orders[i]);
+   }
+   CFarmJsonValue *v_owned_net = (root != NULL ? root.Get("owned_net") : NULL);
+   const int n_owned_net = (v_owned_net != NULL && v_owned_net.type == FARM_JSON_OBJECT ? v_owned_net.Size() : 0);
+   ArrayResize(out.owned_net_keys, n_owned_net);
+   ArrayResize(out.owned_net_values, n_owned_net);
+   for(int i = 0; i < n_owned_net; i++)
+   {
+      out.owned_net_keys[i] = v_owned_net.KeyAt(i);
+      CFarmJsonValue *item = v_owned_net.At(i);
+      out.owned_net_values[i] = (item != NULL && item.type == FARM_JSON_NUMBER ? item.number_value : 0.0);
+   }
+   CFarmJsonValue *v_owned_ticket_count = (root != NULL ? root.Get("owned_ticket_count") : NULL);
+   const int n_owned_ticket_count = (v_owned_ticket_count != NULL && v_owned_ticket_count.type == FARM_JSON_OBJECT ? v_owned_ticket_count.Size() : 0);
+   ArrayResize(out.owned_ticket_count_keys, n_owned_ticket_count);
+   ArrayResize(out.owned_ticket_count_values, n_owned_ticket_count);
+   for(int i = 0; i < n_owned_ticket_count; i++)
+   {
+      out.owned_ticket_count_keys[i] = v_owned_ticket_count.KeyAt(i);
+      CFarmJsonValue *item = v_owned_ticket_count.At(i);
+      out.owned_ticket_count_values[i] = (item != NULL && item.type == FARM_JSON_NUMBER ? item.integer_value : 0);
+   }
+   CFarmJsonValue *v_foreign_positions = (root != NULL ? root.Get("foreign_positions") : NULL);
+   FarmFillStatePayloadForeignPositions(v_foreign_positions, out.foreign_positions);
+   CFarmJsonValue *v_account_margin_mode = (root != NULL ? root.Get("account_margin_mode") : NULL);
+   bool ok_account_margin_mode = false;
+   out.account_margin_mode = FarmStatepayloadAccountMarginModeFromString((v_account_margin_mode != NULL && v_account_margin_mode.type == FARM_JSON_STRING ? v_account_margin_mode.string_value : ""), ok_account_margin_mode);
+   CFarmJsonValue *v_guard = (root != NULL ? root.Get("guard") : NULL);
+   FarmFillStatePayloadGuard(v_guard, out.guard);
+}
+
+void FarmFillRiskDirectivePayload(CFarmJsonValue *root, FarmRiskDirectivePayload &out)
+{
+   out.Free();
+   out.raw_json = FarmCanonicalRiskDirective(root);
+   CFarmJsonValue *v_directive_id = (root != NULL ? root.Get("directive_id") : NULL);
+   out.directive_id = (v_directive_id != NULL && v_directive_id.type == FARM_JSON_STRING ? v_directive_id.string_value : "");
+   CFarmJsonValue *v_mode = (root != NULL ? root.Get("mode") : NULL);
+   bool ok_mode = false;
+   out.mode = FarmRiskdirectivepayloadModeFromString((v_mode != NULL && v_mode.type == FARM_JSON_STRING ? v_mode.string_value : ""), ok_mode);
+   CFarmJsonValue *v_scale_factor = (root != NULL ? root.Get("scale_factor") : NULL);
+   out.scale_factor = (v_scale_factor != NULL && v_scale_factor.type == FARM_JSON_NUMBER ? v_scale_factor.number_value : 0.0);
+   CFarmJsonValue *v_reason = (root != NULL ? root.Get("reason") : NULL);
+   out.reason = (v_reason != NULL && v_reason.type == FARM_JSON_STRING ? v_reason.string_value : "");
+   CFarmJsonValue *v_detail = (root != NULL ? root.Get("detail") : NULL);
+   out.detail_present = (v_detail != NULL);
+   if(v_detail == NULL) { }
+   else
+   {
+      out.detail_is_null = (v_detail != NULL && v_detail.type == FARM_JSON_NULL);
+      if(out.detail_is_null) { }
+      else
+      {
+         out.detail = (v_detail != NULL && v_detail.type == FARM_JSON_STRING ? v_detail.string_value : "");
+      }
+   }
+   CFarmJsonValue *v_expires_at = (root != NULL ? root.Get("expires_at") : NULL);
+   out.expires_at_present = (v_expires_at != NULL);
+   if(v_expires_at == NULL) { }
+   else
+   {
+      out.expires_at_is_null = (v_expires_at != NULL && v_expires_at.type == FARM_JSON_NULL);
+      if(out.expires_at_is_null) { }
+      else
+      {
+         out.expires_at = (v_expires_at != NULL && v_expires_at.type == FARM_JSON_STRING ? v_expires_at.string_value : "");
+      }
+   }
+   CFarmJsonValue *v_flatten_symbols = (root != NULL ? root.Get("flatten_symbols") : NULL);
+   out.flatten_symbols_present = (v_flatten_symbols != NULL);
+   if(v_flatten_symbols == NULL) { }
+   else
+   {
+      const int n_flatten_symbols = (v_flatten_symbols != NULL && v_flatten_symbols.type == FARM_JSON_ARRAY ? v_flatten_symbols.Size() : 0);
+      ArrayResize(out.flatten_symbols, n_flatten_symbols);
+      for(int i = 0; i < n_flatten_symbols; i++)
+      {
+         CFarmJsonValue *item = v_flatten_symbols.At(i);
+         out.flatten_symbols[i] = (item != NULL && item.type == FARM_JSON_STRING ? item.string_value : "");
+      }
+   }
+}
+
+void FarmFillIntentPayloadProvenance(CFarmJsonValue *root, FarmIntentPayloadProvenance &out)
+{
+   out.Free();
+   CFarmJsonValue *v_strategy_id = (root != NULL ? root.Get("strategy_id") : NULL);
+   out.strategy_id = (v_strategy_id != NULL && v_strategy_id.type == FARM_JSON_STRING ? v_strategy_id.string_value : "");
+   CFarmJsonValue *v_decided_at = (root != NULL ? root.Get("decided_at") : NULL);
+   out.decided_at = (v_decided_at != NULL && v_decided_at.type == FARM_JSON_STRING ? v_decided_at.string_value : "");
+   CFarmJsonValue *v_confidence = (root != NULL ? root.Get("confidence") : NULL);
+   out.confidence_present = (v_confidence != NULL);
+   if(v_confidence == NULL) { }
+   else
+   {
+      out.confidence_is_null = (v_confidence != NULL && v_confidence.type == FARM_JSON_NULL);
+      if(out.confidence_is_null) { }
+      else
+      {
+         out.confidence = (v_confidence != NULL && v_confidence.type == FARM_JSON_NUMBER ? v_confidence.number_value : 0.0);
+      }
+   }
+   CFarmJsonValue *v_feature_hash = (root != NULL ? root.Get("feature_hash") : NULL);
+   out.feature_hash_present = (v_feature_hash != NULL);
+   if(v_feature_hash == NULL) { }
+   else
+   {
+      out.feature_hash_is_null = (v_feature_hash != NULL && v_feature_hash.type == FARM_JSON_NULL);
+      if(out.feature_hash_is_null) { }
+      else
+      {
+         out.feature_hash = (v_feature_hash != NULL && v_feature_hash.type == FARM_JSON_STRING ? v_feature_hash.string_value : "");
+      }
+   }
+   CFarmJsonValue *v_model_version = (root != NULL ? root.Get("model_version") : NULL);
+   out.model_version_present = (v_model_version != NULL);
+   if(v_model_version == NULL) { }
+   else
+   {
+      out.model_version_is_null = (v_model_version != NULL && v_model_version.type == FARM_JSON_NULL);
+      if(out.model_version_is_null) { }
+      else
+      {
+         out.model_version = (v_model_version != NULL && v_model_version.type == FARM_JSON_STRING ? v_model_version.string_value : "");
+      }
+   }
+   CFarmJsonValue *v_news_state = (root != NULL ? root.Get("news_state") : NULL);
+   out.news_state_present = (v_news_state != NULL);
+   if(v_news_state == NULL) { }
+   else
+   {
+      out.news_state_is_null = (v_news_state != NULL && v_news_state.type == FARM_JSON_NULL);
+      if(out.news_state_is_null) { }
+      else
+      {
+         bool ok_news_state = false;
+         out.news_state = FarmIntentpayloadprovenanceNewsStateFromString((v_news_state != NULL && v_news_state.type == FARM_JSON_STRING ? v_news_state.string_value : ""), ok_news_state);
+      }
+   }
+   CFarmJsonValue *v_regime = (root != NULL ? root.Get("regime") : NULL);
+   out.regime_present = (v_regime != NULL);
+   if(v_regime == NULL) { }
+   else
+   {
+      out.regime_is_null = (v_regime != NULL && v_regime.type == FARM_JSON_NULL);
+      if(out.regime_is_null) { }
+      else
+      {
+         out.regime = (v_regime != NULL && v_regime.type == FARM_JSON_STRING ? v_regime.string_value : "");
+      }
+   }
+   CFarmJsonValue *v_risk_scale_applied = (root != NULL ? root.Get("risk_scale_applied") : NULL);
+   out.risk_scale_applied_present = (v_risk_scale_applied != NULL);
+   if(v_risk_scale_applied == NULL) { }
+   else
+   {
+      out.risk_scale_applied_is_null = (v_risk_scale_applied != NULL && v_risk_scale_applied.type == FARM_JSON_NULL);
+      if(out.risk_scale_applied_is_null) { }
+      else
+      {
+         out.risk_scale_applied = (v_risk_scale_applied != NULL && v_risk_scale_applied.type == FARM_JSON_NUMBER ? v_risk_scale_applied.number_value : 0.0);
+      }
+   }
+}
+
+void FarmFillIntentPayload(CFarmJsonValue *root, FarmIntentPayload &out)
+{
+   out.Free();
+   out.raw_json = FarmCanonicalIntent(root);
+   CFarmJsonValue *v_intent_id = (root != NULL ? root.Get("intent_id") : NULL);
+   out.intent_id = (v_intent_id != NULL && v_intent_id.type == FARM_JSON_STRING ? v_intent_id.string_value : "");
+   CFarmJsonValue *v_symbol = (root != NULL ? root.Get("symbol") : NULL);
+   out.symbol = (v_symbol != NULL && v_symbol.type == FARM_JSON_STRING ? v_symbol.string_value : "");
+   CFarmJsonValue *v_target_volume = (root != NULL ? root.Get("target_volume") : NULL);
+   out.target_volume = (v_target_volume != NULL && v_target_volume.type == FARM_JSON_NUMBER ? v_target_volume.number_value : 0.0);
+   CFarmJsonValue *v_max_slippage_points = (root != NULL ? root.Get("max_slippage_points") : NULL);
+   out.max_slippage_points = (v_max_slippage_points != NULL && v_max_slippage_points.type == FARM_JSON_NUMBER ? v_max_slippage_points.integer_value : 0);
+   CFarmJsonValue *v_sl_price = (root != NULL ? root.Get("sl_price") : NULL);
+   out.sl_price_is_null = (v_sl_price != NULL && v_sl_price.type == FARM_JSON_NULL);
+   if(out.sl_price_is_null) { }
+   else
+   {
+      out.sl_price = (v_sl_price != NULL && v_sl_price.type == FARM_JSON_NUMBER ? v_sl_price.number_value : 0.0);
+   }
+   CFarmJsonValue *v_tp_price = (root != NULL ? root.Get("tp_price") : NULL);
+   out.tp_price_is_null = (v_tp_price != NULL && v_tp_price.type == FARM_JSON_NULL);
+   if(out.tp_price_is_null) { }
+   else
+   {
+      out.tp_price = (v_tp_price != NULL && v_tp_price.type == FARM_JSON_NUMBER ? v_tp_price.number_value : 0.0);
+   }
+   CFarmJsonValue *v_valid_until = (root != NULL ? root.Get("valid_until") : NULL);
+   out.valid_until = (v_valid_until != NULL && v_valid_until.type == FARM_JSON_STRING ? v_valid_until.string_value : "");
+   CFarmJsonValue *v_urgency = (root != NULL ? root.Get("urgency") : NULL);
+   bool ok_urgency = false;
+   out.urgency = FarmIntentpayloadUrgencyFromString((v_urgency != NULL && v_urgency.type == FARM_JSON_STRING ? v_urgency.string_value : ""), ok_urgency);
+   CFarmJsonValue *v_provenance = (root != NULL ? root.Get("provenance") : NULL);
+   FarmFillIntentPayloadProvenance(v_provenance, out.provenance);
+}
+
+void FarmFillIntentAckPayloadActionsPlannedItem(CFarmJsonValue *root, FarmIntentAckPayloadActionsPlannedItem &out)
+{
+   out.Free();
+   CFarmJsonValue *v_op = (root != NULL ? root.Get("op") : NULL);
+   bool ok_op = false;
+   out.op = FarmIntentackpayloadactionsplanneditemOpFromString((v_op != NULL && v_op.type == FARM_JSON_STRING ? v_op.string_value : ""), ok_op);
+   CFarmJsonValue *v_side = (root != NULL ? root.Get("side") : NULL);
+   bool ok_side = false;
+   out.side = FarmIntentackpayloadactionsplanneditemSideFromString((v_side != NULL && v_side.type == FARM_JSON_STRING ? v_side.string_value : ""), ok_side);
+   CFarmJsonValue *v_volume = (root != NULL ? root.Get("volume") : NULL);
+   out.volume = (v_volume != NULL && v_volume.type == FARM_JSON_NUMBER ? v_volume.number_value : 0.0);
+   CFarmJsonValue *v_ticket = (root != NULL ? root.Get("ticket") : NULL);
+   out.ticket_is_null = (v_ticket != NULL && v_ticket.type == FARM_JSON_NULL);
+   if(out.ticket_is_null) { }
+   else
+   {
+      out.ticket = (v_ticket != NULL && v_ticket.type == FARM_JSON_NUMBER ? v_ticket.integer_value : 0);
+   }
+}
+
+void FarmFillIntentAckPayload(CFarmJsonValue *root, FarmIntentAckPayload &out)
+{
+   out.Free();
+   out.raw_json = FarmCanonicalIntentAck(root);
+   CFarmJsonValue *v_intent_id = (root != NULL ? root.Get("intent_id") : NULL);
+   out.intent_id = (v_intent_id != NULL && v_intent_id.type == FARM_JSON_STRING ? v_intent_id.string_value : "");
+   CFarmJsonValue *v_status = (root != NULL ? root.Get("status") : NULL);
+   bool ok_status = false;
+   out.status = FarmIntentackpayloadStatusFromString((v_status != NULL && v_status.type == FARM_JSON_STRING ? v_status.string_value : ""), ok_status);
+   CFarmJsonValue *v_volume_before = (root != NULL ? root.Get("volume_before") : NULL);
+   out.volume_before = (v_volume_before != NULL && v_volume_before.type == FARM_JSON_NUMBER ? v_volume_before.number_value : 0.0);
+   CFarmJsonValue *v_volume_target = (root != NULL ? root.Get("volume_target") : NULL);
+   out.volume_target = (v_volume_target != NULL && v_volume_target.type == FARM_JSON_NUMBER ? v_volume_target.number_value : 0.0);
+   CFarmJsonValue *v_overshoot_volume = (root != NULL ? root.Get("overshoot_volume") : NULL);
+   out.overshoot_volume = (v_overshoot_volume != NULL && v_overshoot_volume.type == FARM_JSON_NUMBER ? v_overshoot_volume.number_value : 0.0);
+   CFarmJsonValue *v_actions_planned = (root != NULL ? root.Get("actions_planned") : NULL);
+   const int n_actions_planned = (v_actions_planned != NULL && v_actions_planned.type == FARM_JSON_ARRAY ? v_actions_planned.Size() : 0);
+   ArrayResize(out.actions_planned, n_actions_planned);
+   for(int i = 0; i < n_actions_planned; i++)
+   {
+      CFarmJsonValue *item = v_actions_planned.At(i);
+      FarmFillIntentAckPayloadActionsPlannedItem(item, out.actions_planned[i]);
+   }
+   CFarmJsonValue *v_reason = (root != NULL ? root.Get("reason") : NULL);
+   out.reason_present = (v_reason != NULL);
+   if(v_reason == NULL) { }
+   else
+   {
+      out.reason_is_null = (v_reason != NULL && v_reason.type == FARM_JSON_NULL);
+      if(out.reason_is_null) { }
+      else
+      {
+         out.reason = (v_reason != NULL && v_reason.type == FARM_JSON_STRING ? v_reason.string_value : "");
+      }
+   }
+   CFarmJsonValue *v_volume_clamped_to = (root != NULL ? root.Get("volume_clamped_to") : NULL);
+   out.volume_clamped_to_present = (v_volume_clamped_to != NULL);
+   if(v_volume_clamped_to == NULL) { }
+   else
+   {
+      out.volume_clamped_to_is_null = (v_volume_clamped_to != NULL && v_volume_clamped_to.type == FARM_JSON_NULL);
+      if(out.volume_clamped_to_is_null) { }
+      else
+      {
+         out.volume_clamped_to = (v_volume_clamped_to != NULL && v_volume_clamped_to.type == FARM_JSON_NUMBER ? v_volume_clamped_to.number_value : 0.0);
+      }
+   }
+}
+
+void FarmFillHelloPayloadSymbol(CFarmJsonValue *root, FarmHelloPayloadSymbol &out)
+{
+   out.Free();
+   CFarmJsonValue *v_name = (root != NULL ? root.Get("name") : NULL);
+   out.name = (v_name != NULL && v_name.type == FARM_JSON_STRING ? v_name.string_value : "");
+   CFarmJsonValue *v_digits = (root != NULL ? root.Get("digits") : NULL);
+   out.digits = (v_digits != NULL && v_digits.type == FARM_JSON_NUMBER ? v_digits.integer_value : 0);
+   CFarmJsonValue *v_point = (root != NULL ? root.Get("point") : NULL);
+   out.point = (v_point != NULL && v_point.type == FARM_JSON_NUMBER ? v_point.number_value : 0.0);
+   CFarmJsonValue *v_tick_size = (root != NULL ? root.Get("tick_size") : NULL);
+   out.tick_size = (v_tick_size != NULL && v_tick_size.type == FARM_JSON_NUMBER ? v_tick_size.number_value : 0.0);
+   CFarmJsonValue *v_tick_value = (root != NULL ? root.Get("tick_value") : NULL);
+   out.tick_value = (v_tick_value != NULL && v_tick_value.type == FARM_JSON_NUMBER ? v_tick_value.number_value : 0.0);
+   CFarmJsonValue *v_contract_size = (root != NULL ? root.Get("contract_size") : NULL);
+   out.contract_size = (v_contract_size != NULL && v_contract_size.type == FARM_JSON_NUMBER ? v_contract_size.number_value : 0.0);
+   CFarmJsonValue *v_volume_min = (root != NULL ? root.Get("volume_min") : NULL);
+   out.volume_min = (v_volume_min != NULL && v_volume_min.type == FARM_JSON_NUMBER ? v_volume_min.number_value : 0.0);
+   CFarmJsonValue *v_volume_max = (root != NULL ? root.Get("volume_max") : NULL);
+   out.volume_max = (v_volume_max != NULL && v_volume_max.type == FARM_JSON_NUMBER ? v_volume_max.number_value : 0.0);
+   CFarmJsonValue *v_volume_step = (root != NULL ? root.Get("volume_step") : NULL);
+   out.volume_step = (v_volume_step != NULL && v_volume_step.type == FARM_JSON_NUMBER ? v_volume_step.number_value : 0.0);
+   CFarmJsonValue *v_stops_level = (root != NULL ? root.Get("stops_level") : NULL);
+   out.stops_level = (v_stops_level != NULL && v_stops_level.type == FARM_JSON_NUMBER ? v_stops_level.integer_value : 0);
+   CFarmJsonValue *v_freeze_level = (root != NULL ? root.Get("freeze_level") : NULL);
+   out.freeze_level = (v_freeze_level != NULL && v_freeze_level.type == FARM_JSON_NUMBER ? v_freeze_level.integer_value : 0);
+   CFarmJsonValue *v_swap_long = (root != NULL ? root.Get("swap_long") : NULL);
+   out.swap_long = (v_swap_long != NULL && v_swap_long.type == FARM_JSON_NUMBER ? v_swap_long.number_value : 0.0);
+   CFarmJsonValue *v_swap_short = (root != NULL ? root.Get("swap_short") : NULL);
+   out.swap_short = (v_swap_short != NULL && v_swap_short.type == FARM_JSON_NUMBER ? v_swap_short.number_value : 0.0);
+   CFarmJsonValue *v_trade_mode = (root != NULL ? root.Get("trade_mode") : NULL);
+   bool ok_trade_mode = false;
+   out.trade_mode = FarmHellopayloadsymbolTradeModeFromString((v_trade_mode != NULL && v_trade_mode.type == FARM_JSON_STRING ? v_trade_mode.string_value : ""), ok_trade_mode);
+   CFarmJsonValue *v_order_mode_closeby = (root != NULL ? root.Get("order_mode_closeby") : NULL);
+   out.order_mode_closeby = (v_order_mode_closeby != NULL && v_order_mode_closeby.type == FARM_JSON_BOOL && v_order_mode_closeby.bool_value);
+}
+
+void FarmFillHelloPayloadLocalLimits(CFarmJsonValue *root, FarmHelloPayloadLocalLimits &out)
+{
+   out.Free();
+   CFarmJsonValue *v_max_lot_per_order = (root != NULL ? root.Get("max_lot_per_order") : NULL);
+   out.max_lot_per_order = (v_max_lot_per_order != NULL && v_max_lot_per_order.type == FARM_JSON_NUMBER ? v_max_lot_per_order.number_value : 0.0);
+   CFarmJsonValue *v_max_net_volume_per_symbol = (root != NULL ? root.Get("max_net_volume_per_symbol") : NULL);
+   out.max_net_volume_per_symbol = (v_max_net_volume_per_symbol != NULL && v_max_net_volume_per_symbol.type == FARM_JSON_NUMBER ? v_max_net_volume_per_symbol.number_value : 0.0);
+   CFarmJsonValue *v_max_tickets_per_symbol = (root != NULL ? root.Get("max_tickets_per_symbol") : NULL);
+   out.max_tickets_per_symbol = (v_max_tickets_per_symbol != NULL && v_max_tickets_per_symbol.type == FARM_JSON_NUMBER ? v_max_tickets_per_symbol.integer_value : 0);
+   CFarmJsonValue *v_max_total_tickets = (root != NULL ? root.Get("max_total_tickets") : NULL);
+   out.max_total_tickets = (v_max_total_tickets != NULL && v_max_total_tickets.type == FARM_JSON_NUMBER ? v_max_total_tickets.integer_value : 0);
+   CFarmJsonValue *v_max_spread_points = (root != NULL ? root.Get("max_spread_points") : NULL);
+   out.max_spread_points = (v_max_spread_points != NULL && v_max_spread_points.type == FARM_JSON_NUMBER ? v_max_spread_points.integer_value : 0);
+   CFarmJsonValue *v_daily_loss_pct = (root != NULL ? root.Get("daily_loss_pct") : NULL);
+   out.daily_loss_pct = (v_daily_loss_pct != NULL && v_daily_loss_pct.type == FARM_JSON_NUMBER ? v_daily_loss_pct.number_value : 0.0);
+   CFarmJsonValue *v_max_dd_pct = (root != NULL ? root.Get("max_dd_pct") : NULL);
+   out.max_dd_pct = (v_max_dd_pct != NULL && v_max_dd_pct.type == FARM_JSON_NUMBER ? v_max_dd_pct.number_value : 0.0);
+}
+
+void FarmFillHelloPayloadBrokerTime(CFarmJsonValue *root, FarmHelloPayloadBrokerTime &out)
+{
+   out.Free();
+   CFarmJsonValue *v_utc_offset_sec = (root != NULL ? root.Get("utc_offset_sec") : NULL);
+   out.utc_offset_sec = (v_utc_offset_sec != NULL && v_utc_offset_sec.type == FARM_JSON_NUMBER ? v_utc_offset_sec.integer_value : 0);
+   CFarmJsonValue *v_detected_at = (root != NULL ? root.Get("detected_at") : NULL);
+   out.detected_at = (v_detected_at != NULL && v_detected_at.type == FARM_JSON_STRING ? v_detected_at.string_value : "");
+   CFarmJsonValue *v_source = (root != NULL ? root.Get("source") : NULL);
+   bool ok_source = false;
+   out.source = FarmHellopayloadbrokertimeSourceFromString((v_source != NULL && v_source.type == FARM_JSON_STRING ? v_source.string_value : ""), ok_source);
+   CFarmJsonValue *v_local_dst_sec = (root != NULL ? root.Get("local_dst_sec") : NULL);
+   out.local_dst_sec_present = (v_local_dst_sec != NULL);
+   if(v_local_dst_sec == NULL) { }
+   else
+   {
+      out.local_dst_sec_is_null = (v_local_dst_sec != NULL && v_local_dst_sec.type == FARM_JSON_NULL);
+      if(out.local_dst_sec_is_null) { }
+      else
+      {
+         out.local_dst_sec = (v_local_dst_sec != NULL && v_local_dst_sec.type == FARM_JSON_NUMBER ? v_local_dst_sec.integer_value : 0);
+      }
+   }
+   CFarmJsonValue *v_local_gmt_offset_sec = (root != NULL ? root.Get("local_gmt_offset_sec") : NULL);
+   out.local_gmt_offset_sec_present = (v_local_gmt_offset_sec != NULL);
+   if(v_local_gmt_offset_sec == NULL) { }
+   else
+   {
+      out.local_gmt_offset_sec_is_null = (v_local_gmt_offset_sec != NULL && v_local_gmt_offset_sec.type == FARM_JSON_NULL);
+      if(out.local_gmt_offset_sec_is_null) { }
+      else
+      {
+         out.local_gmt_offset_sec = (v_local_gmt_offset_sec != NULL && v_local_gmt_offset_sec.type == FARM_JSON_NUMBER ? v_local_gmt_offset_sec.integer_value : 0);
+      }
+   }
+}
+
+void FarmFillHelloPayloadAccount(CFarmJsonValue *root, FarmHelloPayloadAccount &out)
+{
+   out.Free();
+   CFarmJsonValue *v_login = (root != NULL ? root.Get("login") : NULL);
+   out.login = (v_login != NULL && v_login.type == FARM_JSON_NUMBER ? v_login.integer_value : 0);
+   CFarmJsonValue *v_server = (root != NULL ? root.Get("server") : NULL);
+   out.server = (v_server != NULL && v_server.type == FARM_JSON_STRING ? v_server.string_value : "");
+   CFarmJsonValue *v_currency = (root != NULL ? root.Get("currency") : NULL);
+   out.currency = (v_currency != NULL && v_currency.type == FARM_JSON_STRING ? v_currency.string_value : "");
+   CFarmJsonValue *v_leverage = (root != NULL ? root.Get("leverage") : NULL);
+   out.leverage = (v_leverage != NULL && v_leverage.type == FARM_JSON_NUMBER ? v_leverage.integer_value : 0);
+   CFarmJsonValue *v_balance = (root != NULL ? root.Get("balance") : NULL);
+   out.balance = (v_balance != NULL && v_balance.type == FARM_JSON_NUMBER ? v_balance.number_value : 0.0);
+   CFarmJsonValue *v_equity = (root != NULL ? root.Get("equity") : NULL);
+   out.equity = (v_equity != NULL && v_equity.type == FARM_JSON_NUMBER ? v_equity.number_value : 0.0);
+   CFarmJsonValue *v_is_demo = (root != NULL ? root.Get("is_demo") : NULL);
+   out.is_demo = (v_is_demo != NULL && v_is_demo.type == FARM_JSON_BOOL && v_is_demo.bool_value);
+   CFarmJsonValue *v_margin_mode = (root != NULL ? root.Get("margin_mode") : NULL);
+   bool ok_margin_mode = false;
+   out.margin_mode = FarmHellopayloadaccountMarginModeFromString((v_margin_mode != NULL && v_margin_mode.type == FARM_JSON_STRING ? v_margin_mode.string_value : ""), ok_margin_mode);
+}
+
+void FarmFillHelloPayload(CFarmJsonValue *root, FarmHelloPayload &out)
+{
+   out.Free();
+   out.raw_json = FarmCanonicalHello(root);
+   CFarmJsonValue *v_token = (root != NULL ? root.Get("token") : NULL);
+   out.token = (v_token != NULL && v_token.type == FARM_JSON_STRING ? v_token.string_value : "");
+   CFarmJsonValue *v_ea_version = (root != NULL ? root.Get("ea_version") : NULL);
+   out.ea_version = (v_ea_version != NULL && v_ea_version.type == FARM_JSON_STRING ? v_ea_version.string_value : "");
+   CFarmJsonValue *v_terminal_build = (root != NULL ? root.Get("terminal_build") : NULL);
+   out.terminal_build = (v_terminal_build != NULL && v_terminal_build.type == FARM_JSON_NUMBER ? v_terminal_build.integer_value : 0);
+   CFarmJsonValue *v_account = (root != NULL ? root.Get("account") : NULL);
+   FarmFillHelloPayloadAccount(v_account, out.account);
+   CFarmJsonValue *v_symbol = (root != NULL ? root.Get("symbol") : NULL);
+   FarmFillHelloPayloadSymbol(v_symbol, out.symbol);
+   CFarmJsonValue *v_timeframe = (root != NULL ? root.Get("timeframe") : NULL);
+   bool ok_timeframe = false;
+   out.timeframe = FarmHellopayloadTimeframeFromString((v_timeframe != NULL && v_timeframe.type == FARM_JSON_STRING ? v_timeframe.string_value : ""), ok_timeframe);
+   CFarmJsonValue *v_strategy_id = (root != NULL ? root.Get("strategy_id") : NULL);
+   out.strategy_id = (v_strategy_id != NULL && v_strategy_id.type == FARM_JSON_STRING ? v_strategy_id.string_value : "");
+   CFarmJsonValue *v_magic = (root != NULL ? root.Get("magic") : NULL);
+   out.magic = (v_magic != NULL && v_magic.type == FARM_JSON_NUMBER ? v_magic.integer_value : 0);
+   CFarmJsonValue *v_local_limits = (root != NULL ? root.Get("local_limits") : NULL);
+   FarmFillHelloPayloadLocalLimits(v_local_limits, out.local_limits);
+   CFarmJsonValue *v_broker_time = (root != NULL ? root.Get("broker_time") : NULL);
+   out.broker_time_present = (v_broker_time != NULL);
+   if(v_broker_time == NULL) { }
+   else
+   {
+      FarmFillHelloPayloadBrokerTime(v_broker_time, out.broker_time);
+   }
+}
+
+void FarmFillHelloAckPayloadInitialDirective(CFarmJsonValue *root, FarmHelloAckPayloadInitialDirective &out)
+{
+   out.Free();
+   CFarmJsonValue *v_mode = (root != NULL ? root.Get("mode") : NULL);
+   bool ok_mode = false;
+   out.mode = FarmHelloackpayloadinitialdirectiveModeFromString((v_mode != NULL && v_mode.type == FARM_JSON_STRING ? v_mode.string_value : ""), ok_mode);
+   CFarmJsonValue *v_scale_factor = (root != NULL ? root.Get("scale_factor") : NULL);
+   out.scale_factor = (v_scale_factor != NULL && v_scale_factor.type == FARM_JSON_NUMBER ? v_scale_factor.number_value : 0.0);
+}
+
+void FarmFillHelloAckPayload(CFarmJsonValue *root, FarmHelloAckPayload &out)
+{
+   out.Free();
+   out.raw_json = FarmCanonicalHelloAck(root);
+   CFarmJsonValue *v_accepted = (root != NULL ? root.Get("accepted") : NULL);
+   out.accepted = (v_accepted != NULL && v_accepted.type == FARM_JSON_BOOL && v_accepted.bool_value);
+   CFarmJsonValue *v_server_time = (root != NULL ? root.Get("server_time") : NULL);
+   out.server_time = (v_server_time != NULL && v_server_time.type == FARM_JSON_STRING ? v_server_time.string_value : "");
+   CFarmJsonValue *v_brain_version = (root != NULL ? root.Get("brain_version") : NULL);
+   out.brain_version = (v_brain_version != NULL && v_brain_version.type == FARM_JSON_STRING ? v_brain_version.string_value : "");
+   CFarmJsonValue *v_assigned_session_id = (root != NULL ? root.Get("assigned_session_id") : NULL);
+   out.assigned_session_id_present = (v_assigned_session_id != NULL);
+   if(v_assigned_session_id == NULL) { }
+   else
+   {
+      out.assigned_session_id_is_null = (v_assigned_session_id != NULL && v_assigned_session_id.type == FARM_JSON_NULL);
+      if(out.assigned_session_id_is_null) { }
+      else
+      {
+         out.assigned_session_id = (v_assigned_session_id != NULL && v_assigned_session_id.type == FARM_JSON_STRING ? v_assigned_session_id.string_value : "");
+      }
+   }
+   CFarmJsonValue *v_initial_directive = (root != NULL ? root.Get("initial_directive") : NULL);
+   out.initial_directive_present = (v_initial_directive != NULL);
+   if(v_initial_directive == NULL) { }
+   else
+   {
+      FarmFillHelloAckPayloadInitialDirective(v_initial_directive, out.initial_directive);
+   }
+   CFarmJsonValue *v_reject_reason = (root != NULL ? root.Get("reject_reason") : NULL);
+   out.reject_reason_present = (v_reject_reason != NULL);
+   if(v_reject_reason == NULL) { }
+   else
+   {
+      out.reject_reason_is_null = (v_reject_reason != NULL && v_reject_reason.type == FARM_JSON_NULL);
+      if(out.reject_reason_is_null) { }
+      else
+      {
+         bool ok_reject_reason = false;
+         out.reject_reason = FarmHelloackpayloadRejectReasonFromString((v_reject_reason != NULL && v_reject_reason.type == FARM_JSON_STRING ? v_reject_reason.string_value : ""), ok_reject_reason);
+      }
+   }
+}
+
+void FarmFillHeartbeatPayloadWire(CFarmJsonValue *root, FarmHeartbeatPayloadWire &out)
+{
+   out.Free();
+   CFarmJsonValue *v_state = (root != NULL ? root.Get("state") : NULL);
+   bool ok_state = false;
+   out.state = FarmHeartbeatpayloadwireStateFromString((v_state != NULL && v_state.type == FARM_JSON_STRING ? v_state.string_value : ""), ok_state);
+   CFarmJsonValue *v_send_queue_depth = (root != NULL ? root.Get("send_queue_depth") : NULL);
+   out.send_queue_depth = (v_send_queue_depth != NULL && v_send_queue_depth.type == FARM_JSON_NUMBER ? v_send_queue_depth.integer_value : 0);
+   CFarmJsonValue *v_messages_sent = (root != NULL ? root.Get("messages_sent") : NULL);
+   out.messages_sent = (v_messages_sent != NULL && v_messages_sent.type == FARM_JSON_NUMBER ? v_messages_sent.integer_value : 0);
+   CFarmJsonValue *v_messages_recv = (root != NULL ? root.Get("messages_recv") : NULL);
+   out.messages_recv = (v_messages_recv != NULL && v_messages_recv.type == FARM_JSON_NUMBER ? v_messages_recv.integer_value : 0);
+   CFarmJsonValue *v_reconnect_count = (root != NULL ? root.Get("reconnect_count") : NULL);
+   out.reconnect_count = (v_reconnect_count != NULL && v_reconnect_count.type == FARM_JSON_NUMBER ? v_reconnect_count.integer_value : 0);
+   CFarmJsonValue *v_bytes_dropped = (root != NULL ? root.Get("bytes_dropped") : NULL);
+   out.bytes_dropped = (v_bytes_dropped != NULL && v_bytes_dropped.type == FARM_JSON_NUMBER ? v_bytes_dropped.integer_value : 0);
+   CFarmJsonValue *v_seconds_since_last_inbound = (root != NULL ? root.Get("seconds_since_last_inbound") : NULL);
+   out.seconds_since_last_inbound = (v_seconds_since_last_inbound != NULL && v_seconds_since_last_inbound.type == FARM_JSON_NUMBER ? v_seconds_since_last_inbound.integer_value : 0);
+   CFarmJsonValue *v_broker_utc_offset_sec = (root != NULL ? root.Get("broker_utc_offset_sec") : NULL);
+   out.broker_utc_offset_sec_present = (v_broker_utc_offset_sec != NULL);
+   if(v_broker_utc_offset_sec == NULL) { }
+   else
+   {
+      out.broker_utc_offset_sec_is_null = (v_broker_utc_offset_sec != NULL && v_broker_utc_offset_sec.type == FARM_JSON_NULL);
+      if(out.broker_utc_offset_sec_is_null) { }
+      else
+      {
+         out.broker_utc_offset_sec = (v_broker_utc_offset_sec != NULL && v_broker_utc_offset_sec.type == FARM_JSON_NUMBER ? v_broker_utc_offset_sec.integer_value : 0);
+      }
+   }
+   CFarmJsonValue *v_pump_p99_us = (root != NULL ? root.Get("pump_p99_us") : NULL);
+   out.pump_p99_us_present = (v_pump_p99_us != NULL);
+   if(v_pump_p99_us == NULL) { }
+   else
+   {
+      out.pump_p99_us = (v_pump_p99_us != NULL && v_pump_p99_us.type == FARM_JSON_NUMBER ? v_pump_p99_us.integer_value : 0);
+   }
+}
+
+void FarmFillHeartbeatPayload(CFarmJsonValue *root, FarmHeartbeatPayload &out)
+{
+   out.Free();
+   out.raw_json = FarmCanonicalHeartbeat(root);
+   CFarmJsonValue *v_seq = (root != NULL ? root.Get("seq") : NULL);
+   out.seq = (v_seq != NULL && v_seq.type == FARM_JSON_NUMBER ? v_seq.integer_value : 0);
+   CFarmJsonValue *v_wire = (root != NULL ? root.Get("wire") : NULL);
+   FarmFillHeartbeatPayloadWire(v_wire, out.wire);
+}
+
+void FarmFillHeartbeatAckPayload(CFarmJsonValue *root, FarmHeartbeatAckPayload &out)
+{
+   out.Free();
+   out.raw_json = FarmCanonicalHeartbeatAck(root);
+   CFarmJsonValue *v_seq = (root != NULL ? root.Get("seq") : NULL);
+   out.seq = (v_seq != NULL && v_seq.type == FARM_JSON_NUMBER ? v_seq.integer_value : 0);
+   CFarmJsonValue *v_server_time = (root != NULL ? root.Get("server_time") : NULL);
+   out.server_time = (v_server_time != NULL && v_server_time.type == FARM_JSON_STRING ? v_server_time.string_value : "");
+   CFarmJsonValue *v_brain_healthy = (root != NULL ? root.Get("brain_healthy") : NULL);
+   out.brain_healthy_present = (v_brain_healthy != NULL);
+   if(v_brain_healthy == NULL) { }
+   else
+   {
+      out.brain_healthy = (v_brain_healthy != NULL && v_brain_healthy.type == FARM_JSON_BOOL && v_brain_healthy.bool_value);
+   }
+}
+
+void FarmFillExecReportPayload(CFarmJsonValue *root, FarmExecReportPayload &out)
+{
+   out.Free();
+   out.raw_json = FarmCanonicalExecReport(root);
+   CFarmJsonValue *v_intent_id = (root != NULL ? root.Get("intent_id") : NULL);
+   out.intent_id = (v_intent_id != NULL && v_intent_id.type == FARM_JSON_STRING ? v_intent_id.string_value : "");
+   CFarmJsonValue *v_op = (root != NULL ? root.Get("op") : NULL);
+   bool ok_op = false;
+   out.op = FarmExecreportpayloadOpFromString((v_op != NULL && v_op.type == FARM_JSON_STRING ? v_op.string_value : ""), ok_op);
+   CFarmJsonValue *v_result = (root != NULL ? root.Get("result") : NULL);
+   bool ok_result = false;
+   out.result = FarmExecreportpayloadResultFromString((v_result != NULL && v_result.type == FARM_JSON_STRING ? v_result.string_value : ""), ok_result);
+   CFarmJsonValue *v_retcode = (root != NULL ? root.Get("retcode") : NULL);
+   out.retcode = (v_retcode != NULL && v_retcode.type == FARM_JSON_NUMBER ? v_retcode.integer_value : 0);
+   CFarmJsonValue *v_retcode_text = (root != NULL ? root.Get("retcode_text") : NULL);
+   out.retcode_text = (v_retcode_text != NULL && v_retcode_text.type == FARM_JSON_STRING ? v_retcode_text.string_value : "");
+   CFarmJsonValue *v_side = (root != NULL ? root.Get("side") : NULL);
+   bool ok_side = false;
+   out.side = FarmExecreportpayloadSideFromString((v_side != NULL && v_side.type == FARM_JSON_STRING ? v_side.string_value : ""), ok_side);
+   CFarmJsonValue *v_volume_requested = (root != NULL ? root.Get("volume_requested") : NULL);
+   out.volume_requested = (v_volume_requested != NULL && v_volume_requested.type == FARM_JSON_NUMBER ? v_volume_requested.number_value : 0.0);
+   CFarmJsonValue *v_volume_filled = (root != NULL ? root.Get("volume_filled") : NULL);
+   out.volume_filled = (v_volume_filled != NULL && v_volume_filled.type == FARM_JSON_NUMBER ? v_volume_filled.number_value : 0.0);
+   CFarmJsonValue *v_attempt = (root != NULL ? root.Get("attempt") : NULL);
+   out.attempt = (v_attempt != NULL && v_attempt.type == FARM_JSON_NUMBER ? v_attempt.integer_value : 0);
+   CFarmJsonValue *v_commission = (root != NULL ? root.Get("commission") : NULL);
+   out.commission_present = (v_commission != NULL);
+   if(v_commission == NULL) { }
+   else
+   {
+      out.commission = (v_commission != NULL && v_commission.type == FARM_JSON_NUMBER ? v_commission.number_value : 0.0);
+   }
+   CFarmJsonValue *v_error = (root != NULL ? root.Get("error") : NULL);
+   out.error_present = (v_error != NULL);
+   if(v_error == NULL) { }
+   else
+   {
+      out.error_is_null = (v_error != NULL && v_error.type == FARM_JSON_NULL);
+      if(out.error_is_null) { }
+      else
+      {
+         out.error = (v_error != NULL && v_error.type == FARM_JSON_STRING ? v_error.string_value : "");
+      }
+   }
+   CFarmJsonValue *v_latency_ms = (root != NULL ? root.Get("latency_ms") : NULL);
+   out.latency_ms_present = (v_latency_ms != NULL);
+   if(v_latency_ms == NULL) { }
+   else
+   {
+      out.latency_ms_is_null = (v_latency_ms != NULL && v_latency_ms.type == FARM_JSON_NULL);
+      if(out.latency_ms_is_null) { }
+      else
+      {
+         out.latency_ms = (v_latency_ms != NULL && v_latency_ms.type == FARM_JSON_NUMBER ? v_latency_ms.integer_value : 0);
+      }
+   }
+   CFarmJsonValue *v_price_filled = (root != NULL ? root.Get("price_filled") : NULL);
+   out.price_filled_present = (v_price_filled != NULL);
+   if(v_price_filled == NULL) { }
+   else
+   {
+      out.price_filled_is_null = (v_price_filled != NULL && v_price_filled.type == FARM_JSON_NULL);
+      if(out.price_filled_is_null) { }
+      else
+      {
+         out.price_filled = (v_price_filled != NULL && v_price_filled.type == FARM_JSON_NUMBER ? v_price_filled.number_value : 0.0);
+      }
+   }
+   CFarmJsonValue *v_price_requested = (root != NULL ? root.Get("price_requested") : NULL);
+   out.price_requested_present = (v_price_requested != NULL);
+   if(v_price_requested == NULL) { }
+   else
+   {
+      out.price_requested_is_null = (v_price_requested != NULL && v_price_requested.type == FARM_JSON_NULL);
+      if(out.price_requested_is_null) { }
+      else
+      {
+         out.price_requested = (v_price_requested != NULL && v_price_requested.type == FARM_JSON_NUMBER ? v_price_requested.number_value : 0.0);
+      }
+   }
+   CFarmJsonValue *v_slippage_points = (root != NULL ? root.Get("slippage_points") : NULL);
+   out.slippage_points_present = (v_slippage_points != NULL);
+   if(v_slippage_points == NULL) { }
+   else
+   {
+      out.slippage_points_is_null = (v_slippage_points != NULL && v_slippage_points.type == FARM_JSON_NULL);
+      if(out.slippage_points_is_null) { }
+      else
+      {
+         out.slippage_points = (v_slippage_points != NULL && v_slippage_points.type == FARM_JSON_NUMBER ? v_slippage_points.integer_value : 0);
+      }
+   }
+   CFarmJsonValue *v_spread_at_send_points = (root != NULL ? root.Get("spread_at_send_points") : NULL);
+   out.spread_at_send_points_present = (v_spread_at_send_points != NULL);
+   if(v_spread_at_send_points == NULL) { }
+   else
+   {
+      out.spread_at_send_points = (v_spread_at_send_points != NULL && v_spread_at_send_points.type == FARM_JSON_NUMBER ? v_spread_at_send_points.integer_value : 0);
+   }
+   CFarmJsonValue *v_swap = (root != NULL ? root.Get("swap") : NULL);
+   out.swap_present = (v_swap != NULL);
+   if(v_swap == NULL) { }
+   else
+   {
+      out.swap = (v_swap != NULL && v_swap.type == FARM_JSON_NUMBER ? v_swap.number_value : 0.0);
+   }
+   CFarmJsonValue *v_ticket = (root != NULL ? root.Get("ticket") : NULL);
+   out.ticket_present = (v_ticket != NULL);
+   if(v_ticket == NULL) { }
+   else
+   {
+      out.ticket_is_null = (v_ticket != NULL && v_ticket.type == FARM_JSON_NULL);
+      if(out.ticket_is_null) { }
+      else
+      {
+         out.ticket = (v_ticket != NULL && v_ticket.type == FARM_JSON_NUMBER ? v_ticket.integer_value : 0);
+      }
+   }
+}
+
+void FarmFillErrorPayload(CFarmJsonValue *root, FarmErrorPayload &out)
+{
+   out.Free();
+   out.raw_json = FarmCanonicalError(root);
+   CFarmJsonValue *v_code = (root != NULL ? root.Get("code") : NULL);
+   out.code = (v_code != NULL && v_code.type == FARM_JSON_STRING ? v_code.string_value : "");
+   CFarmJsonValue *v_severity = (root != NULL ? root.Get("severity") : NULL);
+   bool ok_severity = false;
+   out.severity = FarmErrorpayloadSeverityFromString((v_severity != NULL && v_severity.type == FARM_JSON_STRING ? v_severity.string_value : ""), ok_severity);
+   CFarmJsonValue *v_message = (root != NULL ? root.Get("message") : NULL);
+   out.message = (v_message != NULL && v_message.type == FARM_JSON_STRING ? v_message.string_value : "");
+   CFarmJsonValue *v_fatal = (root != NULL ? root.Get("fatal") : NULL);
+   out.fatal = (v_fatal != NULL && v_fatal.type == FARM_JSON_BOOL && v_fatal.bool_value);
+   CFarmJsonValue *v_context = (root != NULL ? root.Get("context") : NULL);
+   out.context_present = (v_context != NULL);
+   if(v_context == NULL) { }
+   else
+   {
+      out.context_is_null = (v_context != NULL && v_context.type == FARM_JSON_NULL);
+      if(out.context_is_null) { }
+      else
+      {
+         const int n_context = (v_context != NULL && v_context.type == FARM_JSON_OBJECT ? v_context.Size() : 0);
+         ArrayResize(out.context_keys, n_context);
+         ArrayResize(out.context_values, n_context);
+         for(int i = 0; i < n_context; i++)
+         {
+            out.context_keys[i] = v_context.KeyAt(i);
+            CFarmJsonValue *item = v_context.At(i);
+            out.context_values[i] = (item != NULL ? item.ToJson() : "null");
+         }
+      }
+   }
+}
+
+void FarmFillConfigUpdatePayloadSettings(CFarmJsonValue *root, FarmConfigUpdatePayloadSettings &out)
+{
+   out.Free();
+   CFarmJsonValue *v_bar_backfill_count = (root != NULL ? root.Get("bar_backfill_count") : NULL);
+   out.bar_backfill_count_present = (v_bar_backfill_count != NULL);
+   if(v_bar_backfill_count == NULL) { }
+   else
+   {
+      out.bar_backfill_count = (v_bar_backfill_count != NULL && v_bar_backfill_count.type == FARM_JSON_NUMBER ? v_bar_backfill_count.integer_value : 0);
+   }
+   CFarmJsonValue *v_heartbeat_sec = (root != NULL ? root.Get("heartbeat_sec") : NULL);
+   out.heartbeat_sec_present = (v_heartbeat_sec != NULL);
+   if(v_heartbeat_sec == NULL) { }
+   else
+   {
+      out.heartbeat_sec = (v_heartbeat_sec != NULL && v_heartbeat_sec.type == FARM_JSON_NUMBER ? v_heartbeat_sec.integer_value : 0);
+   }
+   CFarmJsonValue *v_state_interval_sec = (root != NULL ? root.Get("state_interval_sec") : NULL);
+   out.state_interval_sec_present = (v_state_interval_sec != NULL);
+   if(v_state_interval_sec == NULL) { }
+   else
+   {
+      out.state_interval_sec = (v_state_interval_sec != NULL && v_state_interval_sec.type == FARM_JSON_NUMBER ? v_state_interval_sec.integer_value : 0);
+   }
+   CFarmJsonValue *v_verbose_log = (root != NULL ? root.Get("verbose_log") : NULL);
+   out.verbose_log_present = (v_verbose_log != NULL);
+   if(v_verbose_log == NULL) { }
+   else
+   {
+      out.verbose_log = (v_verbose_log != NULL && v_verbose_log.type == FARM_JSON_BOOL && v_verbose_log.bool_value);
+   }
+}
+
+void FarmFillConfigUpdatePayload(CFarmJsonValue *root, FarmConfigUpdatePayload &out)
+{
+   out.Free();
+   out.raw_json = FarmCanonicalConfigUpdate(root);
+   CFarmJsonValue *v_config_id = (root != NULL ? root.Get("config_id") : NULL);
+   out.config_id = (v_config_id != NULL && v_config_id.type == FARM_JSON_STRING ? v_config_id.string_value : "");
+   CFarmJsonValue *v_settings = (root != NULL ? root.Get("settings") : NULL);
+   FarmFillConfigUpdatePayloadSettings(v_settings, out.settings);
+   CFarmJsonValue *v_apply_at = (root != NULL ? root.Get("apply_at") : NULL);
+   out.apply_at_present = (v_apply_at != NULL);
+   if(v_apply_at == NULL) { }
+   else
+   {
+      out.apply_at_is_null = (v_apply_at != NULL && v_apply_at.type == FARM_JSON_NULL);
+      if(out.apply_at_is_null) { }
+      else
+      {
+         out.apply_at = (v_apply_at != NULL && v_apply_at.type == FARM_JSON_STRING ? v_apply_at.string_value : "");
+      }
+   }
+}
+
+void FarmFillBarPayload(CFarmJsonValue *root, FarmBarPayload &out)
+{
+   out.Free();
+   out.raw_json = FarmCanonicalBar(root);
+   CFarmJsonValue *v_symbol = (root != NULL ? root.Get("symbol") : NULL);
+   out.symbol = (v_symbol != NULL && v_symbol.type == FARM_JSON_STRING ? v_symbol.string_value : "");
+   CFarmJsonValue *v_timeframe = (root != NULL ? root.Get("timeframe") : NULL);
+   bool ok_timeframe = false;
+   out.timeframe = FarmBarpayloadTimeframeFromString((v_timeframe != NULL && v_timeframe.type == FARM_JSON_STRING ? v_timeframe.string_value : ""), ok_timeframe);
+   CFarmJsonValue *v_bar_time = (root != NULL ? root.Get("bar_time") : NULL);
+   out.bar_time = (v_bar_time != NULL && v_bar_time.type == FARM_JSON_STRING ? v_bar_time.string_value : "");
+   CFarmJsonValue *v_open = (root != NULL ? root.Get("open") : NULL);
+   out.open = (v_open != NULL && v_open.type == FARM_JSON_NUMBER ? v_open.number_value : 0.0);
+   CFarmJsonValue *v_high = (root != NULL ? root.Get("high") : NULL);
+   out.high = (v_high != NULL && v_high.type == FARM_JSON_NUMBER ? v_high.number_value : 0.0);
+   CFarmJsonValue *v_low = (root != NULL ? root.Get("low") : NULL);
+   out.low = (v_low != NULL && v_low.type == FARM_JSON_NUMBER ? v_low.number_value : 0.0);
+   CFarmJsonValue *v_close = (root != NULL ? root.Get("close") : NULL);
+   out.close = (v_close != NULL && v_close.type == FARM_JSON_NUMBER ? v_close.number_value : 0.0);
+   CFarmJsonValue *v_tick_volume = (root != NULL ? root.Get("tick_volume") : NULL);
+   out.tick_volume = (v_tick_volume != NULL && v_tick_volume.type == FARM_JSON_NUMBER ? v_tick_volume.integer_value : 0);
+   CFarmJsonValue *v_real_volume = (root != NULL ? root.Get("real_volume") : NULL);
+   out.real_volume = (v_real_volume != NULL && v_real_volume.type == FARM_JSON_NUMBER ? v_real_volume.integer_value : 0);
+   CFarmJsonValue *v_spread_points_avg = (root != NULL ? root.Get("spread_points_avg") : NULL);
+   out.spread_points_avg = (v_spread_points_avg != NULL && v_spread_points_avg.type == FARM_JSON_NUMBER ? v_spread_points_avg.integer_value : 0);
+   CFarmJsonValue *v_spread_points_max = (root != NULL ? root.Get("spread_points_max") : NULL);
+   out.spread_points_max = (v_spread_points_max != NULL && v_spread_points_max.type == FARM_JSON_NUMBER ? v_spread_points_max.integer_value : 0);
+   CFarmJsonValue *v_is_final = (root != NULL ? root.Get("is_final") : NULL);
+   out.is_final = (v_is_final != NULL && v_is_final.type == FARM_JSON_BOOL && v_is_final.bool_value);
+}
+
+string FarmRenderStatePayloadPositionsItem(const FarmStatePayloadPositionsItem &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "ticket");
+   out += IntegerToString(src.ticket);
+   FarmJsonAppendFieldPrefix(out, first, "symbol");
+   out += FarmJsonQuoteUtf8(src.symbol);
+   FarmJsonAppendFieldPrefix(out, first, "side");
+   out += FarmJsonQuoteUtf8(FarmStatepayloadpositionsitemSideToString(src.side));
+   FarmJsonAppendFieldPrefix(out, first, "volume");
+   out += FarmJsonFormatDouble(src.volume);
+   FarmJsonAppendFieldPrefix(out, first, "price_open");
+   out += FarmJsonFormatDouble(src.price_open);
+   FarmJsonAppendFieldPrefix(out, first, "sl");
+   if(src.sl_is_null)
+      out += "null";
+   else
+   {
+      out += FarmJsonFormatDouble(src.sl);
+   }
+   FarmJsonAppendFieldPrefix(out, first, "tp");
+   if(src.tp_is_null)
+      out += "null";
+   else
+   {
+      out += FarmJsonFormatDouble(src.tp);
+   }
+   FarmJsonAppendFieldPrefix(out, first, "profit");
+   out += FarmJsonFormatDouble(src.profit);
+   FarmJsonAppendFieldPrefix(out, first, "swap");
+   out += FarmJsonFormatDouble(src.swap);
+   FarmJsonAppendFieldPrefix(out, first, "magic");
+   out += IntegerToString(src.magic);
+   FarmJsonAppendFieldPrefix(out, first, "time_open");
+   out += FarmJsonQuoteUtf8(src.time_open);
+   if(src.comment_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "comment");
+      if(src.comment_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(src.comment);
+      }
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderStatePayloadPendingOrdersItem(const FarmStatePayloadPendingOrdersItem &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "ticket");
+   out += IntegerToString(src.ticket);
+   FarmJsonAppendFieldPrefix(out, first, "symbol");
+   out += FarmJsonQuoteUtf8(src.symbol);
+   FarmJsonAppendFieldPrefix(out, first, "type");
+   out += FarmJsonQuoteUtf8(FarmStatepayloadpendingordersitemTypeToString(src.type));
+   FarmJsonAppendFieldPrefix(out, first, "volume");
+   out += FarmJsonFormatDouble(src.volume);
+   FarmJsonAppendFieldPrefix(out, first, "price_open");
+   out += FarmJsonFormatDouble(src.price_open);
+   FarmJsonAppendFieldPrefix(out, first, "magic");
+   out += IntegerToString(src.magic);
+   FarmJsonAppendFieldPrefix(out, first, "time_setup");
+   out += FarmJsonQuoteUtf8(src.time_setup);
+   if(src.sl_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "sl");
+      if(src.sl_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonFormatDouble(src.sl);
+      }
+   }
+   if(src.time_expiration_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "time_expiration");
+      if(src.time_expiration_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(src.time_expiration);
+      }
+   }
+   if(src.tp_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "tp");
+      if(src.tp_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonFormatDouble(src.tp);
+      }
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderStatePayloadGuard(const FarmStatePayloadGuard &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "halted");
+   out += (src.halted ? "true" : "false");
+   FarmJsonAppendFieldPrefix(out, first, "mode");
+   out += FarmJsonQuoteUtf8(FarmStatepayloadguardModeToString(src.mode));
+   FarmJsonAppendFieldPrefix(out, first, "current_spread_points");
+   out += IntegerToString(src.current_spread_points);
+   FarmJsonAppendFieldPrefix(out, first, "internal_hedge_detected");
+   out += (src.internal_hedge_detected ? "true" : "false");
+   if(src.halt_reason_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "halt_reason");
+      if(src.halt_reason_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(FarmStatepayloadguardHaltReasonToString(src.halt_reason));
+      }
+   }
+   if(src.halted_until_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "halted_until");
+      if(src.halted_until_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(src.halted_until);
+      }
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderStatePayloadForeignPositions(const FarmStatePayloadForeignPositions &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "count");
+   out += IntegerToString(src.count);
+   FarmJsonAppendFieldPrefix(out, first, "symbols");
+   out += "[";
+   for(int i = 0; i < ArraySize(src.symbols); i++)
+   {
+      if(i > 0) out += ",";
+      out += FarmJsonQuoteUtf8(src.symbols[i]);
+   }
+   out += "]";
+   FarmJsonAppendFieldPrefix(out, first, "total_volume");
+   out += FarmJsonFormatDouble(src.total_volume);
+   FarmJsonAppendFieldPrefix(out, first, "margin_estimate");
+   out += FarmJsonFormatDouble(src.margin_estimate);
+   out += "}";
+   return out;
+}
+
+string FarmRenderStatePayload(const FarmStatePayload &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "balance");
+   out += FarmJsonFormatDouble(src.balance);
+   FarmJsonAppendFieldPrefix(out, first, "equity");
+   out += FarmJsonFormatDouble(src.equity);
+   FarmJsonAppendFieldPrefix(out, first, "margin_used");
+   out += FarmJsonFormatDouble(src.margin_used);
+   FarmJsonAppendFieldPrefix(out, first, "margin_free");
+   out += FarmJsonFormatDouble(src.margin_free);
+   FarmJsonAppendFieldPrefix(out, first, "margin_level_pct");
+   if(src.margin_level_pct_is_null)
+      out += "null";
+   else
+   {
+      out += FarmJsonFormatDouble(src.margin_level_pct);
+   }
+   FarmJsonAppendFieldPrefix(out, first, "equity_hwm");
+   out += FarmJsonFormatDouble(src.equity_hwm);
+   FarmJsonAppendFieldPrefix(out, first, "day_start_equity");
+   out += FarmJsonFormatDouble(src.day_start_equity);
+   FarmJsonAppendFieldPrefix(out, first, "day_pl");
+   out += FarmJsonFormatDouble(src.day_pl);
+   FarmJsonAppendFieldPrefix(out, first, "day_pl_pct");
+   out += FarmJsonFormatDouble(src.day_pl_pct);
+   FarmJsonAppendFieldPrefix(out, first, "positions");
+   out += "[";
+   for(int i = 0; i < ArraySize(src.positions); i++)
+   {
+      if(i > 0) out += ",";
+      out += FarmRenderStatePayloadPositionsItem(src.positions[i]);
+   }
+   out += "]";
+   FarmJsonAppendFieldPrefix(out, first, "pending_orders");
+   out += "[";
+   for(int i = 0; i < ArraySize(src.pending_orders); i++)
+   {
+      if(i > 0) out += ",";
+      out += FarmRenderStatePayloadPendingOrdersItem(src.pending_orders[i]);
+   }
+   out += "]";
+   FarmJsonAppendFieldPrefix(out, first, "owned_net");
+   out += "{";
+   for(int i = 0; i < ArraySize(src.owned_net_keys); i++)
+   {
+      if(i > 0) out += ",";
+      out += FarmJsonQuoteUtf8(src.owned_net_keys[i]) + ":";
+      out += FarmJsonFormatDouble(src.owned_net_values[i]);
+   }
+   out += "}";
+   FarmJsonAppendFieldPrefix(out, first, "owned_ticket_count");
+   out += "{";
+   for(int i = 0; i < ArraySize(src.owned_ticket_count_keys); i++)
+   {
+      if(i > 0) out += ",";
+      out += FarmJsonQuoteUtf8(src.owned_ticket_count_keys[i]) + ":";
+      out += IntegerToString(src.owned_ticket_count_values[i]);
+   }
+   out += "}";
+   FarmJsonAppendFieldPrefix(out, first, "foreign_positions");
+   out += FarmRenderStatePayloadForeignPositions(src.foreign_positions);
+   FarmJsonAppendFieldPrefix(out, first, "account_margin_mode");
+   out += FarmJsonQuoteUtf8(FarmStatepayloadAccountMarginModeToString(src.account_margin_mode));
+   FarmJsonAppendFieldPrefix(out, first, "guard");
+   out += FarmRenderStatePayloadGuard(src.guard);
+   out += "}";
+   return out;
+}
+
+string FarmRenderRiskDirectivePayload(const FarmRiskDirectivePayload &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "directive_id");
+   out += FarmJsonQuoteUtf8(src.directive_id);
+   FarmJsonAppendFieldPrefix(out, first, "mode");
+   out += FarmJsonQuoteUtf8(FarmRiskdirectivepayloadModeToString(src.mode));
+   FarmJsonAppendFieldPrefix(out, first, "scale_factor");
+   out += FarmJsonFormatDouble(src.scale_factor);
+   FarmJsonAppendFieldPrefix(out, first, "reason");
+   out += FarmJsonQuoteUtf8(src.reason);
+   if(src.detail_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "detail");
+      if(src.detail_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(src.detail);
+      }
+   }
+   if(src.expires_at_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "expires_at");
+      if(src.expires_at_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(src.expires_at);
+      }
+   }
+   if(src.flatten_symbols_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "flatten_symbols");
+      out += "[";
+      for(int i = 0; i < ArraySize(src.flatten_symbols); i++)
+      {
+         if(i > 0) out += ",";
+         out += FarmJsonQuoteUtf8(src.flatten_symbols[i]);
+      }
+      out += "]";
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderIntentPayloadProvenance(const FarmIntentPayloadProvenance &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "strategy_id");
+   out += FarmJsonQuoteUtf8(src.strategy_id);
+   FarmJsonAppendFieldPrefix(out, first, "decided_at");
+   out += FarmJsonQuoteUtf8(src.decided_at);
+   if(src.confidence_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "confidence");
+      if(src.confidence_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonFormatDouble(src.confidence);
+      }
+   }
+   if(src.feature_hash_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "feature_hash");
+      if(src.feature_hash_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(src.feature_hash);
+      }
+   }
+   if(src.model_version_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "model_version");
+      if(src.model_version_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(src.model_version);
+      }
+   }
+   if(src.news_state_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "news_state");
+      if(src.news_state_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(FarmIntentpayloadprovenanceNewsStateToString(src.news_state));
+      }
+   }
+   if(src.regime_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "regime");
+      if(src.regime_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(src.regime);
+      }
+   }
+   if(src.risk_scale_applied_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "risk_scale_applied");
+      if(src.risk_scale_applied_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonFormatDouble(src.risk_scale_applied);
+      }
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderIntentPayload(const FarmIntentPayload &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "intent_id");
+   out += FarmJsonQuoteUtf8(src.intent_id);
+   FarmJsonAppendFieldPrefix(out, first, "symbol");
+   out += FarmJsonQuoteUtf8(src.symbol);
+   FarmJsonAppendFieldPrefix(out, first, "target_volume");
+   out += FarmJsonFormatDouble(src.target_volume);
+   FarmJsonAppendFieldPrefix(out, first, "max_slippage_points");
+   out += IntegerToString(src.max_slippage_points);
+   FarmJsonAppendFieldPrefix(out, first, "sl_price");
+   if(src.sl_price_is_null)
+      out += "null";
+   else
+   {
+      out += FarmJsonFormatDouble(src.sl_price);
+   }
+   FarmJsonAppendFieldPrefix(out, first, "tp_price");
+   if(src.tp_price_is_null)
+      out += "null";
+   else
+   {
+      out += FarmJsonFormatDouble(src.tp_price);
+   }
+   FarmJsonAppendFieldPrefix(out, first, "valid_until");
+   out += FarmJsonQuoteUtf8(src.valid_until);
+   FarmJsonAppendFieldPrefix(out, first, "urgency");
+   out += FarmJsonQuoteUtf8(FarmIntentpayloadUrgencyToString(src.urgency));
+   FarmJsonAppendFieldPrefix(out, first, "provenance");
+   out += FarmRenderIntentPayloadProvenance(src.provenance);
+   out += "}";
+   return out;
+}
+
+string FarmRenderIntentAckPayloadActionsPlannedItem(const FarmIntentAckPayloadActionsPlannedItem &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "op");
+   out += FarmJsonQuoteUtf8(FarmIntentackpayloadactionsplanneditemOpToString(src.op));
+   FarmJsonAppendFieldPrefix(out, first, "side");
+   out += FarmJsonQuoteUtf8(FarmIntentackpayloadactionsplanneditemSideToString(src.side));
+   FarmJsonAppendFieldPrefix(out, first, "volume");
+   out += FarmJsonFormatDouble(src.volume);
+   FarmJsonAppendFieldPrefix(out, first, "ticket");
+   if(src.ticket_is_null)
+      out += "null";
+   else
+   {
+      out += IntegerToString(src.ticket);
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderIntentAckPayload(const FarmIntentAckPayload &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "intent_id");
+   out += FarmJsonQuoteUtf8(src.intent_id);
+   FarmJsonAppendFieldPrefix(out, first, "status");
+   out += FarmJsonQuoteUtf8(FarmIntentackpayloadStatusToString(src.status));
+   FarmJsonAppendFieldPrefix(out, first, "volume_before");
+   out += FarmJsonFormatDouble(src.volume_before);
+   FarmJsonAppendFieldPrefix(out, first, "volume_target");
+   out += FarmJsonFormatDouble(src.volume_target);
+   FarmJsonAppendFieldPrefix(out, first, "overshoot_volume");
+   out += FarmJsonFormatDouble(src.overshoot_volume);
+   FarmJsonAppendFieldPrefix(out, first, "actions_planned");
+   out += "[";
+   for(int i = 0; i < ArraySize(src.actions_planned); i++)
+   {
+      if(i > 0) out += ",";
+      out += FarmRenderIntentAckPayloadActionsPlannedItem(src.actions_planned[i]);
+   }
+   out += "]";
+   if(src.reason_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "reason");
+      if(src.reason_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(src.reason);
+      }
+   }
+   if(src.volume_clamped_to_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "volume_clamped_to");
+      if(src.volume_clamped_to_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonFormatDouble(src.volume_clamped_to);
+      }
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderHelloPayloadSymbol(const FarmHelloPayloadSymbol &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "name");
+   out += FarmJsonQuoteUtf8(src.name);
+   FarmJsonAppendFieldPrefix(out, first, "digits");
+   out += IntegerToString(src.digits);
+   FarmJsonAppendFieldPrefix(out, first, "point");
+   out += FarmJsonFormatDouble(src.point);
+   FarmJsonAppendFieldPrefix(out, first, "tick_size");
+   out += FarmJsonFormatDouble(src.tick_size);
+   FarmJsonAppendFieldPrefix(out, first, "tick_value");
+   out += FarmJsonFormatDouble(src.tick_value);
+   FarmJsonAppendFieldPrefix(out, first, "contract_size");
+   out += FarmJsonFormatDouble(src.contract_size);
+   FarmJsonAppendFieldPrefix(out, first, "volume_min");
+   out += FarmJsonFormatDouble(src.volume_min);
+   FarmJsonAppendFieldPrefix(out, first, "volume_max");
+   out += FarmJsonFormatDouble(src.volume_max);
+   FarmJsonAppendFieldPrefix(out, first, "volume_step");
+   out += FarmJsonFormatDouble(src.volume_step);
+   FarmJsonAppendFieldPrefix(out, first, "stops_level");
+   out += IntegerToString(src.stops_level);
+   FarmJsonAppendFieldPrefix(out, first, "freeze_level");
+   out += IntegerToString(src.freeze_level);
+   FarmJsonAppendFieldPrefix(out, first, "swap_long");
+   out += FarmJsonFormatDouble(src.swap_long);
+   FarmJsonAppendFieldPrefix(out, first, "swap_short");
+   out += FarmJsonFormatDouble(src.swap_short);
+   FarmJsonAppendFieldPrefix(out, first, "trade_mode");
+   out += FarmJsonQuoteUtf8(FarmHellopayloadsymbolTradeModeToString(src.trade_mode));
+   FarmJsonAppendFieldPrefix(out, first, "order_mode_closeby");
+   out += (src.order_mode_closeby ? "true" : "false");
+   out += "}";
+   return out;
+}
+
+string FarmRenderHelloPayloadLocalLimits(const FarmHelloPayloadLocalLimits &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "max_lot_per_order");
+   out += FarmJsonFormatDouble(src.max_lot_per_order);
+   FarmJsonAppendFieldPrefix(out, first, "max_net_volume_per_symbol");
+   out += FarmJsonFormatDouble(src.max_net_volume_per_symbol);
+   FarmJsonAppendFieldPrefix(out, first, "max_tickets_per_symbol");
+   out += IntegerToString(src.max_tickets_per_symbol);
+   FarmJsonAppendFieldPrefix(out, first, "max_total_tickets");
+   out += IntegerToString(src.max_total_tickets);
+   FarmJsonAppendFieldPrefix(out, first, "max_spread_points");
+   out += IntegerToString(src.max_spread_points);
+   FarmJsonAppendFieldPrefix(out, first, "daily_loss_pct");
+   out += FarmJsonFormatDouble(src.daily_loss_pct);
+   FarmJsonAppendFieldPrefix(out, first, "max_dd_pct");
+   out += FarmJsonFormatDouble(src.max_dd_pct);
+   out += "}";
+   return out;
+}
+
+string FarmRenderHelloPayloadBrokerTime(const FarmHelloPayloadBrokerTime &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "utc_offset_sec");
+   out += IntegerToString(src.utc_offset_sec);
+   FarmJsonAppendFieldPrefix(out, first, "detected_at");
+   out += FarmJsonQuoteUtf8(src.detected_at);
+   FarmJsonAppendFieldPrefix(out, first, "source");
+   out += FarmJsonQuoteUtf8(FarmHellopayloadbrokertimeSourceToString(src.source));
+   if(src.local_dst_sec_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "local_dst_sec");
+      if(src.local_dst_sec_is_null)
+         out += "null";
+      else
+      {
+         out += IntegerToString(src.local_dst_sec);
+      }
+   }
+   if(src.local_gmt_offset_sec_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "local_gmt_offset_sec");
+      if(src.local_gmt_offset_sec_is_null)
+         out += "null";
+      else
+      {
+         out += IntegerToString(src.local_gmt_offset_sec);
+      }
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderHelloPayloadAccount(const FarmHelloPayloadAccount &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "login");
+   out += IntegerToString(src.login);
+   FarmJsonAppendFieldPrefix(out, first, "server");
+   out += FarmJsonQuoteUtf8(src.server);
+   FarmJsonAppendFieldPrefix(out, first, "currency");
+   out += FarmJsonQuoteUtf8(src.currency);
+   FarmJsonAppendFieldPrefix(out, first, "leverage");
+   out += IntegerToString(src.leverage);
+   FarmJsonAppendFieldPrefix(out, first, "balance");
+   out += FarmJsonFormatDouble(src.balance);
+   FarmJsonAppendFieldPrefix(out, first, "equity");
+   out += FarmJsonFormatDouble(src.equity);
+   FarmJsonAppendFieldPrefix(out, first, "is_demo");
+   out += (src.is_demo ? "true" : "false");
+   FarmJsonAppendFieldPrefix(out, first, "margin_mode");
+   out += FarmJsonQuoteUtf8(FarmHellopayloadaccountMarginModeToString(src.margin_mode));
+   out += "}";
+   return out;
+}
+
+string FarmRenderHelloPayload(const FarmHelloPayload &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "token");
+   out += FarmJsonQuoteUtf8(src.token);
+   FarmJsonAppendFieldPrefix(out, first, "ea_version");
+   out += FarmJsonQuoteUtf8(src.ea_version);
+   FarmJsonAppendFieldPrefix(out, first, "terminal_build");
+   out += IntegerToString(src.terminal_build);
+   FarmJsonAppendFieldPrefix(out, first, "account");
+   out += FarmRenderHelloPayloadAccount(src.account);
+   FarmJsonAppendFieldPrefix(out, first, "symbol");
+   out += FarmRenderHelloPayloadSymbol(src.symbol);
+   FarmJsonAppendFieldPrefix(out, first, "timeframe");
+   out += FarmJsonQuoteUtf8(FarmHellopayloadTimeframeToString(src.timeframe));
+   FarmJsonAppendFieldPrefix(out, first, "strategy_id");
+   out += FarmJsonQuoteUtf8(src.strategy_id);
+   FarmJsonAppendFieldPrefix(out, first, "magic");
+   out += IntegerToString(src.magic);
+   FarmJsonAppendFieldPrefix(out, first, "local_limits");
+   out += FarmRenderHelloPayloadLocalLimits(src.local_limits);
+   if(src.broker_time_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "broker_time");
+      out += FarmRenderHelloPayloadBrokerTime(src.broker_time);
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderHelloAckPayloadInitialDirective(const FarmHelloAckPayloadInitialDirective &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "mode");
+   out += FarmJsonQuoteUtf8(FarmHelloackpayloadinitialdirectiveModeToString(src.mode));
+   FarmJsonAppendFieldPrefix(out, first, "scale_factor");
+   out += FarmJsonFormatDouble(src.scale_factor);
+   out += "}";
+   return out;
+}
+
+string FarmRenderHelloAckPayload(const FarmHelloAckPayload &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "accepted");
+   out += (src.accepted ? "true" : "false");
+   FarmJsonAppendFieldPrefix(out, first, "server_time");
+   out += FarmJsonQuoteUtf8(src.server_time);
+   FarmJsonAppendFieldPrefix(out, first, "brain_version");
+   out += FarmJsonQuoteUtf8(src.brain_version);
+   if(src.assigned_session_id_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "assigned_session_id");
+      if(src.assigned_session_id_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(src.assigned_session_id);
+      }
+   }
+   if(src.initial_directive_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "initial_directive");
+      out += FarmRenderHelloAckPayloadInitialDirective(src.initial_directive);
+   }
+   if(src.reject_reason_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "reject_reason");
+      if(src.reject_reason_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(FarmHelloackpayloadRejectReasonToString(src.reject_reason));
+      }
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderHeartbeatPayloadWire(const FarmHeartbeatPayloadWire &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "state");
+   out += FarmJsonQuoteUtf8(FarmHeartbeatpayloadwireStateToString(src.state));
+   FarmJsonAppendFieldPrefix(out, first, "send_queue_depth");
+   out += IntegerToString(src.send_queue_depth);
+   FarmJsonAppendFieldPrefix(out, first, "messages_sent");
+   out += IntegerToString(src.messages_sent);
+   FarmJsonAppendFieldPrefix(out, first, "messages_recv");
+   out += IntegerToString(src.messages_recv);
+   FarmJsonAppendFieldPrefix(out, first, "reconnect_count");
+   out += IntegerToString(src.reconnect_count);
+   FarmJsonAppendFieldPrefix(out, first, "bytes_dropped");
+   out += IntegerToString(src.bytes_dropped);
+   FarmJsonAppendFieldPrefix(out, first, "seconds_since_last_inbound");
+   out += IntegerToString(src.seconds_since_last_inbound);
+   if(src.broker_utc_offset_sec_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "broker_utc_offset_sec");
+      if(src.broker_utc_offset_sec_is_null)
+         out += "null";
+      else
+      {
+         out += IntegerToString(src.broker_utc_offset_sec);
+      }
+   }
+   if(src.pump_p99_us_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "pump_p99_us");
+      out += IntegerToString(src.pump_p99_us);
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderHeartbeatPayload(const FarmHeartbeatPayload &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "seq");
+   out += IntegerToString(src.seq);
+   FarmJsonAppendFieldPrefix(out, first, "wire");
+   out += FarmRenderHeartbeatPayloadWire(src.wire);
+   out += "}";
+   return out;
+}
+
+string FarmRenderHeartbeatAckPayload(const FarmHeartbeatAckPayload &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "seq");
+   out += IntegerToString(src.seq);
+   FarmJsonAppendFieldPrefix(out, first, "server_time");
+   out += FarmJsonQuoteUtf8(src.server_time);
+   if(src.brain_healthy_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "brain_healthy");
+      out += (src.brain_healthy ? "true" : "false");
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderExecReportPayload(const FarmExecReportPayload &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "intent_id");
+   out += FarmJsonQuoteUtf8(src.intent_id);
+   FarmJsonAppendFieldPrefix(out, first, "op");
+   out += FarmJsonQuoteUtf8(FarmExecreportpayloadOpToString(src.op));
+   FarmJsonAppendFieldPrefix(out, first, "result");
+   out += FarmJsonQuoteUtf8(FarmExecreportpayloadResultToString(src.result));
+   FarmJsonAppendFieldPrefix(out, first, "retcode");
+   out += IntegerToString(src.retcode);
+   FarmJsonAppendFieldPrefix(out, first, "retcode_text");
+   out += FarmJsonQuoteUtf8(src.retcode_text);
+   FarmJsonAppendFieldPrefix(out, first, "side");
+   out += FarmJsonQuoteUtf8(FarmExecreportpayloadSideToString(src.side));
+   FarmJsonAppendFieldPrefix(out, first, "volume_requested");
+   out += FarmJsonFormatDouble(src.volume_requested);
+   FarmJsonAppendFieldPrefix(out, first, "volume_filled");
+   out += FarmJsonFormatDouble(src.volume_filled);
+   FarmJsonAppendFieldPrefix(out, first, "attempt");
+   out += IntegerToString(src.attempt);
+   if(src.commission_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "commission");
+      out += FarmJsonFormatDouble(src.commission);
+   }
+   if(src.error_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "error");
+      if(src.error_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(src.error);
+      }
+   }
+   if(src.latency_ms_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "latency_ms");
+      if(src.latency_ms_is_null)
+         out += "null";
+      else
+      {
+         out += IntegerToString(src.latency_ms);
+      }
+   }
+   if(src.price_filled_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "price_filled");
+      if(src.price_filled_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonFormatDouble(src.price_filled);
+      }
+   }
+   if(src.price_requested_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "price_requested");
+      if(src.price_requested_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonFormatDouble(src.price_requested);
+      }
+   }
+   if(src.slippage_points_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "slippage_points");
+      if(src.slippage_points_is_null)
+         out += "null";
+      else
+      {
+         out += IntegerToString(src.slippage_points);
+      }
+   }
+   if(src.spread_at_send_points_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "spread_at_send_points");
+      out += IntegerToString(src.spread_at_send_points);
+   }
+   if(src.swap_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "swap");
+      out += FarmJsonFormatDouble(src.swap);
+   }
+   if(src.ticket_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "ticket");
+      if(src.ticket_is_null)
+         out += "null";
+      else
+      {
+         out += IntegerToString(src.ticket);
+      }
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderErrorPayload(const FarmErrorPayload &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "code");
+   out += FarmJsonQuoteUtf8(src.code);
+   FarmJsonAppendFieldPrefix(out, first, "severity");
+   out += FarmJsonQuoteUtf8(FarmErrorpayloadSeverityToString(src.severity));
+   FarmJsonAppendFieldPrefix(out, first, "message");
+   out += FarmJsonQuoteUtf8(src.message);
+   FarmJsonAppendFieldPrefix(out, first, "fatal");
+   out += (src.fatal ? "true" : "false");
+   if(src.context_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "context");
+      if(src.context_is_null)
+         out += "null";
+      else
+      {
+         out += "{";
+         for(int i = 0; i < ArraySize(src.context_keys); i++)
+         {
+            if(i > 0) out += ",";
+            out += FarmJsonQuoteUtf8(src.context_keys[i]) + ":";
+            out += src.context_values[i];
+         }
+         out += "}";
+      }
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderConfigUpdatePayloadSettings(const FarmConfigUpdatePayloadSettings &src)
+{
+   string out = "{";
+   bool first = true;
+   if(src.bar_backfill_count_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "bar_backfill_count");
+      out += IntegerToString(src.bar_backfill_count);
+   }
+   if(src.heartbeat_sec_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "heartbeat_sec");
+      out += IntegerToString(src.heartbeat_sec);
+   }
+   if(src.state_interval_sec_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "state_interval_sec");
+      out += IntegerToString(src.state_interval_sec);
+   }
+   if(src.verbose_log_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "verbose_log");
+      out += (src.verbose_log ? "true" : "false");
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderConfigUpdatePayload(const FarmConfigUpdatePayload &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "config_id");
+   out += FarmJsonQuoteUtf8(src.config_id);
+   FarmJsonAppendFieldPrefix(out, first, "settings");
+   out += FarmRenderConfigUpdatePayloadSettings(src.settings);
+   if(src.apply_at_present)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "apply_at");
+      if(src.apply_at_is_null)
+         out += "null";
+      else
+      {
+         out += FarmJsonQuoteUtf8(src.apply_at);
+      }
+   }
+   out += "}";
+   return out;
+}
+
+string FarmRenderBarPayload(const FarmBarPayload &src)
+{
+   string out = "{";
+   bool first = true;
+   FarmJsonAppendFieldPrefix(out, first, "symbol");
+   out += FarmJsonQuoteUtf8(src.symbol);
+   FarmJsonAppendFieldPrefix(out, first, "timeframe");
+   out += FarmJsonQuoteUtf8(FarmBarpayloadTimeframeToString(src.timeframe));
+   FarmJsonAppendFieldPrefix(out, first, "bar_time");
+   out += FarmJsonQuoteUtf8(src.bar_time);
+   FarmJsonAppendFieldPrefix(out, first, "open");
+   out += FarmJsonFormatDouble(src.open);
+   FarmJsonAppendFieldPrefix(out, first, "high");
+   out += FarmJsonFormatDouble(src.high);
+   FarmJsonAppendFieldPrefix(out, first, "low");
+   out += FarmJsonFormatDouble(src.low);
+   FarmJsonAppendFieldPrefix(out, first, "close");
+   out += FarmJsonFormatDouble(src.close);
+   FarmJsonAppendFieldPrefix(out, first, "tick_volume");
+   out += IntegerToString(src.tick_volume);
+   FarmJsonAppendFieldPrefix(out, first, "real_volume");
+   out += IntegerToString(src.real_volume);
+   FarmJsonAppendFieldPrefix(out, first, "spread_points_avg");
+   out += IntegerToString(src.spread_points_avg);
+   FarmJsonAppendFieldPrefix(out, first, "spread_points_max");
+   out += IntegerToString(src.spread_points_max);
+   FarmJsonAppendFieldPrefix(out, first, "is_final");
+   out += (src.is_final ? "true" : "false");
+   out += "}";
+   return out;
+}
+
+bool FarmParseHello(const string json, FarmHelloPayload &out)
 {
    CFarmJsonDoc doc;
    if(!doc.Parse(json)) return false;
-   if(!FarmValidatePayload(msg_type, doc.Root())) { doc.Free(); return false; }
-   out_json = FarmCanonicalizePayloadJson(msg_type, doc.Root());
+   if(!FarmValidatePayload(FARM_MSG_HELLO, doc.Root())) { doc.Free(); return false; }
+   FarmFillHelloPayload(doc.Root(), out);
    doc.Free();
    return true;
 }
 
-double FarmJsonNumberValue(CFarmJsonValue *obj, const string key)
+bool FarmSerializeHello(const FarmHelloPayload &src, string &out_json)
 {
-   CFarmJsonValue *v = obj.Get(key);
-   return (v != NULL && v.type == FARM_JSON_NUMBER ? v.number_value : 0.0);
+   out_json = FarmRenderHelloPayload(src);
+   return true;
 }
 
-long FarmJsonLongValue(CFarmJsonValue *obj, const string key)
+bool FarmParseHelloAck(const string json, FarmHelloAckPayload &out)
 {
-   CFarmJsonValue *v = obj.Get(key);
-   return (v != NULL && v.type == FARM_JSON_NUMBER ? v.integer_value : 0);
+   CFarmJsonDoc doc;
+   if(!doc.Parse(json)) return false;
+   if(!FarmValidatePayload(FARM_MSG_HELLO_ACK, doc.Root())) { doc.Free(); return false; }
+   FarmFillHelloAckPayload(doc.Root(), out);
+   doc.Free();
+   return true;
 }
 
-string FarmJsonStringValue(CFarmJsonValue *obj, const string key)
+bool FarmSerializeHelloAck(const FarmHelloAckPayload &src, string &out_json)
 {
-   CFarmJsonValue *v = obj.Get(key);
-   return (v != NULL && v.type == FARM_JSON_STRING ? v.string_value : "");
+   out_json = FarmRenderHelloAckPayload(src);
+   return true;
 }
 
-bool FarmJsonBoolValue(CFarmJsonValue *obj, const string key)
+bool FarmParseHeartbeat(const string json, FarmHeartbeatPayload &out)
 {
-   CFarmJsonValue *v = obj.Get(key);
-   return (v != NULL && v.type == FARM_JSON_BOOL && v.bool_value);
+   CFarmJsonDoc doc;
+   if(!doc.Parse(json)) return false;
+   if(!FarmValidatePayload(FARM_MSG_HEARTBEAT, doc.Root())) { doc.Free(); return false; }
+   FarmFillHeartbeatPayload(doc.Root(), out);
+   doc.Free();
+   return true;
 }
 
-void FarmFillStatePosition(CFarmJsonValue *src, FarmStatePosition &out)
+bool FarmSerializeHeartbeat(const FarmHeartbeatPayload &src, string &out_json)
 {
-   out.ticket = FarmJsonLongValue(src, "ticket");
-   out.symbol = FarmJsonStringValue(src, "symbol");
-   out.side = FarmJsonStringValue(src, "side");
-   out.volume = FarmJsonNumberValue(src, "volume");
-   out.price_open = FarmJsonNumberValue(src, "price_open");
-   CFarmJsonValue *sl = src.Get("sl");
-   out.sl_is_null = (sl != NULL && sl.type == FARM_JSON_NULL);
-   out.sl = (sl != NULL && sl.type == FARM_JSON_NUMBER ? sl.number_value : 0.0);
-   CFarmJsonValue *tp = src.Get("tp");
-   out.tp_is_null = (tp != NULL && tp.type == FARM_JSON_NULL);
-   out.tp = (tp != NULL && tp.type == FARM_JSON_NUMBER ? tp.number_value : 0.0);
-   out.profit = FarmJsonNumberValue(src, "profit");
-   out.swap = FarmJsonNumberValue(src, "swap");
-   out.magic = FarmJsonLongValue(src, "magic");
-   CFarmJsonValue *comment = src.Get("comment");
-   out.comment_present = (comment != NULL);
-   out.comment_is_null = (comment != NULL && comment.type == FARM_JSON_NULL);
-   out.comment = (comment != NULL && comment.type == FARM_JSON_STRING ? comment.string_value : "");
-   out.time_open = FarmJsonStringValue(src, "time_open");
+   out_json = FarmRenderHeartbeatPayload(src);
+   return true;
 }
 
-void FarmFillStatePendingOrder(CFarmJsonValue *src, FarmStatePendingOrder &out)
+bool FarmParseHeartbeatAck(const string json, FarmHeartbeatAckPayload &out)
 {
-   out.ticket = FarmJsonLongValue(src, "ticket");
-   out.symbol = FarmJsonStringValue(src, "symbol");
-   out.type = FarmJsonStringValue(src, "type");
-   out.volume = FarmJsonNumberValue(src, "volume");
-   out.price_open = FarmJsonNumberValue(src, "price_open");
-   CFarmJsonValue *sl = src.Get("sl");
-   out.sl_present = (sl != NULL);
-   out.sl_is_null = (sl != NULL && sl.type == FARM_JSON_NULL);
-   out.sl = (sl != NULL && sl.type == FARM_JSON_NUMBER ? sl.number_value : 0.0);
-   CFarmJsonValue *tp = src.Get("tp");
-   out.tp_present = (tp != NULL);
-   out.tp_is_null = (tp != NULL && tp.type == FARM_JSON_NULL);
-   out.tp = (tp != NULL && tp.type == FARM_JSON_NUMBER ? tp.number_value : 0.0);
-   out.magic = FarmJsonLongValue(src, "magic");
-   out.time_setup = FarmJsonStringValue(src, "time_setup");
-   CFarmJsonValue *exp = src.Get("time_expiration");
-   out.time_expiration_present = (exp != NULL);
-   out.time_expiration_is_null = (exp != NULL && exp.type == FARM_JSON_NULL);
-   out.time_expiration = (exp != NULL && exp.type == FARM_JSON_STRING ? exp.string_value : "");
+   CFarmJsonDoc doc;
+   if(!doc.Parse(json)) return false;
+   if(!FarmValidatePayload(FARM_MSG_HEARTBEAT_ACK, doc.Root())) { doc.Free(); return false; }
+   FarmFillHeartbeatAckPayload(doc.Root(), out);
+   doc.Free();
+   return true;
 }
 
-void FarmFillStringArray(CFarmJsonValue *src, string &out[])
+bool FarmSerializeHeartbeatAck(const FarmHeartbeatAckPayload &src, string &out_json)
 {
-   ArrayResize(out, src.Size());
-   for(int i = 0; i < src.Size(); i++)
-   {
-      CFarmJsonValue *item = src.At(i);
-      out[i] = (item != NULL && item.type == FARM_JSON_STRING ? item.string_value : "");
-   }
+   out_json = FarmRenderHeartbeatAckPayload(src);
+   return true;
 }
 
-void FarmFillState(CFarmJsonValue *root, FarmStatePayload &out)
+bool FarmParseBar(const string json, FarmBarPayload &out)
 {
-   out.Free();
-   out.raw_json = FarmCanonicalState(root);
-   out.balance = FarmJsonNumberValue(root, "balance");
-   out.equity = FarmJsonNumberValue(root, "equity");
-   out.margin_used = FarmJsonNumberValue(root, "margin_used");
-   out.margin_free = FarmJsonNumberValue(root, "margin_free");
-   CFarmJsonValue *ml = root.Get("margin_level_pct");
-   out.margin_level_pct_present = (ml != NULL);
-   out.margin_level_pct_is_null = (ml != NULL && ml.type == FARM_JSON_NULL);
-   out.margin_level_pct = (ml != NULL && ml.type == FARM_JSON_NUMBER ? ml.number_value : 0.0);
-   out.equity_hwm = FarmJsonNumberValue(root, "equity_hwm");
-   out.day_start_equity = FarmJsonNumberValue(root, "day_start_equity");
-   out.day_pl = FarmJsonNumberValue(root, "day_pl");
-   out.day_pl_pct = FarmJsonNumberValue(root, "day_pl_pct");
-   CFarmJsonValue *positions = root.Get("positions");
-   ArrayResize(out.positions, positions.Size());
-   for(int i = 0; i < positions.Size(); i++) FarmFillStatePosition(positions.At(i), out.positions[i]);
-   CFarmJsonValue *pending = root.Get("pending_orders");
-   ArrayResize(out.pending_orders, pending.Size());
-   for(int i = 0; i < pending.Size(); i++) FarmFillStatePendingOrder(pending.At(i), out.pending_orders[i]);
-   CFarmJsonValue *owned_net = root.Get("owned_net");
-   ArrayResize(out.owned_net_keys, owned_net.Size());
-   ArrayResize(out.owned_net_values, owned_net.Size());
-   for(int i = 0; i < owned_net.Size(); i++)
-   {
-      out.owned_net_keys[i] = owned_net.KeyAt(i);
-      CFarmJsonValue *v = owned_net.At(i);
-      out.owned_net_values[i] = (v != NULL && v.type == FARM_JSON_NUMBER ? v.number_value : 0.0);
-   }
-   CFarmJsonValue *count = root.Get("owned_ticket_count");
-   ArrayResize(out.owned_ticket_count_keys, count.Size());
-   ArrayResize(out.owned_ticket_count_values, count.Size());
-   for(int i = 0; i < count.Size(); i++)
-   {
-      out.owned_ticket_count_keys[i] = count.KeyAt(i);
-      CFarmJsonValue *v = count.At(i);
-      out.owned_ticket_count_values[i] = (v != NULL && v.type == FARM_JSON_NUMBER ? v.integer_value : 0);
-   }
-   CFarmJsonValue *foreign = root.Get("foreign_positions");
-   out.foreign_positions.count = FarmJsonLongValue(foreign, "count");
-   FarmFillStringArray(foreign.Get("symbols"), out.foreign_positions.symbols);
-   out.foreign_positions.total_volume = FarmJsonNumberValue(foreign, "total_volume");
-   out.foreign_positions.margin_estimate = FarmJsonNumberValue(foreign, "margin_estimate");
-   out.account_margin_mode = FarmJsonStringValue(root, "account_margin_mode");
-   CFarmJsonValue *guard = root.Get("guard");
-   out.guard.halted = FarmJsonBoolValue(guard, "halted");
-   CFarmJsonValue *reason = guard.Get("halt_reason");
-   out.guard.halt_reason_present = (reason != NULL);
-   out.guard.halt_reason_is_null = (reason != NULL && reason.type == FARM_JSON_NULL);
-   out.guard.halt_reason = (reason != NULL && reason.type == FARM_JSON_STRING ? reason.string_value : "");
-   out.guard.mode = FarmJsonStringValue(guard, "mode");
-   out.guard.current_spread_points = FarmJsonLongValue(guard, "current_spread_points");
-   out.guard.internal_hedge_detected = FarmJsonBoolValue(guard, "internal_hedge_detected");
-   CFarmJsonValue *until = guard.Get("halted_until");
-   out.guard.halted_until_present = (until != NULL);
-   out.guard.halted_until_is_null = (until != NULL && until.type == FARM_JSON_NULL);
-   out.guard.halted_until = (until != NULL && until.type == FARM_JSON_STRING ? until.string_value : "");
+   CFarmJsonDoc doc;
+   if(!doc.Parse(json)) return false;
+   if(!FarmValidatePayload(FARM_MSG_BAR, doc.Root())) { doc.Free(); return false; }
+   FarmFillBarPayload(doc.Root(), out);
+   doc.Free();
+   return true;
+}
+
+bool FarmSerializeBar(const FarmBarPayload &src, string &out_json)
+{
+   out_json = FarmRenderBarPayload(src);
+   return true;
 }
 
 bool FarmParseState(const string json, FarmStatePayload &out)
 {
    CFarmJsonDoc doc;
    if(!doc.Parse(json)) return false;
-   if(!FarmValidateState(doc.Root())) { doc.Free(); return false; }
-   FarmFillState(doc.Root(), out);
+   if(!FarmValidatePayload(FARM_MSG_STATE, doc.Root())) { doc.Free(); return false; }
+   FarmFillStatePayload(doc.Root(), out);
    doc.Free();
    return true;
 }
 
 bool FarmSerializeState(const FarmStatePayload &src, string &out_json)
 {
-   out_json = src.raw_json;
-   return out_json != "";
-}
-
-bool FarmParseHello(const string json, FarmHelloPayload &out)
-{
-   return FarmParsePayloadJson(FARM_MSG_HELLO, json, out.raw_json);
-}
-
-bool FarmSerializeHello(const FarmHelloPayload &src, string &out_json)
-{
-   out_json = src.raw_json;
-   return out_json != "";
-}
-
-bool FarmParseHelloAck(const string json, FarmHelloAckPayload &out)
-{
-   return FarmParsePayloadJson(FARM_MSG_HELLO_ACK, json, out.raw_json);
-}
-
-bool FarmSerializeHelloAck(const FarmHelloAckPayload &src, string &out_json)
-{
-   out_json = src.raw_json;
-   return out_json != "";
-}
-
-bool FarmParseHeartbeat(const string json, FarmHeartbeatPayload &out)
-{
-   return FarmParsePayloadJson(FARM_MSG_HEARTBEAT, json, out.raw_json);
-}
-
-bool FarmSerializeHeartbeat(const FarmHeartbeatPayload &src, string &out_json)
-{
-   out_json = src.raw_json;
-   return out_json != "";
-}
-
-bool FarmParseHeartbeatAck(const string json, FarmHeartbeatAckPayload &out)
-{
-   return FarmParsePayloadJson(FARM_MSG_HEARTBEAT_ACK, json, out.raw_json);
-}
-
-bool FarmSerializeHeartbeatAck(const FarmHeartbeatAckPayload &src, string &out_json)
-{
-   out_json = src.raw_json;
-   return out_json != "";
-}
-
-bool FarmParseBar(const string json, FarmBarPayload &out)
-{
-   return FarmParsePayloadJson(FARM_MSG_BAR, json, out.raw_json);
-}
-
-bool FarmSerializeBar(const FarmBarPayload &src, string &out_json)
-{
-   out_json = src.raw_json;
-   return out_json != "";
+   out_json = FarmRenderStatePayload(src);
+   return true;
 }
 
 bool FarmParseIntent(const string json, FarmIntentPayload &out)
 {
-   return FarmParsePayloadJson(FARM_MSG_INTENT, json, out.raw_json);
+   CFarmJsonDoc doc;
+   if(!doc.Parse(json)) return false;
+   if(!FarmValidatePayload(FARM_MSG_INTENT, doc.Root())) { doc.Free(); return false; }
+   FarmFillIntentPayload(doc.Root(), out);
+   doc.Free();
+   return true;
 }
 
 bool FarmSerializeIntent(const FarmIntentPayload &src, string &out_json)
 {
-   out_json = src.raw_json;
-   return out_json != "";
+   out_json = FarmRenderIntentPayload(src);
+   return true;
 }
 
 bool FarmParseIntentAck(const string json, FarmIntentAckPayload &out)
 {
-   return FarmParsePayloadJson(FARM_MSG_INTENT_ACK, json, out.raw_json);
+   CFarmJsonDoc doc;
+   if(!doc.Parse(json)) return false;
+   if(!FarmValidatePayload(FARM_MSG_INTENT_ACK, doc.Root())) { doc.Free(); return false; }
+   FarmFillIntentAckPayload(doc.Root(), out);
+   doc.Free();
+   return true;
 }
 
 bool FarmSerializeIntentAck(const FarmIntentAckPayload &src, string &out_json)
 {
-   out_json = src.raw_json;
-   return out_json != "";
+   out_json = FarmRenderIntentAckPayload(src);
+   return true;
 }
 
 bool FarmParseExecReport(const string json, FarmExecReportPayload &out)
 {
-   return FarmParsePayloadJson(FARM_MSG_EXEC_REPORT, json, out.raw_json);
+   CFarmJsonDoc doc;
+   if(!doc.Parse(json)) return false;
+   if(!FarmValidatePayload(FARM_MSG_EXEC_REPORT, doc.Root())) { doc.Free(); return false; }
+   FarmFillExecReportPayload(doc.Root(), out);
+   doc.Free();
+   return true;
 }
 
 bool FarmSerializeExecReport(const FarmExecReportPayload &src, string &out_json)
 {
-   out_json = src.raw_json;
-   return out_json != "";
+   out_json = FarmRenderExecReportPayload(src);
+   return true;
 }
 
 bool FarmParseRiskDirective(const string json, FarmRiskDirectivePayload &out)
 {
-   return FarmParsePayloadJson(FARM_MSG_RISK_DIRECTIVE, json, out.raw_json);
+   CFarmJsonDoc doc;
+   if(!doc.Parse(json)) return false;
+   if(!FarmValidatePayload(FARM_MSG_RISK_DIRECTIVE, doc.Root())) { doc.Free(); return false; }
+   FarmFillRiskDirectivePayload(doc.Root(), out);
+   doc.Free();
+   return true;
 }
 
 bool FarmSerializeRiskDirective(const FarmRiskDirectivePayload &src, string &out_json)
 {
-   out_json = src.raw_json;
-   return out_json != "";
+   out_json = FarmRenderRiskDirectivePayload(src);
+   return true;
 }
 
 bool FarmParseConfigUpdate(const string json, FarmConfigUpdatePayload &out)
 {
-   return FarmParsePayloadJson(FARM_MSG_CONFIG_UPDATE, json, out.raw_json);
+   CFarmJsonDoc doc;
+   if(!doc.Parse(json)) return false;
+   if(!FarmValidatePayload(FARM_MSG_CONFIG_UPDATE, doc.Root())) { doc.Free(); return false; }
+   FarmFillConfigUpdatePayload(doc.Root(), out);
+   doc.Free();
+   return true;
 }
 
 bool FarmSerializeConfigUpdate(const FarmConfigUpdatePayload &src, string &out_json)
 {
-   out_json = src.raw_json;
-   return out_json != "";
+   out_json = FarmRenderConfigUpdatePayload(src);
+   return true;
 }
 
 bool FarmParseError(const string json, FarmErrorPayload &out)
 {
-   return FarmParsePayloadJson(FARM_MSG_ERROR, json, out.raw_json);
+   CFarmJsonDoc doc;
+   if(!doc.Parse(json)) return false;
+   if(!FarmValidatePayload(FARM_MSG_ERROR, doc.Root())) { doc.Free(); return false; }
+   FarmFillErrorPayload(doc.Root(), out);
+   doc.Free();
+   return true;
 }
 
 bool FarmSerializeError(const FarmErrorPayload &src, string &out_json)
 {
-   out_json = src.raw_json;
-   return out_json != "";
+   out_json = FarmRenderErrorPayload(src);
+   return true;
 }
 
 #endif

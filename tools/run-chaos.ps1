@@ -10,6 +10,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. "$PSScriptRoot\python-gate-env.ps1"
 
 function Import-DotEnv {
     param([string]$Path)
@@ -214,11 +215,13 @@ try {
     Assert-PathExists "terminal64.exe" $terminal
     Assert-PathExists "metaeditor64.exe" $metaeditor
     Assert-PathExists "MT5 data dir" $dataDir
+    $python = Get-GatePython -Repo $Repo
+    Assert-GatePythonImports -GateName "CHAOS GATE" -Python $python -Imports @("farm_contracts", "farm_contracts.models:PAYLOAD_MODELS") -WorkingDirectory $Repo
 
     $suite = "tests.chaos.test_wire_resilience.LiveChartChaosTests"
     $timeoutMs = if ($Slow) { 75 * 60 * 1000 } else { 15 * 60 * 1000 }
-    Write-Output "CHAOS GATE -- suite=$suite slow=$($Slow.IsPresent) port=$env:EA_FARM_CHAOS_PORT timeout_min=$([int]($timeoutMs / 60000))"
-    $result = Invoke-StreamingProcess -FileName "python" -Arguments "-m unittest -v $suite" -WorkingDirectory $Repo -TimeoutMs $timeoutMs
+    Write-Output "CHAOS GATE -- suite=$suite slow=$($Slow.IsPresent) port=$env:EA_FARM_CHAOS_PORT timeout_min=$([int]($timeoutMs / 60000)) python=$python"
+    $result = Invoke-StreamingProcess -FileName $python -Arguments "-m unittest -v $suite" -WorkingDirectory $Repo -TimeoutMs $timeoutMs
     $code = [int]$result.Code
     $text = [string]$result.Text
 

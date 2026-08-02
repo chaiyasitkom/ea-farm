@@ -173,6 +173,118 @@ void test_parse_state_with_nested_positions()
    AssertTrue(FarmParseState(p, state), "test_parse_state_with_nested_positions");
 }
 
+bool ReadFixturePayload(const string filename, string &payload_json)
+{
+   string raw = "";
+   FarmEnvelope env;
+   payload_json = "";
+   if(!ReadCommonUtf8(FixturePath(filename), raw))
+      return false;
+   if(!FarmParseEnvelope(raw, env))
+      return false;
+   payload_json = env.payload_json;
+   return true;
+}
+
+void test_typed_parse_all_payload_fixtures_reads_fields()
+{
+   bool ok = true;
+   string p = "";
+
+   FarmHelloPayload hello;
+   ok = ok && ReadFixturePayload("hello.valid.json", p)
+        && FarmParseHello(p, hello)
+        && hello.token == "demo-token"
+        && hello.account.login == 8123456
+        && hello.symbol.name == "EURUSD.iux"
+        && hello.broker_time_present
+        && hello.broker_time.utc_offset_sec == 10800;
+
+   FarmHelloAckPayload hello_ack;
+   ok = ok && ReadFixturePayload("hello_ack.valid.json", p)
+        && FarmParseHelloAck(p, hello_ack)
+        && hello_ack.accepted
+        && hello_ack.brain_version == "1.0.0"
+        && hello_ack.initial_directive_present
+        && hello_ack.initial_directive.scale_factor == 1.0;
+
+   FarmHeartbeatPayload heartbeat;
+   ok = ok && ReadFixturePayload("heartbeat.valid.json", p)
+        && FarmParseHeartbeat(p, heartbeat)
+        && heartbeat.seq == 1
+        && heartbeat.wire.send_queue_depth == 1
+        && heartbeat.wire.pump_p99_us == 1;
+
+   FarmHeartbeatAckPayload heartbeat_ack;
+   ok = ok && ReadFixturePayload("heartbeat_ack.valid.json", p)
+        && FarmParseHeartbeatAck(p, heartbeat_ack)
+        && heartbeat_ack.seq == 1
+        && heartbeat_ack.brain_healthy;
+
+   FarmBarPayload bar;
+   ok = ok && ReadFixturePayload("bar.valid.json", p)
+        && FarmParseBar(p, bar)
+        && bar.symbol == "EURUSD.iux"
+        && bar.close == 1.16901
+        && bar.is_final;
+
+   FarmStatePayload state;
+   ok = ok && ReadFixturePayload("state.valid.json", p)
+        && FarmParseState(p, state)
+        && state.balance == 10000.0
+        && ArraySize(state.positions) == 1
+        && state.positions[0].symbol == "EURUSD.iux"
+        && ArraySize(state.owned_net_keys) == 1
+        && state.guard.current_spread_points == 12;
+
+   FarmIntentPayload intent;
+   ok = ok && ReadFixturePayload("intent.valid.json", p)
+        && FarmParseIntent(p, intent)
+        && intent.intent_id == "01J8X4K2P9QZ7M3N4R5T6V7W8X"
+        && intent.symbol == "EURUSD.iux"
+        && intent.provenance.strategy_id == "trend_v1";
+
+   FarmIntentAckPayload intent_ack;
+   ok = ok && ReadFixturePayload("intent_ack.valid.json", p)
+        && FarmParseIntentAck(p, intent_ack)
+        && intent_ack.intent_id == "01J8X4K2P9QZ7M3N4R5T6V7W8X"
+        && intent_ack.overshoot_volume == 1.0
+        && ArraySize(intent_ack.actions_planned) == 1
+        && intent_ack.actions_planned[0].ticket == 1;
+
+   FarmExecReportPayload exec_report;
+   ok = ok && ReadFixturePayload("exec_report.valid.json", p)
+        && FarmParseExecReport(p, exec_report)
+        && exec_report.retcode == 10009
+        && exec_report.ticket_present
+        && IntegerToString(exec_report.ticket) == "9007199254740993"
+        && exec_report.volume_filled == 0.1;
+
+   FarmRiskDirectivePayload risk_directive;
+   ok = ok && ReadFixturePayload("risk_directive.valid.json", p)
+        && FarmParseRiskDirective(p, risk_directive)
+        && risk_directive.directive_id == "01J8X4K2P9QZ7M3N4R5T6V7W8X"
+        && risk_directive.scale_factor == 1.0
+        && ArraySize(risk_directive.flatten_symbols) == 1;
+
+   FarmConfigUpdatePayload config_update;
+   ok = ok && ReadFixturePayload("config_update.valid.json", p)
+        && FarmParseConfigUpdate(p, config_update)
+        && config_update.config_id == "01J8X4K2P9QZ7M3N4R5T6V7W8X"
+        && config_update.settings.heartbeat_sec_present
+        && config_update.settings.heartbeat_sec == 2;
+
+   FarmErrorPayload error;
+   ok = ok && ReadFixturePayload("error.valid.json", p)
+        && FarmParseError(p, error)
+        && error.code == "BAD_REQUEST"
+        && error.message == "value"
+        && !error.fatal
+        && ArraySize(error.context_keys) == 0;
+
+   AssertTrue(ok, "test_typed_parse_all_payload_fixtures_reads_fields");
+}
+
 void test_parse_duplicate_key_in_nested_object()
 {
    CFarmJsonDoc doc;
@@ -223,10 +335,8 @@ void test_null_vs_value_vs_absent()
    const string absent = "{\"balance\":1.0,\"equity\":1.0,\"positions\":[]}";
    FarmStatePayload state_absent;
    AssertTrue(FarmParseState(base1, state_null)
-              && state_null.margin_level_pct_present
               && state_null.margin_level_pct_is_null
               && FarmParseState(base2, state_value)
-              && state_value.margin_level_pct_present
               && !state_value.margin_level_pct_is_null
               && state_value.margin_level_pct == 100.0
               && !FarmParseState(absent, state_absent), "test_null_vs_value_vs_absent");
@@ -271,6 +381,7 @@ void RunAllTests()
 {
    RecordRan("test_roundtrip_all_valid_fixtures"); test_roundtrip_all_valid_fixtures();
    RecordRan("test_parse_state_with_nested_positions"); test_parse_state_with_nested_positions();
+   RecordRan("test_typed_parse_all_payload_fixtures_reads_fields"); test_typed_parse_all_payload_fixtures_reads_fields();
    RecordRan("test_parse_duplicate_key_in_nested_object"); test_parse_duplicate_key_in_nested_object();
    RecordRan("test_parse_string_containing_key_like_text"); test_parse_string_containing_key_like_text();
    RecordRan("test_parse_ignores_unknown_field"); test_parse_ignores_unknown_field();

@@ -246,6 +246,8 @@ def write_startup_files(port: int, work_dir: Path) -> Path:
             "InpHeartbeatSec=2",
             "InpBrainTimeoutSec=10",
             "InpSendQueueMax=256",
+            "InpBackfillBars=300",
+            "InpStateIntervalSec=5",
             "InpVerboseLog=true",
         ]
     )
@@ -257,7 +259,7 @@ def write_startup_files(port: int, work_dir: Path) -> Path:
         IUX_DATA / "MQL5" / "Experts",
     ):
         set_dir.mkdir(parents=True, exist_ok=True)
-        (set_dir / set_name).write_text(set_text, encoding="ascii")
+        (set_dir / set_name).write_text(set_text, encoding="ascii", newline="")
 
     ini = work_dir / "farm-chaos-live.ini"
     ini.write_text(
@@ -278,6 +280,7 @@ def write_startup_files(port: int, work_dir: Path) -> Path:
             ]
         ),
         encoding="ascii",
+        newline="",
     )
     return ini
 

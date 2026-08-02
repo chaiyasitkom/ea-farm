@@ -14,6 +14,26 @@ string FarmStringTrim(const string raw)
    return StringSubstr(raw, start, end - start + 1);
 }
 
+string FarmSanitizeInputString(const string raw)
+{
+   return FarmStringTrim(raw);
+}
+
+bool FarmIsValidStrategyId(const string value)
+{
+   const int len = StringLen(value);
+   if(len < 1 || len > 32)
+      return false;
+   for(int i = 0; i < len; i++)
+   {
+      const ushort ch = StringGetCharacter(value, i);
+      if((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_')
+         continue;
+      return false;
+   }
+   return true;
+}
+
 string FarmJsonEscape(const string raw)
 {
    string out = "";

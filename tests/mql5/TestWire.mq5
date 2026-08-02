@@ -101,6 +101,11 @@ void AssertEqualInt(const int actual, const int expected, const string name)
    AssertTrue(actual == expected, name + " actual=" + IntegerToString(actual) + " expected=" + IntegerToString(expected));
 }
 
+string TestEnvelope(const string type, const string payload)
+{
+   return "{\"v\":1,\"type\":\"" + type + "\",\"msg_id\":\"01J8X4K2P9QZ7M3N4R5T6V7W8X\",\"session_id\":\"acct-8123456-EURUSD.iux-H1\",\"ts_server\":\"2026-07-26T14:30:00Z\",\"ts_sent\":\"2026-07-26T14:30:00Z\",\"payload\":" + payload + "}";
+}
+
 void test_framing_multiple_in_one_read()
 {
    CWire wire;
@@ -157,15 +162,17 @@ void test_framing_oversize_frame_rejected()
 
 void test_json_unknown_field_ignored()
 {
-   const string json = "{\"type\":\"HELLO_ACK\",\"accepted\":true,\"extra\":\"ignored\"}";
-   AssertEqualString(FarmJsonGetString(json, "type", ""), "HELLO_ACK", "test_json_unknown_field_ignored");
-   AssertTrue(FarmJsonGetBool(json, "accepted", false), "test_json_unknown_field_ignored accepted");
+   FarmEnvelope env;
+   FarmHelloAckPayload ack;
+   const string json = TestEnvelope("HELLO_ACK", "{\"accepted\":true,\"server_time\":\"2026-07-26T14:30:00Z\",\"assigned_session_id\":\"acct-8123456-EURUSD.iux-H1\",\"brain_version\":\"1.0.0\",\"reject_reason\":null,\"extra\":\"ignored\"}");
+   AssertTrue(FarmParseEnvelope(json, env) && env.type == FARM_MSG_HELLO_ACK, "test_json_unknown_field_ignored");
+   AssertTrue(FarmParseHelloAck(env.payload_json, ack) && ack.accepted, "test_json_unknown_field_ignored payload");
 }
 
 void test_json_unknown_type_ignored()
 {
    CWire wire;
-   wire.TestHandleInboundLine("{\"type\":\"FUTURE_MESSAGE\",\"payload\":{\"x\":1}}");
+   wire.TestHandleInboundLine(TestEnvelope("FUTURE_MESSAGE", "{\"x\":1}"));
    AssertEqualInt(wire.TestReceivedQueueDepth(), 0, "test_json_unknown_type_ignored");
 }
 
@@ -180,7 +187,7 @@ void test_receive_application_message_queued()
 {
    CWire wire;
    string msg;
-   const string intent = "{\"type\":\"INTENT\",\"payload\":{\"intent_id\":\"abc\"}}";
+   const string intent = TestEnvelope("INTENT", "{\"intent_id\":\"01J8X4K2P9QZ7M3N4R5T6V7W8X\",\"symbol\":\"EURUSD.iux\",\"side\":\"BUY\",\"volume\":0.1,\"entry\":{\"type\":\"MARKET\"},\"sl\":1.0,\"tp\":null,\"magic\":770001,\"strategy_id\":\"trend_v1\",\"model_version\":\"model_v1\",\"confidence\":0.7,\"risk\":{\"risk_pct\":0.35,\"max_loss_money\":3.5},\"urgency\":\"NORMAL\",\"ttl_sec\":30,\"comment\":\"i:01J8X4K2P9Q\"}");
    wire.TestHandleInboundLine(intent);
    AssertEqualInt(wire.TestReceivedQueueDepth(), 1, "test_receive_application_message_queued depth");
    AssertTrue(wire.Receive(msg), "test_receive_application_message_queued receive");
@@ -192,7 +199,7 @@ void test_hello_ack_accepted_sets_ready()
 {
    CWire wire;
    wire.TestSetState(WIRE_AUTHENTICATING);
-   wire.TestHandleInboundLine("{\"type\":\"HELLO_ACK\",\"payload\":{\"accepted\":true},\"accepted\":true,\"assigned_session_id\":\"acct-test\"}");
+   wire.TestHandleInboundLine(TestEnvelope("HELLO_ACK", "{\"accepted\":true,\"server_time\":\"2026-07-26T14:30:00Z\",\"assigned_session_id\":\"acct-8123456-EURUSD.iux-H1\",\"brain_version\":\"1.0.0\",\"reject_reason\":null}"));
    AssertTrue(wire.State() == WIRE_READY, "test_hello_ack_accepted_sets_ready");
 }
 
@@ -200,7 +207,7 @@ void test_hello_ack_rejected_sets_failed_auth()
 {
    CWire wire;
    wire.TestSetState(WIRE_AUTHENTICATING);
-   wire.TestHandleInboundLine("{\"type\":\"HELLO_ACK\",\"accepted\":false,\"reject_reason\":\"BAD_TOKEN\"}");
+   wire.TestHandleInboundLine(TestEnvelope("HELLO_ACK", "{\"accepted\":false,\"server_time\":\"2026-07-26T14:30:00Z\",\"assigned_session_id\":\"acct-8123456-EURUSD.iux-H1\",\"brain_version\":\"1.0.0\",\"reject_reason\":\"BAD_TOKEN\"}"));
    AssertTrue(wire.State() == WIRE_FAILED_AUTH, "test_hello_ack_rejected_sets_failed_auth");
 }
 

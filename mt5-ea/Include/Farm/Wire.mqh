@@ -4,6 +4,7 @@
 #include "BrokerTime.mqh"
 #include "Json.mqh"
 #include "Logger.mqh"
+#include <Farm/FarmMessages.mqh>
 
 #define FARM_WIRE_MAX_FRAME_BYTES 65536
 #define FARM_WIRE_READ_CHUNK_BYTES 4096
@@ -21,6 +22,27 @@ enum ENUM_WIRE_STATE {
    WIRE_AUTHENTICATING,
    WIRE_READY,
    WIRE_FAILED_AUTH
+};
+
+class CWirePayloadProvider
+{
+public:
+   virtual bool BuildHeartbeatPayload(const int seq,
+                                      const string wire_state,
+                                      const int send_queue_depth,
+                                      const long messages_sent,
+                                      const long messages_recv,
+                                      const long reconnect_count,
+                                      const long bytes_dropped,
+                                      const int seconds_since_last_inbound,
+                                      const bool broker_offset_known,
+                                      const int broker_utc_offset_sec,
+                                      const ulong pump_p99_us,
+                                      string &out_payload)
+   {
+      out_payload = "";
+      return false;
+   }
 };
 
 string FarmCrockford32Char(const int value)
@@ -114,6 +136,8 @@ private:
    string          m_ea_version;
    string          m_strategy_id;
    int             m_magic;
+   string          m_hello_payload;
+   CWirePayloadProvider *m_payload_provider;
    bool            m_verbose;
    int             m_diag_handle;
    string          m_diag_session_id;
@@ -378,8 +402,16 @@ private:
          m_log.Warn(StringFormat("broker_time_restored dropped_no_time=%I64d total_drops=%I64d", m_messages_dropped_no_time_current, m_messages_dropped_no_time_total));
          m_messages_dropped_no_time_current = 0;
       }
-      out_line = FarmMakeEnvelope(type, msg_id, m_session_id, wire_utc, wire_utc, payload_json);
-      return true;
+      FarmEnvelope env;
+      env.v = 1;
+      env.type = FarmMsgTypeFromString(type);
+      env.type_raw = type;
+      env.msg_id = msg_id;
+      env.session_id = m_session_id;
+      env.ts_server = FarmFormatIsoUtc(wire_utc);
+      env.ts_sent = FarmFormatIsoUtc(wire_utc);
+      env.payload_json = payload_json;
+      return FarmSerializeEnvelope(env, out_line);
    }
 
    bool HasPartialSend() const
@@ -517,118 +549,16 @@ private:
       return true;
    }
 
-   string AccountMarginModeText() const
-   {
-      const long mode = AccountInfoInteger(ACCOUNT_MARGIN_MODE);
-      if(mode == ACCOUNT_MARGIN_MODE_RETAIL_HEDGING)
-         return "RETAIL_HEDGING";
-      if(mode == ACCOUNT_MARGIN_MODE_RETAIL_NETTING)
-         return "RETAIL_NETTING";
-      if(mode == ACCOUNT_MARGIN_MODE_EXCHANGE)
-         return "EXCHANGE";
-      return "UNKNOWN";
-   }
-
-   string TradeModeText(const long mode) const
-   {
-      if(mode == SYMBOL_TRADE_MODE_FULL)
-         return "FULL";
-      if(mode == SYMBOL_TRADE_MODE_DISABLED)
-         return "DISABLED";
-      if(mode == SYMBOL_TRADE_MODE_CLOSEONLY)
-         return "CLOSE_ONLY";
-      if(mode == SYMBOL_TRADE_MODE_LONGONLY)
-         return "LONG_ONLY";
-      if(mode == SYMBOL_TRADE_MODE_SHORTONLY)
-         return "SHORT_ONLY";
-      return "UNKNOWN";
-   }
-
-   bool SymbolCloseBySupported(const string symbol) const
-   {
-      const long order_mode = SymbolInfoInteger(symbol, SYMBOL_ORDER_MODE);
-      return ((order_mode & SYMBOL_ORDER_CLOSEBY) == SYMBOL_ORDER_CLOSEBY);
-   }
-
-   string BuildHelloPayload()
-   {
-      const string symbol = Symbol();
-      const long login = AccountInfoInteger(ACCOUNT_LOGIN);
-      const string timeframe = FarmTimeframeCode((ENUM_TIMEFRAMES)Period());
-      const string session = StringFormat("acct-%I64d-%s-%s", login, symbol, timeframe);
-      m_session_id = session;
-
-      const string account = "{"
-         "\"login\":" + IntegerToString(login) + ","
-         "\"server\":" + FarmJsonQuote(AccountInfoString(ACCOUNT_SERVER)) + ","
-         "\"currency\":" + FarmJsonQuote(AccountInfoString(ACCOUNT_CURRENCY)) + ","
-         "\"leverage\":" + IntegerToString((int)AccountInfoInteger(ACCOUNT_LEVERAGE)) + ","
-         "\"balance\":" + FarmDoubleJson(AccountInfoDouble(ACCOUNT_BALANCE), 2) + ","
-         "\"equity\":" + FarmDoubleJson(AccountInfoDouble(ACCOUNT_EQUITY), 2) + ","
-         "\"is_demo\":" + FarmBoolJson(AccountInfoInteger(ACCOUNT_TRADE_MODE) == ACCOUNT_TRADE_MODE_DEMO) + ","
-         "\"margin_mode\":" + FarmJsonQuote(AccountMarginModeText()) +
-      "}";
-
-      const long trade_mode = SymbolInfoInteger(symbol, SYMBOL_TRADE_MODE);
-      const string symbol_json = "{"
-         "\"name\":" + FarmJsonQuote(symbol) + ","
-         "\"digits\":" + IntegerToString((int)SymbolInfoInteger(symbol, SYMBOL_DIGITS)) + ","
-         "\"point\":" + FarmDoubleJson(SymbolInfoDouble(symbol, SYMBOL_POINT), 10) + ","
-         "\"tick_size\":" + FarmDoubleJson(SymbolInfoDouble(symbol, SYMBOL_TRADE_TICK_SIZE), 10) + ","
-         "\"tick_value\":" + FarmDoubleJson(SymbolInfoDouble(symbol, SYMBOL_TRADE_TICK_VALUE), 8) + ","
-         "\"contract_size\":" + FarmDoubleJson(SymbolInfoDouble(symbol, SYMBOL_TRADE_CONTRACT_SIZE), 2) + ","
-         "\"volume_min\":" + FarmDoubleJson(SymbolInfoDouble(symbol, SYMBOL_VOLUME_MIN), 2) + ","
-         "\"volume_max\":" + FarmDoubleJson(SymbolInfoDouble(symbol, SYMBOL_VOLUME_MAX), 2) + ","
-         "\"volume_step\":" + FarmDoubleJson(SymbolInfoDouble(symbol, SYMBOL_VOLUME_STEP), 2) + ","
-         "\"stops_level\":" + IntegerToString((int)SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL)) + ","
-         "\"freeze_level\":" + IntegerToString((int)SymbolInfoInteger(symbol, SYMBOL_TRADE_FREEZE_LEVEL)) + ","
-         "\"swap_long\":" + FarmDoubleJson(SymbolInfoDouble(symbol, SYMBOL_SWAP_LONG), 8) + ","
-         "\"swap_short\":" + FarmDoubleJson(SymbolInfoDouble(symbol, SYMBOL_SWAP_SHORT), 8) + ","
-         "\"trade_mode\":" + FarmJsonQuote(TradeModeText(trade_mode)) + ","
-         "\"order_mode_closeby\":" + FarmBoolJson(SymbolCloseBySupported(symbol)) +
-      "}";
-
-      const string limits = "{"
-         "\"max_lot_per_order\":0.50,"
-         "\"max_net_volume_per_symbol\":0.50,"
-         "\"max_tickets_per_symbol\":4,"
-         "\"max_total_tickets\":8,"
-         "\"max_spread_points\":25,"
-         "\"daily_loss_pct\":2.0,"
-         "\"max_dd_pct\":6.0"
-      "}";
-
-      string broker_time_field = "";
-      if(m_broker_time != NULL && m_broker_time.IsValid())
-      {
-         const string broker_time = "{"
-            "\"utc_offset_sec\":" + IntegerToString(m_broker_time.OffsetSeconds()) + ","
-            "\"detected_at\":" + FarmJsonQuote(FarmFormatIsoUtc(m_broker_time.DetectedAtUtc())) + ","
-            "\"source\":\"INFERRED_SERVER_MINUS_GMT\","
-            "\"local_gmt_offset_sec\":" + IntegerToString(m_broker_time.LocalGmtOffsetSeconds()) + ","
-            "\"local_dst_sec\":" + IntegerToString(m_broker_time.LocalDstSeconds()) +
-         "}";
-         broker_time_field = "\"broker_time\":" + broker_time + ",";
-      }
-
-      string payload = "{";
-      payload += "\"token\":" + FarmJsonQuote(m_token) + ",";
-      payload += "\"ea_version\":" + FarmJsonQuote(m_ea_version) + ",";
-      payload += "\"terminal_build\":" + IntegerToString((int)TerminalInfoInteger(TERMINAL_BUILD)) + ",";
-      payload += "\"account\":" + account + ",";
-      payload += "\"symbol\":" + symbol_json + ",";
-      payload += "\"timeframe\":" + FarmJsonQuote(timeframe) + ",";
-      payload += "\"strategy_id\":" + FarmJsonQuote(m_strategy_id) + ",";
-      payload += "\"magic\":" + IntegerToString(m_magic) + ",";
-      payload += broker_time_field;
-      payload += "\"local_limits\":" + limits;
-      payload += "}";
-      return payload;
-   }
-
    void SendHello()
    {
-      const string payload = BuildHelloPayload();
+      const string payload = m_hello_payload;
+      if(StringLen(payload) == 0)
+      {
+         m_log.Error("hello_payload_not_configured");
+         CloseSocket();
+         ScheduleReconnect();
+         return;
+      }
       string hello;
       if(!MakeWireEnvelope("HELLO", payload, hello))
       {
@@ -643,20 +573,24 @@ private:
    void SendHeartbeat()
    {
       const int seq = m_heartbeat_seq + 1;
-      const string payload = "{"
-         "\"seq\":" + IntegerToString(seq) + ","
-         "\"wire\":{"
-            "\"state\":" + FarmJsonQuote(WireStateText()) + ","
-            "\"send_queue_depth\":" + IntegerToString(SendQueueDepth()) + ","
-            "\"messages_sent\":" + IntegerToString(m_messages_sent) + ","
-            "\"messages_recv\":" + IntegerToString(m_messages_recv) + ","
-            "\"reconnect_count\":" + IntegerToString(m_reconnect_count) + ","
-            "\"bytes_dropped\":" + IntegerToString(m_bytes_dropped) + ","
-            "\"seconds_since_last_inbound\":" + IntegerToString(SecondsSinceLastInbound()) + ","
-            "\"broker_utc_offset_sec\":" + ((m_broker_time != NULL && m_broker_time.IsValid()) ? IntegerToString(m_broker_time.OffsetSeconds()) : "null") + ","
-            "\"pump_p99_us\":" + IntegerToString((long)PumpP99Us()) +
-         "}" +
-      "}";
+      string payload = "";
+      if(m_payload_provider == NULL ||
+         !m_payload_provider.BuildHeartbeatPayload(seq,
+                                                   WireStateText(),
+                                                   SendQueueDepth(),
+                                                   m_messages_sent,
+                                                   m_messages_recv,
+                                                   m_reconnect_count,
+                                                   m_bytes_dropped,
+                                                   SecondsSinceLastInbound(),
+                                                   (m_broker_time != NULL && m_broker_time.IsValid()),
+                                                   (m_broker_time != NULL ? m_broker_time.OffsetSeconds() : 0),
+                                                   PumpP99Us(),
+                                                   payload))
+      {
+         m_log.Warn("heartbeat_payload_not_available");
+         return;
+      }
       string msg;
       if(!MakeWireEnvelope("HEARTBEAT", payload, msg))
          return;
@@ -702,13 +636,14 @@ private:
 
    void HandleInboundLine(const string line)
    {
-      if(!FarmJsonLooksLikeObject(line))
+      FarmEnvelope env;
+      if(!FarmParseEnvelope(line, env))
       {
-         m_log.Warn("malformed_json_skipped");
+         m_log.Warn("malformed_message_skipped err=" + FarmJsonLastError());
          return;
       }
 
-      const string type = FarmJsonGetString(line, "type", "");
+      const string type = env.type_raw;
       WriteDiagLine(
          "{\"ev\":\"inbound\"," +
          DiagClockJson() + "," +
@@ -717,10 +652,21 @@ private:
       );
       if(type == "HELLO_ACK")
       {
-         const bool accepted = FarmJsonGetBool(line, "accepted", false);
+         CFarmJsonDoc payload_doc;
+         if(!payload_doc.Parse(env.payload_json))
+         {
+            m_log.Warn("hello_ack_payload_malformed err=" + FarmJsonLastError());
+            payload_doc.Free();
+            return;
+         }
+         CFarmJsonValue *payload = payload_doc.Root();
+         CFarmJsonValue *accepted_value = (payload == NULL ? NULL : payload.Get("accepted"));
+         const bool accepted = (accepted_value != NULL && accepted_value.type == FARM_JSON_BOOL && accepted_value.bool_value);
          if(accepted)
          {
-            m_session_id = FarmJsonGetString(line, "assigned_session_id", m_session_id);
+            CFarmJsonValue *assigned = payload.Get("assigned_session_id");
+            if(assigned != NULL && assigned.type == FARM_JSON_STRING && StringLen(assigned.string_value) > 0)
+               m_session_id = assigned.string_value;
             m_missed_heartbeat_acks = 0;
             m_heartbeat_seq = 0;
             m_backoff_sec = 1;
@@ -729,11 +675,15 @@ private:
          }
          else
          {
-            const string reason = FarmJsonGetString(line, "reject_reason", "UNKNOWN");
+            string reason = "UNKNOWN";
+            CFarmJsonValue *reject_reason = payload.Get("reject_reason");
+            if(reject_reason != NULL && reject_reason.type == FARM_JSON_STRING && StringLen(reject_reason.string_value) > 0)
+               reason = reject_reason.string_value;
             m_log.Error("hello_rejected reason=" + reason);
             CloseSocket();
             EnterState(WIRE_FAILED_AUTH, "HELLO_ACK rejected " + reason);
          }
+         payload_doc.Free();
          return;
       }
 
@@ -910,6 +860,8 @@ public:
       m_ea_version = "1.0.0";
       m_strategy_id = "trend_v1";
       m_magic = 770001;
+      m_hello_payload = "";
+      m_payload_provider = NULL;
       m_verbose = false;
       m_diag_handle = INVALID_HANDLE;
       m_diag_session_id = "";
@@ -922,6 +874,28 @@ public:
       m_broker_time = broker_time;
       if(m_broker_time != NULL)
          m_ulid_rand_suffix = FarmRandomUlidSuffix(m_broker_time.LocalTime());
+   }
+
+   void SetHelloPayload(const string payload_json, const string session_id)
+   {
+      m_hello_payload = payload_json;
+      if(StringLen(session_id) > 0)
+         m_session_id = session_id;
+   }
+
+   void SetPayloadProvider(CWirePayloadProvider *provider)
+   {
+      m_payload_provider = provider;
+   }
+
+   string Token() const
+   {
+      return m_token;
+   }
+
+   bool MakeApplicationEnvelope(const string type, const string payload_json, string &out_line)
+   {
+      return MakeWireEnvelope(type, payload_json, out_line);
    }
 
    bool Init(const string host, const int port, const string token,
@@ -953,7 +927,7 @@ public:
    {
       m_heartbeat_sec = (heartbeat_sec > 1 ? heartbeat_sec : 1);
       m_queue_max = (queue_max > 1 ? queue_max : 1);
-      m_strategy_id = strategy_id;
+      m_strategy_id = FarmSanitizeInputString(strategy_id);
       m_magic = magic;
       m_verbose = verbose;
       m_log.Init("wire", verbose);
@@ -1135,6 +1109,11 @@ public:
    int SendQueueDepth() const
    {
       return ArraySize(m_outbound_queue);
+   }
+
+   int SendQueueMax() const
+   {
+      return m_queue_max;
    }
 
    long MessagesSent() const

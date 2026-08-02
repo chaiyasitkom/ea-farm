@@ -3,6 +3,7 @@
 #property description "EA Farm executor shell for SPEC-001 wire transport only."
 
 #include <Farm/Wire.mqh>
+#include <Farm/StateReporter.mqh>
 #include <Farm/Logger.mqh>
 
 input string InpBrainHost        = "127.0.0.1";
@@ -13,10 +14,13 @@ input int    InpMagic            = 770001;
 input int    InpHeartbeatSec     = 2;
 input int    InpBrainTimeoutSec  = 10;
 input int    InpSendQueueMax     = 256;
+input int    InpBackfillBars     = 300;
+input int    InpStateIntervalSec = 5;
 input bool   InpVerboseLog       = false;
 
 CWire       g_wire;
 CBrokerTime g_broker_time;
+CStateReporter g_state_reporter;
 CFarmLogger g_log;
 bool        g_closeby_supported = false;
 
@@ -35,9 +39,23 @@ int OnInit()
 {
    g_log.Init("FarmExecutor", InpVerboseLog);
 
-   if(StringLen(InpBrainToken) == 0)
+   const string brain_host = FarmSanitizeInputString(InpBrainHost);
+   const string brain_token = FarmSanitizeInputString(InpBrainToken);
+   const string strategy_id = FarmSanitizeInputString(InpStrategyId);
+
+   if(StringLen(brain_host) == 0)
    {
-      g_log.Fatal("InpBrainToken is empty");
+      g_log.Fatal("InpBrainHost is empty after trim");
+      return INIT_FAILED;
+   }
+   if(StringLen(brain_token) == 0)
+   {
+      g_log.Fatal("InpBrainToken is empty after trim");
+      return INIT_FAILED;
+   }
+   if(!FarmIsValidStrategyId(strategy_id))
+   {
+      g_log.Fatal("InpStrategyId invalid after trim value=" + FarmJsonQuoteUtf8(strategy_id));
       return INIT_FAILED;
    }
 
@@ -72,9 +90,12 @@ int OnInit()
    }
    g_log.Info(g_broker_time.DiagnosticLine());
 
-   g_wire.ConfigureRuntime(InpHeartbeatSec, InpSendQueueMax, InpStrategyId, InpMagic, InpVerboseLog);
+   g_wire.ConfigureRuntime(InpHeartbeatSec, InpSendQueueMax, strategy_id, InpMagic, InpVerboseLog);
    g_wire.UseBrokerTime(GetPointer(g_broker_time));
-   if(!g_wire.Init(InpBrainHost, InpBrainPort, InpBrainToken, 3000))
+   if(!g_wire.Init(brain_host, InpBrainPort, brain_token, 3000))
+      return INIT_FAILED;
+   if(!g_state_reporter.Init(GetPointer(g_wire), GetPointer(g_broker_time),
+                             InpMagic, strategy_id, InpBackfillBars, InpStateIntervalSec))
       return INIT_FAILED;
 
    EventSetTimer(1);
@@ -101,6 +122,7 @@ void OnTimer()
    }
 
    g_wire.Pump();
+   g_state_reporter.Pump();
 
    string msg;
    while(g_wire.Receive(msg))
@@ -113,5 +135,5 @@ void OnTimer()
 
 void OnTick()
 {
-   // SPEC-001 transport work is timer-driven; trading logic is out of scope.
+   g_state_reporter.OnTickSample();
 }

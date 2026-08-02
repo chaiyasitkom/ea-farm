@@ -11,6 +11,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. "$PSScriptRoot\python-gate-env.ps1"
 
 function Import-DotEnv {
     param([string]$Path)
@@ -45,11 +46,8 @@ $Repo = Get-EnvOrDefault "EA_FARM_REPO" $DefaultRepo
 Push-Location $Repo
 try {
     Import-DotEnv (Join-Path $Repo ".env")
-    python -c "import psutil" | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Output "SOAK: ENVIRONMENT NOT READY -- psutil is required. Install with: python -m pip install -e .[dev]"
-        exit 3
-    }
+    $python = Get-GatePython -Repo $Repo
+    Assert-GatePythonImports -GateName "SOAK" -Python $python -Imports @("psutil", "farm_contracts", "farm_contracts.models:PAYLOAD_MODELS") -WorkingDirectory $Repo
 
     $env:EA_FARM_LIVE_MT5 = "1"
     $env:EA_FARM_LIVE_MT5_SLOW = "1"
@@ -57,8 +55,8 @@ try {
 
     if ($Profile -eq "churn") {
         $suite = "tests.soak.test_memory_soak.MemorySoakTests.test_soak_churn_2h_no_handle_leak"
-        Write-Output "SOAK -- profile=churn duration=2h"
-        python -m unittest $suite
+        Write-Output "SOAK -- profile=churn duration=2h python=$python"
+        & $python -m unittest $suite
         exit $LASTEXITCODE
     }
 

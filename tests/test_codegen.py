@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import re
 import shutil
 import subprocess
 import tempfile
@@ -17,6 +18,21 @@ from brain.common.wiretime import format_utc, parse_utc
 ROOT = Path(__file__).resolve().parents[1]
 GEN_DIR = ROOT / "contracts" / "gen" / "python"
 FIXTURE_DIR = ROOT / "contracts" / "fixtures"
+MQL5_MESSAGES = ROOT / "contracts" / "gen" / "mql5" / "FarmMessages.mqh"
+PAYLOAD_FILES = [
+    "hello",
+    "hello_ack",
+    "heartbeat",
+    "heartbeat_ack",
+    "bar",
+    "state",
+    "intent",
+    "intent_ack",
+    "exec_report",
+    "risk_directive",
+    "config_update",
+    "error",
+]
 
 
 def copy_codegen_workspace(temp_repo: Path, *, include_fixtures: bool = False) -> None:
@@ -184,6 +200,47 @@ def test_every_envelope_type_has_model() -> None:
         (ROOT / "contracts" / "schema" / "envelope.json").read_text(encoding="utf-8")
     )
     assert sorted(contracts.PAYLOAD_MODELS) == sorted(schema["properties"]["type"]["enum"])
+
+
+def test_mql5_payloads_are_typed_not_raw_json_shells() -> None:
+    source = MQL5_MESSAGES.read_text(encoding="utf-8")
+    for schema_name in PAYLOAD_FILES:
+        struct_name = "".join(part.capitalize() for part in schema_name.split("_")) + "Payload"
+        function_name = struct_name.removesuffix("Payload")
+        struct_match = re.search(
+            rf"struct Farm{struct_name}\s*\{{(?P<body>.*?)\n\}};",
+            source,
+            flags=re.S,
+        )
+        assert struct_match is not None, struct_name
+        body = struct_match.group("body")
+        assert "raw_json;" in body
+        assert re.search(r"\n\s+(string|long|double|bool|Farm|ENUM_FARM_)", body) is not None
+        assert re.search(
+            rf"bool FarmParse{function_name}\(const string json, Farm{struct_name} &out\).*?"
+            rf"FarmFill{struct_name}\(doc\.Root\(\), out\);",
+            source,
+            flags=re.S,
+        ), function_name
+
+
+def test_mql5_payload_fillers_read_schema_required_fields() -> None:
+    source = MQL5_MESSAGES.read_text(encoding="utf-8")
+    for schema_name in PAYLOAD_FILES:
+        schema = json.loads(
+            (ROOT / "contracts" / "schema" / f"{schema_name}.json").read_text(encoding="utf-8")
+        )
+        struct_name = "".join(part.capitalize() for part in schema_name.split("_")) + "Payload"
+        fill_match = re.search(
+            rf"void FarmFill{struct_name}\(CFarmJsonValue \*root, Farm{struct_name} &out\)"
+            r"\s*\{(?P<body>.*?)\n\}",
+            source,
+            flags=re.S,
+        )
+        assert fill_match is not None, struct_name
+        fill_body = fill_match.group("body")
+        for field_name in schema["required"]:
+            assert f'root.Get("{field_name}")' in fill_body, f"{struct_name}.{field_name}"
 
 
 def test_all_classes_ignore_extra() -> None:
