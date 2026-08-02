@@ -80,3 +80,6 @@ Desktop.ini
 
 # soak run logs (detached)
 .soak-churn-run.*
+
+# pytest temp dirs จาก sandbox
+.tmp-pytest*/

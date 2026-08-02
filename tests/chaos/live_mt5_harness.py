@@ -15,15 +15,50 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 
-ROOT = Path(__file__).resolve().parents[2]
-SERVER = ROOT / "brain" / "gateway" / "echo_server.py"
 TOKEN = "test-token"
 
-IUX_DATA = Path(
+DEFAULT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_IUX_DATA = Path(
     r"C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\A45801173FBAFA01B9AFF0EEDE7938E3"
 )
-IUX_TERMINAL = Path(r"C:\Program Files\IUX Markets MT5 Terminal3\terminal64.exe")
-IUX_METAEDITOR = Path(r"C:\Program Files\IUX Markets MT5 Terminal3\metaeditor64.exe")
+DEFAULT_IUX_COMMON = Path(r"C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\Common\Files")
+DEFAULT_IUX_TERMINAL = Path(r"C:\Program Files\IUX Markets MT5 Terminal3\terminal64.exe")
+DEFAULT_IUX_METAEDITOR = Path(r"C:\Program Files\IUX Markets MT5 Terminal3\metaeditor64.exe")
+
+
+def _dotenv_values(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    values: dict[str, str] = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", maxsplit=1)
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        values[key] = value
+    return values
+
+
+_bootstrap_env = _dotenv_values(Path(os.environ.get("EA_FARM_REPO", DEFAULT_ROOT)) / ".env")
+
+
+def _env_or_dotenv(name: str, default: str) -> str:
+    value = os.environ.get(name) or _bootstrap_env.get(name)
+    if value is None or value.strip() == "":
+        return default
+    return value
+
+
+ROOT = Path(_env_or_dotenv("EA_FARM_REPO", str(DEFAULT_ROOT)))
+SERVER = ROOT / "brain" / "gateway" / "echo_server.py"
+IUX_DATA = Path(_env_or_dotenv("EA_FARM_MT5_DATA_DIR", str(DEFAULT_IUX_DATA)))
+IUX_COMMON = Path(_env_or_dotenv("EA_FARM_MT5_COMMON_DIR", str(DEFAULT_IUX_COMMON)))
+IUX_TERMINAL = Path(_env_or_dotenv("EA_FARM_MT5_TERMINAL", str(DEFAULT_IUX_TERMINAL)))
+IUX_METAEDITOR = Path(_env_or_dotenv("EA_FARM_MT5_METAEDITOR", str(DEFAULT_IUX_METAEDITOR)))
 IUX_SYMBOL = "EURUSD.iux"
 
 

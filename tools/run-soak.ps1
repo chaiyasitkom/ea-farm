@@ -12,9 +12,39 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$Repo = "D:\ea-farm"
+function Import-DotEnv {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return }
+    foreach ($line in Get-Content $Path) {
+        $trimmed = $line.Trim()
+        if (-not $trimmed -or $trimmed.StartsWith("#")) { continue }
+        $idx = $trimmed.IndexOf("=")
+        if ($idx -lt 1) { continue }
+        $key = $trimmed.Substring(0, $idx).Trim()
+        $value = $trimmed.Substring($idx + 1).Trim()
+        if (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'"))) {
+            $value = $value.Substring(1, $value.Length - 2)
+        }
+        if (-not [Environment]::GetEnvironmentVariable($key, "Process")) {
+            [Environment]::SetEnvironmentVariable($key, $value, "Process")
+        }
+    }
+}
+
+function Get-EnvOrDefault {
+    param([string]$Name, [string]$Default)
+    $value = [Environment]::GetEnvironmentVariable($Name, "Process")
+    if ([string]::IsNullOrWhiteSpace($value)) { return $Default }
+    return $value
+}
+
+$DefaultRepo = "D:\ea-farm"
+if ($env:EA_FARM_REPO) { $Repo = $env:EA_FARM_REPO } else { $Repo = $DefaultRepo }
+Import-DotEnv (Join-Path $Repo ".env")
+$Repo = Get-EnvOrDefault "EA_FARM_REPO" $DefaultRepo
 Push-Location $Repo
 try {
+    Import-DotEnv (Join-Path $Repo ".env")
     python -c "import psutil" | Out-Null
     if ($LASTEXITCODE -ne 0) {
         Write-Output "SOAK: ENVIRONMENT NOT READY -- psutil is required. Install with: python -m pip install -e .[dev]"
