@@ -411,9 +411,21 @@ struct FarmBarPayload { ... };
 - [ ] ★ **C1** `Test-Path Makefile` → **`False`** · `grep -rn "make codegen" .` ไม่เจอในโค้ดหรือไฟล์ที่ generate
 - [ ] ทุกค่าใน `envelope.type` (12 ค่า) มี struct + serializer + parser ฝั่ง MQL5
       และมี class ฝั่ง Python — **ตรวจด้วย test ไม่ใช่ตาดู**
-- [ ] ★ **C3** `grep -c 'extra="ignore"' contracts/gen/python/models.py` = **จำนวน class ทั้งหมด − 1**
+- [ ] ★ **C3** `grep -c 'extra="ignore"' contracts/gen/python/models.py` = **จำนวน class ที่สืบทอด `BaseModel` − 1**
       และ `grep -c 'extra="forbid"'` = **1 พอดี** ซึ่งต้องอยู่บน `ConfigUpdateSettings` เท่านั้น
       (ฉบับ rev.1 เขียนว่า "= จำนวน class ทั้งหมด" ซึ่งขัดกับข้อยกเว้นในบรรทัดเดียวกัน — **ติ๊กไม่ได้ทั้งคู่**)
+
+> ### rev.2a (2026-08-02) — C3 ต้องนับเฉพาะ `BaseModel`
+> rev.2 เขียนว่า *"จำนวน class ทั้งหมด"* ซึ่งกำกวม · ผลรันจริงมี **57 class** =
+> **30 `BaseModel`** + **27 `Enum`** · `Enum` ไม่มี `model_config` จึงไม่ควรถูกนับ
+> · เกณฑ์ที่ถูกคือ `29 = 30 − 1` ไม่ใช่ `56 = 57 − 1`
+
+- [ ] ★ **C9** `ruff` ต้องเขียวทั้งรีโป — ไฟล์ใน `contracts/gen/` ให้ยกเว้น **เฉพาะ `E501`
+      และ `F403`/`I001`** ผ่าน `per-file-ignores` · **ห้าม `exclude` ทั้งโฟลเดอร์**
+      เพราะจะปิดกฎตระกูล `F` (pyflakes) ที่จับความผิดจริงในโค้ดที่ generate ด้วย
+      · `mypy` ต้องยังตรวจ `contracts/gen/` ตามปกติ **ห้ามยกเว้น**
+      · เหตุผล: ความยาวบรรทัดของโค้ดที่ generate เป็นเรื่องของ generator ไม่ใช่ของคนอ่าน
+      แต่ **ความถูกต้องยังต้องถูกตรวจเหมือนโค้ดมือ**
 - [ ] `FarmMessages.mqh` compile 0 error 0 warning ด้วย `tools/compile-gate.ps1`
 - [ ] `TestFarmMessages.mq5` รันผ่าน `tools/run-mql5-tests.ps1` → `status: PASS`
       พร้อม `ran_names` ครบ 12 ชื่อ
