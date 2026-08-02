@@ -19,6 +19,26 @@ GEN_DIR = ROOT / "contracts" / "gen" / "python"
 FIXTURE_DIR = ROOT / "contracts" / "fixtures"
 
 
+def copy_codegen_workspace(temp_repo: Path, *, include_fixtures: bool = False) -> None:
+    contracts_dir = temp_repo / "contracts"
+    contracts_dir.mkdir(parents=True)
+    shutil.copytree(ROOT / "contracts" / "schema", contracts_dir / "schema")
+    shutil.copytree(ROOT / "contracts" / "gen", contracts_dir / "gen")
+    shutil.copy2(ROOT / "contracts" / "symbols.json", contracts_dir / "symbols.json")
+    if include_fixtures:
+        shutil.copytree(ROOT / "contracts" / "fixtures", contracts_dir / "fixtures")
+
+    shutil.copytree(
+        ROOT / "brain",
+        temp_repo / "brain",
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    tools_dir = temp_repo / "tools"
+    tools_dir.mkdir()
+    for name in ("codegen.py", "task.py", "__init__.py"):
+        shutil.copy2(ROOT / "tools" / name, tools_dir / name)
+
+
 def run_codegen() -> None:
     completed = subprocess.run(
         ["python", "tools/codegen.py"],
@@ -49,33 +69,69 @@ def validate_envelope(data: dict[str, Any]) -> None:
 def test_codegen_is_deterministic() -> None:
     run_codegen()
     first = {path.relative_to(ROOT): path.read_bytes() for path in GEN_DIR.glob("*.py")}
-    first.update(
-        {path.relative_to(ROOT): path.read_bytes() for path in FIXTURE_DIR.rglob("*.json")}
-    )
     run_codegen()
     second = {path.relative_to(ROOT): path.read_bytes() for path in GEN_DIR.glob("*.py")}
-    second.update(
-        {path.relative_to(ROOT): path.read_bytes() for path in FIXTURE_DIR.rglob("*.json")}
-    )
     assert second == first
+
+
+def test_codegen_does_not_modify_handwritten_fixtures() -> None:
+    (ROOT / ".tmp-pytest").mkdir(exist_ok=True)
+    temp_root = Path(tempfile.mkdtemp(prefix="fixture-owner-", dir=ROOT / ".tmp-pytest"))
+    temp_repo = temp_root / "repo"
+    copy_codegen_workspace(temp_repo, include_fixtures=True)
+    subprocess.run(
+        ["git", "init"], cwd=temp_repo, check=True, capture_output=True, encoding="utf-8"
+    )
+    subprocess.run(
+        ["git", "add", "contracts/fixtures"],
+        cwd=temp_repo,
+        check=True,
+        capture_output=True,
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Codex Test",
+            "-c",
+            "user.email=codex-test@example.invalid",
+            "commit",
+            "-m",
+            "baseline fixtures",
+        ],
+        cwd=temp_repo,
+        check=True,
+        capture_output=True,
+        encoding="utf-8",
+    )
+    completed = subprocess.run(
+        ["python", "tools/codegen.py"],
+        cwd=temp_repo,
+        check=False,
+        capture_output=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+    )
+    assert completed.returncode == 0, completed.stderr
+    diff = subprocess.run(
+        ["git", "diff", "--exit-code", "--", "contracts/fixtures"],
+        cwd=temp_repo,
+        check=False,
+        capture_output=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+    )
+    assert diff.returncode == 0, diff.stdout + diff.stderr
 
 
 def test_codegen_check_detects_stale_gen() -> None:
     (ROOT / ".tmp-pytest").mkdir(exist_ok=True)
     temp_root = Path(tempfile.mkdtemp(prefix="codegen-check-", dir=ROOT / ".tmp-pytest"))
     temp_repo = temp_root / "repo"
-    shutil.copytree(
-        ROOT,
-        temp_repo,
-        ignore=shutil.ignore_patterns(
-            ".git",
-            ".venv",
-            ".pytest_cache",
-            ".mypy_cache",
-            ".ruff_cache",
-            ".tmp-pytest",
-        ),
-    )
+    copy_codegen_workspace(temp_repo)
     subprocess.run(
         ["git", "init"], cwd=temp_repo, check=True, capture_output=True, encoding="utf-8"
     )

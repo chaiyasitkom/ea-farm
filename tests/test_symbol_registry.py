@@ -22,6 +22,24 @@ from brain.common.registry import (
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def copy_codegen_workspace(temp_repo: Path) -> None:
+    contracts_dir = temp_repo / "contracts"
+    contracts_dir.mkdir(parents=True)
+    shutil.copytree(ROOT / "contracts" / "schema", contracts_dir / "schema")
+    shutil.copytree(ROOT / "contracts" / "gen", contracts_dir / "gen")
+    shutil.copy2(ROOT / "contracts" / "symbols.json", contracts_dir / "symbols.json")
+
+    shutil.copytree(
+        ROOT / "brain",
+        temp_repo / "brain",
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    tools_dir = temp_repo / "tools"
+    tools_dir.mkdir()
+    for name in ("codegen.py", "task.py", "__init__.py"):
+        shutil.copy2(ROOT / "tools" / name, tools_dir / name)
+
+
 @pytest.fixture()
 def registry() -> SymbolRegistry:
     return SymbolRegistry.load()
@@ -176,18 +194,7 @@ def test_codegen_check_detects_stale_symbols_gen() -> None:
     (ROOT / ".tmp-pytest").mkdir(exist_ok=True)
     temp_root = Path(tempfile.mkdtemp(prefix="symbols-codegen-check-", dir=ROOT / ".tmp-pytest"))
     temp_repo = temp_root / "repo"
-    shutil.copytree(
-        ROOT,
-        temp_repo,
-        ignore=shutil.ignore_patterns(
-            ".git",
-            ".venv",
-            ".pytest_cache",
-            ".mypy_cache",
-            ".ruff_cache",
-            ".tmp-pytest",
-        ),
-    )
+    copy_codegen_workspace(temp_repo)
     subprocess.run(["git", "init"], cwd=temp_repo, check=True, capture_output=True, text=True)
     subprocess.run(["python", "tools/codegen.py"], cwd=temp_repo, check=True, timeout=30)
     subprocess.run(["git", "add", "contracts/gen"], cwd=temp_repo, check=True, text=True)

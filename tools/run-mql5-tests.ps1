@@ -29,7 +29,17 @@
 #   * MQL5 has no FILE_UTF8 flag. Real UTF-8 requires
 #     FILE_BIN + StringToCharArray(..., CP_UTF8). See tools\probe\TesterProbe.mq5.
 
+param(
+    [string]$RoundTripManifest = "ea-farm-rt-manifest.json"
+)
+
 $ErrorActionPreference = 'Stop'
+
+$roundTripManifestFile = Split-Path -Leaf $RoundTripManifest
+if ([string]::IsNullOrWhiteSpace($roundTripManifestFile) -or $roundTripManifestFile -ne $RoundTripManifest) {
+    Write-Output "FATAL: RoundTripManifest must be a filename only, not a path: $RoundTripManifest"
+    exit 2
+}
 
 $Repo       = "D:\ea-farm"
 $Common     = "C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\Common\Files"
@@ -64,7 +74,8 @@ $Suites = @(
     @{ Name = "TestWire"; Source = "tests\mql5\TestWire.mq5" },
     @{ Name = "TestBrokerTime"; Source = "tests\mql5\TestBrokerTime.mq5" },
     @{ Name = "TestFarmMessages"; Source = "tests\mql5\TestFarmMessages.mq5" },
-    @{ Name = "TestFarmSymbols"; Source = "tests\mql5\TestFarmSymbols.mq5" }
+    @{ Name = "TestFarmSymbols"; Source = "tests\mql5\TestFarmSymbols.mq5" },
+    @{ Name = "TestRoundTrip"; Source = "tests\mql5\TestRoundTrip.mq5" }
 )
 
 $RequiredSuiteNames = @{
@@ -131,6 +142,9 @@ $RequiredSuiteNames = @{
         "test_production_ready_false_for_uncalibrated",
         "test_correlation_groups_available"
     )
+    TestRoundTrip = @(
+        "test_manifest_roundtrip_cases"
+    )
 }
 
 foreach ($t in $Targets) {
@@ -196,6 +210,52 @@ foreach ($t in $Targets) {
     }
     Write-Output "[deploy] fixtures -> $FixtureDst ($fixtureCount json files)"
 
+    $gateManifestPath = Join-Path $Common "ea-farm-rt-manifest.json"
+    $rtCases = @()
+    $rtId = 1
+    Get-ChildItem $FixtureDst -File -Filter "*.json" |
+        Where-Object { $_.Name -match '\.valid(\.min)?\.json$' } |
+        Sort-Object Name |
+        ForEach-Object {
+            $rtCases += [ordered]@{
+                id = $rtId
+                type = ($_.Name -replace '\.valid(\.min)?\.json$', '').ToUpper()
+                in = "ea-farm-fixtures\$($_.Name)"
+                out = "ea-farm-rt-out-gate-$rtId.json"
+            }
+            $rtId++
+        }
+    $roundTripExpectedCases = $rtCases.Count
+    [IO.File]::WriteAllText(
+        $gateManifestPath,
+        (@{ cases = $rtCases } | ConvertTo-Json -Depth 8 -Compress),
+        [Text.UTF8Encoding]::new($false)
+    )
+    Write-Output "[deploy] default round-trip manifest -> $gateManifestPath ($roundTripExpectedCases cases)"
+
+    if ($roundTripManifestFile -ne "ea-farm-rt-manifest.json") {
+        $callerManifestPath = Join-Path $Common $roundTripManifestFile
+        if (-not (Test-Path $callerManifestPath)) {
+            Write-Output "  [FAIL] requested round-trip manifest not found: $callerManifestPath"
+            $anyFail = $true
+            continue
+        }
+        try {
+            $callerManifestJson = Get-Content $callerManifestPath -Raw | ConvertFrom-Json
+        } catch {
+            Write-Output "  [FAIL] requested round-trip manifest is not valid JSON: $callerManifestPath"
+            $anyFail = $true
+            continue
+        }
+        if (-not ($callerManifestJson.PSObject.Properties.Name -contains "cases")) {
+            Write-Output "  [FAIL] requested round-trip manifest has no cases: $callerManifestPath"
+            $anyFail = $true
+            continue
+        }
+        $roundTripExpectedCases = @($callerManifestJson.cases).Count
+        Write-Output "[deploy] caller round-trip manifest -> $callerManifestPath ($roundTripExpectedCases cases)"
+    }
+
     $expDst = Join-Path $Data "MQL5\Experts\FarmTests"
     if (-not (Test-Path $expDst)) { New-Item -ItemType Directory -Path $expDst -Force | Out-Null }
 
@@ -253,7 +313,8 @@ foreach ($s in $Suites) {
     @(
         "InpTestGitSha=$sha",
         "InpTestResultFile=$resultFile",
-        "InpFixtureDir=ea-farm-fixtures"
+        "InpFixtureDir=ea-farm-fixtures",
+        "InpRoundTripManifest=$roundTripManifestFile"
     ) -join "`r`n" | Out-File -FilePath (Join-Path $setDir $setName) -Encoding ascii
 
     # ---- 4. run the tester ---------------------------------------------
@@ -319,6 +380,7 @@ ShutdownTerminal=1
         total = $j.total
         passed = $j.passed
         failed = $j.failed
+        cases_processed = $j.cases_processed
     }
     [IO.File]::WriteAllText(
         $observedPath,
@@ -330,6 +392,16 @@ ShutdownTerminal=1
         Write-Output "  [FAIL] git_sha mismatch: result=$($j.git_sha) HEAD=$sha"
         $anyFail = $true
         continue
+    }
+
+    if ($name -eq "TestRoundTrip") {
+        if (-not ($j.PSObject.Properties.Name -contains "cases_processed")) {
+            Write-Output "  [FAIL] result JSON has no cases_processed"
+            $anyFail = $true
+        } elseif ([int]$j.cases_processed -lt $roundTripExpectedCases) {
+            Write-Output "  [FAIL] cases_processed=$($j.cases_processed) expected_at_least=$roundTripExpectedCases"
+            $anyFail = $true
+        }
     }
 
     Write-Output "  status=$($j.status) total=$($j.total) passed=$($j.passed) failed=$($j.failed)"

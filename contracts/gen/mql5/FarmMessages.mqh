@@ -430,12 +430,1565 @@ bool FarmValidatePayload(const ENUM_FARM_MSG_TYPE msg_type, CFarmJsonValue *payl
    return true;
 }
 
+string FarmCanonicalHello(CFarmJsonValue *value);
+string FarmCanonicalHelloAck(CFarmJsonValue *value);
+string FarmCanonicalHeartbeat(CFarmJsonValue *value);
+string FarmCanonicalHeartbeatAck(CFarmJsonValue *value);
+string FarmCanonicalBar(CFarmJsonValue *value);
+string FarmCanonicalState(CFarmJsonValue *value);
+string FarmCanonicalIntent(CFarmJsonValue *value);
+string FarmCanonicalIntentAck(CFarmJsonValue *value);
+string FarmCanonicalExecReport(CFarmJsonValue *value);
+string FarmCanonicalRiskDirective(CFarmJsonValue *value);
+string FarmCanonicalConfigUpdate(CFarmJsonValue *value);
+string FarmCanonicalError(CFarmJsonValue *value);
+string FarmCanonicalizePayloadJson(const ENUM_FARM_MSG_TYPE msg_type, CFarmJsonValue *payload);
+
+string FarmCanonicalHello(CFarmJsonValue *value)
+{
+   string out = "{";
+   bool first = true;
+   CFarmJsonValue *root_0 = value.Get("token");
+   if(root_0 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "token");
+      out += FarmJsonCanonicalValue(root_0);
+   }
+   CFarmJsonValue *root_1 = value.Get("ea_version");
+   if(root_1 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "ea_version");
+      out += FarmJsonCanonicalValue(root_1);
+   }
+   CFarmJsonValue *root_2 = value.Get("terminal_build");
+   if(root_2 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "terminal_build");
+      out += FarmJsonCanonicalNumber(root_2, true);
+   }
+   CFarmJsonValue *root_3 = value.Get("account");
+   if(root_3 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "account");
+      out += "{";
+      bool root_3_first = true;
+      CFarmJsonValue *root_3_0 = root_3.Get("login");
+      if(root_3_0 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_3_first, "login");
+         out += FarmJsonCanonicalNumber(root_3_0, true);
+      }
+      CFarmJsonValue *root_3_1 = root_3.Get("server");
+      if(root_3_1 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_3_first, "server");
+         out += FarmJsonCanonicalValue(root_3_1);
+      }
+      CFarmJsonValue *root_3_2 = root_3.Get("currency");
+      if(root_3_2 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_3_first, "currency");
+         out += FarmJsonCanonicalValue(root_3_2);
+      }
+      CFarmJsonValue *root_3_3 = root_3.Get("leverage");
+      if(root_3_3 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_3_first, "leverage");
+         out += FarmJsonCanonicalNumber(root_3_3, true);
+      }
+      CFarmJsonValue *root_3_4 = root_3.Get("balance");
+      if(root_3_4 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_3_first, "balance");
+         out += FarmJsonCanonicalNumber(root_3_4, false);
+      }
+      CFarmJsonValue *root_3_5 = root_3.Get("equity");
+      if(root_3_5 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_3_first, "equity");
+         out += FarmJsonCanonicalNumber(root_3_5, false);
+      }
+      CFarmJsonValue *root_3_6 = root_3.Get("is_demo");
+      if(root_3_6 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_3_first, "is_demo");
+         out += FarmJsonCanonicalValue(root_3_6);
+      }
+      CFarmJsonValue *root_3_7 = root_3.Get("margin_mode");
+      if(root_3_7 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_3_first, "margin_mode");
+         out += FarmJsonCanonicalValue(root_3_7);
+      }
+      out += "}";
+   }
+   CFarmJsonValue *root_4 = value.Get("symbol");
+   if(root_4 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "symbol");
+      out += "{";
+      bool root_4_first = true;
+      CFarmJsonValue *root_4_0 = root_4.Get("name");
+      if(root_4_0 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "name");
+         out += FarmJsonCanonicalValue(root_4_0);
+      }
+      CFarmJsonValue *root_4_1 = root_4.Get("digits");
+      if(root_4_1 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "digits");
+         out += FarmJsonCanonicalNumber(root_4_1, true);
+      }
+      CFarmJsonValue *root_4_2 = root_4.Get("point");
+      if(root_4_2 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "point");
+         out += FarmJsonCanonicalNumber(root_4_2, false);
+      }
+      CFarmJsonValue *root_4_3 = root_4.Get("tick_size");
+      if(root_4_3 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "tick_size");
+         out += FarmJsonCanonicalNumber(root_4_3, false);
+      }
+      CFarmJsonValue *root_4_4 = root_4.Get("tick_value");
+      if(root_4_4 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "tick_value");
+         out += FarmJsonCanonicalNumber(root_4_4, false);
+      }
+      CFarmJsonValue *root_4_5 = root_4.Get("contract_size");
+      if(root_4_5 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "contract_size");
+         out += FarmJsonCanonicalNumber(root_4_5, false);
+      }
+      CFarmJsonValue *root_4_6 = root_4.Get("volume_min");
+      if(root_4_6 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "volume_min");
+         out += FarmJsonCanonicalNumber(root_4_6, false);
+      }
+      CFarmJsonValue *root_4_7 = root_4.Get("volume_max");
+      if(root_4_7 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "volume_max");
+         out += FarmJsonCanonicalNumber(root_4_7, false);
+      }
+      CFarmJsonValue *root_4_8 = root_4.Get("volume_step");
+      if(root_4_8 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "volume_step");
+         out += FarmJsonCanonicalNumber(root_4_8, false);
+      }
+      CFarmJsonValue *root_4_9 = root_4.Get("stops_level");
+      if(root_4_9 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "stops_level");
+         out += FarmJsonCanonicalNumber(root_4_9, true);
+      }
+      CFarmJsonValue *root_4_10 = root_4.Get("freeze_level");
+      if(root_4_10 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "freeze_level");
+         out += FarmJsonCanonicalNumber(root_4_10, true);
+      }
+      CFarmJsonValue *root_4_11 = root_4.Get("swap_long");
+      if(root_4_11 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "swap_long");
+         out += FarmJsonCanonicalNumber(root_4_11, false);
+      }
+      CFarmJsonValue *root_4_12 = root_4.Get("swap_short");
+      if(root_4_12 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "swap_short");
+         out += FarmJsonCanonicalNumber(root_4_12, false);
+      }
+      CFarmJsonValue *root_4_13 = root_4.Get("trade_mode");
+      if(root_4_13 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "trade_mode");
+         out += FarmJsonCanonicalValue(root_4_13);
+      }
+      CFarmJsonValue *root_4_14 = root_4.Get("order_mode_closeby");
+      if(root_4_14 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "order_mode_closeby");
+         out += FarmJsonCanonicalValue(root_4_14);
+      }
+      out += "}";
+   }
+   CFarmJsonValue *root_5 = value.Get("timeframe");
+   if(root_5 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "timeframe");
+      out += FarmJsonCanonicalValue(root_5);
+   }
+   CFarmJsonValue *root_6 = value.Get("strategy_id");
+   if(root_6 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "strategy_id");
+      out += FarmJsonCanonicalValue(root_6);
+   }
+   CFarmJsonValue *root_7 = value.Get("magic");
+   if(root_7 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "magic");
+      out += FarmJsonCanonicalNumber(root_7, true);
+   }
+   CFarmJsonValue *root_8 = value.Get("local_limits");
+   if(root_8 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "local_limits");
+      out += "{";
+      bool root_8_first = true;
+      CFarmJsonValue *root_8_0 = root_8.Get("max_lot_per_order");
+      if(root_8_0 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "max_lot_per_order");
+         out += FarmJsonCanonicalNumber(root_8_0, false);
+      }
+      CFarmJsonValue *root_8_1 = root_8.Get("max_net_volume_per_symbol");
+      if(root_8_1 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "max_net_volume_per_symbol");
+         out += FarmJsonCanonicalNumber(root_8_1, false);
+      }
+      CFarmJsonValue *root_8_2 = root_8.Get("max_tickets_per_symbol");
+      if(root_8_2 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "max_tickets_per_symbol");
+         out += FarmJsonCanonicalNumber(root_8_2, true);
+      }
+      CFarmJsonValue *root_8_3 = root_8.Get("max_total_tickets");
+      if(root_8_3 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "max_total_tickets");
+         out += FarmJsonCanonicalNumber(root_8_3, true);
+      }
+      CFarmJsonValue *root_8_4 = root_8.Get("max_spread_points");
+      if(root_8_4 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "max_spread_points");
+         out += FarmJsonCanonicalNumber(root_8_4, true);
+      }
+      CFarmJsonValue *root_8_5 = root_8.Get("daily_loss_pct");
+      if(root_8_5 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "daily_loss_pct");
+         out += FarmJsonCanonicalNumber(root_8_5, false);
+      }
+      CFarmJsonValue *root_8_6 = root_8.Get("max_dd_pct");
+      if(root_8_6 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "max_dd_pct");
+         out += FarmJsonCanonicalNumber(root_8_6, false);
+      }
+      out += "}";
+   }
+   CFarmJsonValue *root_9 = value.Get("broker_time");
+   if(root_9 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "broker_time");
+      out += "{";
+      bool root_9_first = true;
+      CFarmJsonValue *root_9_0 = root_9.Get("utc_offset_sec");
+      if(root_9_0 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_9_first, "utc_offset_sec");
+         out += FarmJsonCanonicalNumber(root_9_0, true);
+      }
+      CFarmJsonValue *root_9_1 = root_9.Get("detected_at");
+      if(root_9_1 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_9_first, "detected_at");
+         out += FarmJsonCanonicalValue(root_9_1);
+      }
+      CFarmJsonValue *root_9_2 = root_9.Get("source");
+      if(root_9_2 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_9_first, "source");
+         out += FarmJsonCanonicalValue(root_9_2);
+      }
+      CFarmJsonValue *root_9_3 = root_9.Get("local_dst_sec");
+      if(root_9_3 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_9_first, "local_dst_sec");
+         if(root_9_3 != NULL && root_9_3.type == FARM_JSON_NULL)
+            out += "null";
+         else
+         {
+            out += FarmJsonCanonicalNumber(root_9_3, true);
+         }
+      }
+      CFarmJsonValue *root_9_4 = root_9.Get("local_gmt_offset_sec");
+      if(root_9_4 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_9_first, "local_gmt_offset_sec");
+         if(root_9_4 != NULL && root_9_4.type == FARM_JSON_NULL)
+            out += "null";
+         else
+         {
+            out += FarmJsonCanonicalNumber(root_9_4, true);
+         }
+      }
+      out += "}";
+   }
+   return out + "}";
+}
+
+string FarmCanonicalHelloAck(CFarmJsonValue *value)
+{
+   string out = "{";
+   bool first = true;
+   CFarmJsonValue *root_0 = value.Get("accepted");
+   if(root_0 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "accepted");
+      out += FarmJsonCanonicalValue(root_0);
+   }
+   CFarmJsonValue *root_1 = value.Get("server_time");
+   if(root_1 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "server_time");
+      out += FarmJsonCanonicalValue(root_1);
+   }
+   CFarmJsonValue *root_2 = value.Get("brain_version");
+   if(root_2 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "brain_version");
+      out += FarmJsonCanonicalValue(root_2);
+   }
+   CFarmJsonValue *root_3 = value.Get("assigned_session_id");
+   if(root_3 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "assigned_session_id");
+      if(root_3 != NULL && root_3.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalValue(root_3);
+      }
+   }
+   CFarmJsonValue *root_4 = value.Get("initial_directive");
+   if(root_4 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "initial_directive");
+      out += "{";
+      bool root_4_first = true;
+      CFarmJsonValue *root_4_0 = root_4.Get("mode");
+      if(root_4_0 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "mode");
+         out += FarmJsonCanonicalValue(root_4_0);
+      }
+      CFarmJsonValue *root_4_1 = root_4.Get("scale_factor");
+      if(root_4_1 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_4_first, "scale_factor");
+         out += FarmJsonCanonicalNumber(root_4_1, false);
+      }
+      out += "}";
+   }
+   CFarmJsonValue *root_5 = value.Get("reject_reason");
+   if(root_5 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "reject_reason");
+      if(root_5 != NULL && root_5.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalValue(root_5);
+      }
+   }
+   return out + "}";
+}
+
+string FarmCanonicalHeartbeat(CFarmJsonValue *value)
+{
+   string out = "{";
+   bool first = true;
+   CFarmJsonValue *root_0 = value.Get("seq");
+   if(root_0 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "seq");
+      out += FarmJsonCanonicalNumber(root_0, true);
+   }
+   CFarmJsonValue *root_1 = value.Get("wire");
+   if(root_1 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "wire");
+      out += "{";
+      bool root_1_first = true;
+      CFarmJsonValue *root_1_0 = root_1.Get("state");
+      if(root_1_0 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "state");
+         out += FarmJsonCanonicalValue(root_1_0);
+      }
+      CFarmJsonValue *root_1_1 = root_1.Get("send_queue_depth");
+      if(root_1_1 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "send_queue_depth");
+         out += FarmJsonCanonicalNumber(root_1_1, true);
+      }
+      CFarmJsonValue *root_1_2 = root_1.Get("messages_sent");
+      if(root_1_2 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "messages_sent");
+         out += FarmJsonCanonicalNumber(root_1_2, true);
+      }
+      CFarmJsonValue *root_1_3 = root_1.Get("messages_recv");
+      if(root_1_3 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "messages_recv");
+         out += FarmJsonCanonicalNumber(root_1_3, true);
+      }
+      CFarmJsonValue *root_1_4 = root_1.Get("reconnect_count");
+      if(root_1_4 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "reconnect_count");
+         out += FarmJsonCanonicalNumber(root_1_4, true);
+      }
+      CFarmJsonValue *root_1_5 = root_1.Get("bytes_dropped");
+      if(root_1_5 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "bytes_dropped");
+         out += FarmJsonCanonicalNumber(root_1_5, true);
+      }
+      CFarmJsonValue *root_1_6 = root_1.Get("seconds_since_last_inbound");
+      if(root_1_6 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "seconds_since_last_inbound");
+         out += FarmJsonCanonicalNumber(root_1_6, true);
+      }
+      CFarmJsonValue *root_1_7 = root_1.Get("broker_utc_offset_sec");
+      if(root_1_7 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "broker_utc_offset_sec");
+         if(root_1_7 != NULL && root_1_7.type == FARM_JSON_NULL)
+            out += "null";
+         else
+         {
+            out += FarmJsonCanonicalNumber(root_1_7, true);
+         }
+      }
+      CFarmJsonValue *root_1_8 = root_1.Get("pump_p99_us");
+      if(root_1_8 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "pump_p99_us");
+         out += FarmJsonCanonicalNumber(root_1_8, true);
+      }
+      out += "}";
+   }
+   return out + "}";
+}
+
+string FarmCanonicalHeartbeatAck(CFarmJsonValue *value)
+{
+   string out = "{";
+   bool first = true;
+   CFarmJsonValue *root_0 = value.Get("seq");
+   if(root_0 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "seq");
+      out += FarmJsonCanonicalNumber(root_0, true);
+   }
+   CFarmJsonValue *root_1 = value.Get("server_time");
+   if(root_1 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "server_time");
+      out += FarmJsonCanonicalValue(root_1);
+   }
+   CFarmJsonValue *root_2 = value.Get("brain_healthy");
+   if(root_2 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "brain_healthy");
+      out += FarmJsonCanonicalValue(root_2);
+   }
+   return out + "}";
+}
+
+string FarmCanonicalBar(CFarmJsonValue *value)
+{
+   string out = "{";
+   bool first = true;
+   CFarmJsonValue *root_0 = value.Get("symbol");
+   if(root_0 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "symbol");
+      out += FarmJsonCanonicalValue(root_0);
+   }
+   CFarmJsonValue *root_1 = value.Get("timeframe");
+   if(root_1 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "timeframe");
+      out += FarmJsonCanonicalValue(root_1);
+   }
+   CFarmJsonValue *root_2 = value.Get("bar_time");
+   if(root_2 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "bar_time");
+      out += FarmJsonCanonicalValue(root_2);
+   }
+   CFarmJsonValue *root_3 = value.Get("open");
+   if(root_3 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "open");
+      out += FarmJsonCanonicalNumber(root_3, false);
+   }
+   CFarmJsonValue *root_4 = value.Get("high");
+   if(root_4 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "high");
+      out += FarmJsonCanonicalNumber(root_4, false);
+   }
+   CFarmJsonValue *root_5 = value.Get("low");
+   if(root_5 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "low");
+      out += FarmJsonCanonicalNumber(root_5, false);
+   }
+   CFarmJsonValue *root_6 = value.Get("close");
+   if(root_6 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "close");
+      out += FarmJsonCanonicalNumber(root_6, false);
+   }
+   CFarmJsonValue *root_7 = value.Get("tick_volume");
+   if(root_7 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "tick_volume");
+      out += FarmJsonCanonicalNumber(root_7, true);
+   }
+   CFarmJsonValue *root_8 = value.Get("real_volume");
+   if(root_8 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "real_volume");
+      out += FarmJsonCanonicalNumber(root_8, true);
+   }
+   CFarmJsonValue *root_9 = value.Get("spread_points_avg");
+   if(root_9 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "spread_points_avg");
+      out += FarmJsonCanonicalNumber(root_9, true);
+   }
+   CFarmJsonValue *root_10 = value.Get("spread_points_max");
+   if(root_10 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "spread_points_max");
+      out += FarmJsonCanonicalNumber(root_10, true);
+   }
+   CFarmJsonValue *root_11 = value.Get("is_final");
+   if(root_11 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "is_final");
+      out += FarmJsonCanonicalValue(root_11);
+   }
+   return out + "}";
+}
+
+string FarmCanonicalState(CFarmJsonValue *value)
+{
+   string out = "{";
+   bool first = true;
+   CFarmJsonValue *root_0 = value.Get("balance");
+   if(root_0 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "balance");
+      out += FarmJsonCanonicalNumber(root_0, false);
+   }
+   CFarmJsonValue *root_1 = value.Get("equity");
+   if(root_1 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "equity");
+      out += FarmJsonCanonicalNumber(root_1, false);
+   }
+   CFarmJsonValue *root_2 = value.Get("margin_used");
+   if(root_2 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "margin_used");
+      out += FarmJsonCanonicalNumber(root_2, false);
+   }
+   CFarmJsonValue *root_3 = value.Get("margin_free");
+   if(root_3 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "margin_free");
+      out += FarmJsonCanonicalNumber(root_3, false);
+   }
+   CFarmJsonValue *root_4 = value.Get("margin_level_pct");
+   if(root_4 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "margin_level_pct");
+      if(root_4 != NULL && root_4.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalNumber(root_4, false);
+      }
+   }
+   CFarmJsonValue *root_5 = value.Get("equity_hwm");
+   if(root_5 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "equity_hwm");
+      out += FarmJsonCanonicalNumber(root_5, false);
+   }
+   CFarmJsonValue *root_6 = value.Get("day_start_equity");
+   if(root_6 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "day_start_equity");
+      out += FarmJsonCanonicalNumber(root_6, false);
+   }
+   CFarmJsonValue *root_7 = value.Get("day_pl");
+   if(root_7 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "day_pl");
+      out += FarmJsonCanonicalNumber(root_7, false);
+   }
+   CFarmJsonValue *root_8 = value.Get("day_pl_pct");
+   if(root_8 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "day_pl_pct");
+      out += FarmJsonCanonicalNumber(root_8, false);
+   }
+   CFarmJsonValue *root_9 = value.Get("positions");
+   if(root_9 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "positions");
+      out += "[";
+      if(root_9 != NULL)
+      {
+         for(int i = 0; i < root_9.Size(); i++)
+         {
+            if(i > 0) out += ",";
+            out += "{";
+            bool root_9_item_first = true;
+            CFarmJsonValue *root_9_item_0 = root_9.At(i).Get("ticket");
+            if(root_9_item_0 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_9_item_first, "ticket");
+               out += FarmJsonCanonicalNumber(root_9_item_0, true);
+            }
+            CFarmJsonValue *root_9_item_1 = root_9.At(i).Get("symbol");
+            if(root_9_item_1 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_9_item_first, "symbol");
+               out += FarmJsonCanonicalValue(root_9_item_1);
+            }
+            CFarmJsonValue *root_9_item_2 = root_9.At(i).Get("side");
+            if(root_9_item_2 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_9_item_first, "side");
+               out += FarmJsonCanonicalValue(root_9_item_2);
+            }
+            CFarmJsonValue *root_9_item_3 = root_9.At(i).Get("volume");
+            if(root_9_item_3 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_9_item_first, "volume");
+               out += FarmJsonCanonicalNumber(root_9_item_3, false);
+            }
+            CFarmJsonValue *root_9_item_4 = root_9.At(i).Get("price_open");
+            if(root_9_item_4 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_9_item_first, "price_open");
+               out += FarmJsonCanonicalNumber(root_9_item_4, false);
+            }
+            CFarmJsonValue *root_9_item_5 = root_9.At(i).Get("sl");
+            if(root_9_item_5 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_9_item_first, "sl");
+               if(root_9_item_5 != NULL && root_9_item_5.type == FARM_JSON_NULL)
+                  out += "null";
+               else
+               {
+                  out += FarmJsonCanonicalNumber(root_9_item_5, false);
+               }
+            }
+            CFarmJsonValue *root_9_item_6 = root_9.At(i).Get("tp");
+            if(root_9_item_6 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_9_item_first, "tp");
+               if(root_9_item_6 != NULL && root_9_item_6.type == FARM_JSON_NULL)
+                  out += "null";
+               else
+               {
+                  out += FarmJsonCanonicalNumber(root_9_item_6, false);
+               }
+            }
+            CFarmJsonValue *root_9_item_7 = root_9.At(i).Get("profit");
+            if(root_9_item_7 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_9_item_first, "profit");
+               out += FarmJsonCanonicalNumber(root_9_item_7, false);
+            }
+            CFarmJsonValue *root_9_item_8 = root_9.At(i).Get("swap");
+            if(root_9_item_8 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_9_item_first, "swap");
+               out += FarmJsonCanonicalNumber(root_9_item_8, false);
+            }
+            CFarmJsonValue *root_9_item_9 = root_9.At(i).Get("magic");
+            if(root_9_item_9 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_9_item_first, "magic");
+               out += FarmJsonCanonicalNumber(root_9_item_9, true);
+            }
+            CFarmJsonValue *root_9_item_10 = root_9.At(i).Get("time_open");
+            if(root_9_item_10 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_9_item_first, "time_open");
+               out += FarmJsonCanonicalValue(root_9_item_10);
+            }
+            CFarmJsonValue *root_9_item_11 = root_9.At(i).Get("comment");
+            if(root_9_item_11 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_9_item_first, "comment");
+               if(root_9_item_11 != NULL && root_9_item_11.type == FARM_JSON_NULL)
+                  out += "null";
+               else
+               {
+                  out += FarmJsonCanonicalValue(root_9_item_11);
+               }
+            }
+            out += "}";
+         }
+      }
+      out += "]";
+   }
+   CFarmJsonValue *root_10 = value.Get("pending_orders");
+   if(root_10 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "pending_orders");
+      out += "[";
+      if(root_10 != NULL)
+      {
+         for(int i = 0; i < root_10.Size(); i++)
+         {
+            if(i > 0) out += ",";
+            out += "{";
+            bool root_10_item_first = true;
+            CFarmJsonValue *root_10_item_0 = root_10.At(i).Get("ticket");
+            if(root_10_item_0 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_10_item_first, "ticket");
+               out += FarmJsonCanonicalNumber(root_10_item_0, true);
+            }
+            CFarmJsonValue *root_10_item_1 = root_10.At(i).Get("symbol");
+            if(root_10_item_1 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_10_item_first, "symbol");
+               out += FarmJsonCanonicalValue(root_10_item_1);
+            }
+            CFarmJsonValue *root_10_item_2 = root_10.At(i).Get("type");
+            if(root_10_item_2 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_10_item_first, "type");
+               out += FarmJsonCanonicalValue(root_10_item_2);
+            }
+            CFarmJsonValue *root_10_item_3 = root_10.At(i).Get("volume");
+            if(root_10_item_3 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_10_item_first, "volume");
+               out += FarmJsonCanonicalNumber(root_10_item_3, false);
+            }
+            CFarmJsonValue *root_10_item_4 = root_10.At(i).Get("price_open");
+            if(root_10_item_4 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_10_item_first, "price_open");
+               out += FarmJsonCanonicalNumber(root_10_item_4, false);
+            }
+            CFarmJsonValue *root_10_item_5 = root_10.At(i).Get("magic");
+            if(root_10_item_5 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_10_item_first, "magic");
+               out += FarmJsonCanonicalNumber(root_10_item_5, true);
+            }
+            CFarmJsonValue *root_10_item_6 = root_10.At(i).Get("time_setup");
+            if(root_10_item_6 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_10_item_first, "time_setup");
+               out += FarmJsonCanonicalValue(root_10_item_6);
+            }
+            CFarmJsonValue *root_10_item_7 = root_10.At(i).Get("sl");
+            if(root_10_item_7 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_10_item_first, "sl");
+               if(root_10_item_7 != NULL && root_10_item_7.type == FARM_JSON_NULL)
+                  out += "null";
+               else
+               {
+                  out += FarmJsonCanonicalNumber(root_10_item_7, false);
+               }
+            }
+            CFarmJsonValue *root_10_item_8 = root_10.At(i).Get("time_expiration");
+            if(root_10_item_8 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_10_item_first, "time_expiration");
+               if(root_10_item_8 != NULL && root_10_item_8.type == FARM_JSON_NULL)
+                  out += "null";
+               else
+               {
+                  out += FarmJsonCanonicalValue(root_10_item_8);
+               }
+            }
+            CFarmJsonValue *root_10_item_9 = root_10.At(i).Get("tp");
+            if(root_10_item_9 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_10_item_first, "tp");
+               if(root_10_item_9 != NULL && root_10_item_9.type == FARM_JSON_NULL)
+                  out += "null";
+               else
+               {
+                  out += FarmJsonCanonicalNumber(root_10_item_9, false);
+               }
+            }
+            out += "}";
+         }
+      }
+      out += "]";
+   }
+   CFarmJsonValue *root_11 = value.Get("owned_net");
+   if(root_11 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "owned_net");
+      out += "{";
+      if(root_11 != NULL)
+      {
+         for(int i = 0; i < root_11.Size(); i++)
+         {
+            if(i > 0) out += ",";
+            out += FarmJsonQuoteUtf8(root_11.KeyAt(i)) + ":";
+            out += FarmJsonCanonicalNumber(root_11.At(i), false);
+         }
+      }
+      out += "}";
+   }
+   CFarmJsonValue *root_12 = value.Get("owned_ticket_count");
+   if(root_12 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "owned_ticket_count");
+      out += "{";
+      if(root_12 != NULL)
+      {
+         for(int i = 0; i < root_12.Size(); i++)
+         {
+            if(i > 0) out += ",";
+            out += FarmJsonQuoteUtf8(root_12.KeyAt(i)) + ":";
+            out += FarmJsonCanonicalNumber(root_12.At(i), true);
+         }
+      }
+      out += "}";
+   }
+   CFarmJsonValue *root_13 = value.Get("foreign_positions");
+   if(root_13 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "foreign_positions");
+      out += "{";
+      bool root_13_first = true;
+      CFarmJsonValue *root_13_0 = root_13.Get("count");
+      if(root_13_0 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_13_first, "count");
+         out += FarmJsonCanonicalNumber(root_13_0, true);
+      }
+      CFarmJsonValue *root_13_1 = root_13.Get("symbols");
+      if(root_13_1 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_13_first, "symbols");
+         out += "[";
+         if(root_13_1 != NULL)
+         {
+            for(int i = 0; i < root_13_1.Size(); i++)
+            {
+               if(i > 0) out += ",";
+               out += FarmJsonCanonicalValue(root_13_1.At(i));
+            }
+         }
+         out += "]";
+      }
+      CFarmJsonValue *root_13_2 = root_13.Get("total_volume");
+      if(root_13_2 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_13_first, "total_volume");
+         out += FarmJsonCanonicalNumber(root_13_2, false);
+      }
+      CFarmJsonValue *root_13_3 = root_13.Get("margin_estimate");
+      if(root_13_3 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_13_first, "margin_estimate");
+         out += FarmJsonCanonicalNumber(root_13_3, false);
+      }
+      out += "}";
+   }
+   CFarmJsonValue *root_14 = value.Get("account_margin_mode");
+   if(root_14 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "account_margin_mode");
+      out += FarmJsonCanonicalValue(root_14);
+   }
+   CFarmJsonValue *root_15 = value.Get("guard");
+   if(root_15 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "guard");
+      out += "{";
+      bool root_15_first = true;
+      CFarmJsonValue *root_15_0 = root_15.Get("halted");
+      if(root_15_0 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_15_first, "halted");
+         out += FarmJsonCanonicalValue(root_15_0);
+      }
+      CFarmJsonValue *root_15_1 = root_15.Get("mode");
+      if(root_15_1 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_15_first, "mode");
+         out += FarmJsonCanonicalValue(root_15_1);
+      }
+      CFarmJsonValue *root_15_2 = root_15.Get("current_spread_points");
+      if(root_15_2 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_15_first, "current_spread_points");
+         out += FarmJsonCanonicalNumber(root_15_2, true);
+      }
+      CFarmJsonValue *root_15_3 = root_15.Get("internal_hedge_detected");
+      if(root_15_3 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_15_first, "internal_hedge_detected");
+         out += FarmJsonCanonicalValue(root_15_3);
+      }
+      CFarmJsonValue *root_15_4 = root_15.Get("halt_reason");
+      if(root_15_4 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_15_first, "halt_reason");
+         if(root_15_4 != NULL && root_15_4.type == FARM_JSON_NULL)
+            out += "null";
+         else
+         {
+            out += FarmJsonCanonicalValue(root_15_4);
+         }
+      }
+      CFarmJsonValue *root_15_5 = root_15.Get("halted_until");
+      if(root_15_5 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_15_first, "halted_until");
+         if(root_15_5 != NULL && root_15_5.type == FARM_JSON_NULL)
+            out += "null";
+         else
+         {
+            out += FarmJsonCanonicalValue(root_15_5);
+         }
+      }
+      out += "}";
+   }
+   return out + "}";
+}
+
+string FarmCanonicalIntent(CFarmJsonValue *value)
+{
+   string out = "{";
+   bool first = true;
+   CFarmJsonValue *root_0 = value.Get("intent_id");
+   if(root_0 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "intent_id");
+      out += FarmJsonCanonicalValue(root_0);
+   }
+   CFarmJsonValue *root_1 = value.Get("symbol");
+   if(root_1 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "symbol");
+      out += FarmJsonCanonicalValue(root_1);
+   }
+   CFarmJsonValue *root_2 = value.Get("target_volume");
+   if(root_2 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "target_volume");
+      out += FarmJsonCanonicalNumber(root_2, false);
+   }
+   CFarmJsonValue *root_3 = value.Get("max_slippage_points");
+   if(root_3 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "max_slippage_points");
+      out += FarmJsonCanonicalNumber(root_3, true);
+   }
+   CFarmJsonValue *root_4 = value.Get("sl_price");
+   if(root_4 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "sl_price");
+      if(root_4 != NULL && root_4.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalNumber(root_4, false);
+      }
+   }
+   CFarmJsonValue *root_5 = value.Get("tp_price");
+   if(root_5 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "tp_price");
+      if(root_5 != NULL && root_5.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalNumber(root_5, false);
+      }
+   }
+   CFarmJsonValue *root_6 = value.Get("valid_until");
+   if(root_6 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "valid_until");
+      out += FarmJsonCanonicalValue(root_6);
+   }
+   CFarmJsonValue *root_7 = value.Get("urgency");
+   if(root_7 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "urgency");
+      out += FarmJsonCanonicalValue(root_7);
+   }
+   CFarmJsonValue *root_8 = value.Get("provenance");
+   if(root_8 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "provenance");
+      out += "{";
+      bool root_8_first = true;
+      CFarmJsonValue *root_8_0 = root_8.Get("strategy_id");
+      if(root_8_0 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "strategy_id");
+         out += FarmJsonCanonicalValue(root_8_0);
+      }
+      CFarmJsonValue *root_8_1 = root_8.Get("decided_at");
+      if(root_8_1 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "decided_at");
+         out += FarmJsonCanonicalValue(root_8_1);
+      }
+      CFarmJsonValue *root_8_2 = root_8.Get("confidence");
+      if(root_8_2 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "confidence");
+         if(root_8_2 != NULL && root_8_2.type == FARM_JSON_NULL)
+            out += "null";
+         else
+         {
+            out += FarmJsonCanonicalNumber(root_8_2, false);
+         }
+      }
+      CFarmJsonValue *root_8_3 = root_8.Get("feature_hash");
+      if(root_8_3 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "feature_hash");
+         if(root_8_3 != NULL && root_8_3.type == FARM_JSON_NULL)
+            out += "null";
+         else
+         {
+            out += FarmJsonCanonicalValue(root_8_3);
+         }
+      }
+      CFarmJsonValue *root_8_4 = root_8.Get("model_version");
+      if(root_8_4 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "model_version");
+         if(root_8_4 != NULL && root_8_4.type == FARM_JSON_NULL)
+            out += "null";
+         else
+         {
+            out += FarmJsonCanonicalValue(root_8_4);
+         }
+      }
+      CFarmJsonValue *root_8_5 = root_8.Get("news_state");
+      if(root_8_5 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "news_state");
+         if(root_8_5 != NULL && root_8_5.type == FARM_JSON_NULL)
+            out += "null";
+         else
+         {
+            out += FarmJsonCanonicalValue(root_8_5);
+         }
+      }
+      CFarmJsonValue *root_8_6 = root_8.Get("regime");
+      if(root_8_6 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "regime");
+         if(root_8_6 != NULL && root_8_6.type == FARM_JSON_NULL)
+            out += "null";
+         else
+         {
+            out += FarmJsonCanonicalValue(root_8_6);
+         }
+      }
+      CFarmJsonValue *root_8_7 = root_8.Get("risk_scale_applied");
+      if(root_8_7 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_8_first, "risk_scale_applied");
+         if(root_8_7 != NULL && root_8_7.type == FARM_JSON_NULL)
+            out += "null";
+         else
+         {
+            out += FarmJsonCanonicalNumber(root_8_7, false);
+         }
+      }
+      out += "}";
+   }
+   return out + "}";
+}
+
+string FarmCanonicalIntentAck(CFarmJsonValue *value)
+{
+   string out = "{";
+   bool first = true;
+   CFarmJsonValue *root_0 = value.Get("intent_id");
+   if(root_0 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "intent_id");
+      out += FarmJsonCanonicalValue(root_0);
+   }
+   CFarmJsonValue *root_1 = value.Get("status");
+   if(root_1 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "status");
+      out += FarmJsonCanonicalValue(root_1);
+   }
+   CFarmJsonValue *root_2 = value.Get("volume_before");
+   if(root_2 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "volume_before");
+      out += FarmJsonCanonicalNumber(root_2, false);
+   }
+   CFarmJsonValue *root_3 = value.Get("volume_target");
+   if(root_3 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "volume_target");
+      out += FarmJsonCanonicalNumber(root_3, false);
+   }
+   CFarmJsonValue *root_4 = value.Get("overshoot_volume");
+   if(root_4 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "overshoot_volume");
+      out += FarmJsonCanonicalNumber(root_4, false);
+   }
+   CFarmJsonValue *root_5 = value.Get("actions_planned");
+   if(root_5 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "actions_planned");
+      out += "[";
+      if(root_5 != NULL)
+      {
+         for(int i = 0; i < root_5.Size(); i++)
+         {
+            if(i > 0) out += ",";
+            out += "{";
+            bool root_5_item_first = true;
+            CFarmJsonValue *root_5_item_0 = root_5.At(i).Get("op");
+            if(root_5_item_0 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_5_item_first, "op");
+               out += FarmJsonCanonicalValue(root_5_item_0);
+            }
+            CFarmJsonValue *root_5_item_1 = root_5.At(i).Get("side");
+            if(root_5_item_1 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_5_item_first, "side");
+               out += FarmJsonCanonicalValue(root_5_item_1);
+            }
+            CFarmJsonValue *root_5_item_2 = root_5.At(i).Get("volume");
+            if(root_5_item_2 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_5_item_first, "volume");
+               out += FarmJsonCanonicalNumber(root_5_item_2, false);
+            }
+            CFarmJsonValue *root_5_item_3 = root_5.At(i).Get("ticket");
+            if(root_5_item_3 != NULL)
+            {
+               FarmJsonAppendFieldPrefix(out, root_5_item_first, "ticket");
+               if(root_5_item_3 != NULL && root_5_item_3.type == FARM_JSON_NULL)
+                  out += "null";
+               else
+               {
+                  out += FarmJsonCanonicalNumber(root_5_item_3, true);
+               }
+            }
+            out += "}";
+         }
+      }
+      out += "]";
+   }
+   CFarmJsonValue *root_6 = value.Get("reason");
+   if(root_6 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "reason");
+      if(root_6 != NULL && root_6.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalValue(root_6);
+      }
+   }
+   CFarmJsonValue *root_7 = value.Get("volume_clamped_to");
+   if(root_7 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "volume_clamped_to");
+      if(root_7 != NULL && root_7.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalNumber(root_7, false);
+      }
+   }
+   return out + "}";
+}
+
+string FarmCanonicalExecReport(CFarmJsonValue *value)
+{
+   string out = "{";
+   bool first = true;
+   CFarmJsonValue *root_0 = value.Get("intent_id");
+   if(root_0 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "intent_id");
+      out += FarmJsonCanonicalValue(root_0);
+   }
+   CFarmJsonValue *root_1 = value.Get("op");
+   if(root_1 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "op");
+      out += FarmJsonCanonicalValue(root_1);
+   }
+   CFarmJsonValue *root_2 = value.Get("result");
+   if(root_2 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "result");
+      out += FarmJsonCanonicalValue(root_2);
+   }
+   CFarmJsonValue *root_3 = value.Get("retcode");
+   if(root_3 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "retcode");
+      out += FarmJsonCanonicalNumber(root_3, true);
+   }
+   CFarmJsonValue *root_4 = value.Get("retcode_text");
+   if(root_4 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "retcode_text");
+      out += FarmJsonCanonicalValue(root_4);
+   }
+   CFarmJsonValue *root_5 = value.Get("side");
+   if(root_5 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "side");
+      out += FarmJsonCanonicalValue(root_5);
+   }
+   CFarmJsonValue *root_6 = value.Get("volume_requested");
+   if(root_6 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "volume_requested");
+      out += FarmJsonCanonicalNumber(root_6, false);
+   }
+   CFarmJsonValue *root_7 = value.Get("volume_filled");
+   if(root_7 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "volume_filled");
+      out += FarmJsonCanonicalNumber(root_7, false);
+   }
+   CFarmJsonValue *root_8 = value.Get("attempt");
+   if(root_8 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "attempt");
+      out += FarmJsonCanonicalNumber(root_8, true);
+   }
+   CFarmJsonValue *root_9 = value.Get("commission");
+   if(root_9 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "commission");
+      out += FarmJsonCanonicalNumber(root_9, false);
+   }
+   CFarmJsonValue *root_10 = value.Get("error");
+   if(root_10 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "error");
+      if(root_10 != NULL && root_10.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalValue(root_10);
+      }
+   }
+   CFarmJsonValue *root_11 = value.Get("latency_ms");
+   if(root_11 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "latency_ms");
+      if(root_11 != NULL && root_11.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalNumber(root_11, true);
+      }
+   }
+   CFarmJsonValue *root_12 = value.Get("price_filled");
+   if(root_12 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "price_filled");
+      if(root_12 != NULL && root_12.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalNumber(root_12, false);
+      }
+   }
+   CFarmJsonValue *root_13 = value.Get("price_requested");
+   if(root_13 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "price_requested");
+      if(root_13 != NULL && root_13.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalNumber(root_13, false);
+      }
+   }
+   CFarmJsonValue *root_14 = value.Get("slippage_points");
+   if(root_14 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "slippage_points");
+      if(root_14 != NULL && root_14.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalNumber(root_14, true);
+      }
+   }
+   CFarmJsonValue *root_15 = value.Get("spread_at_send_points");
+   if(root_15 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "spread_at_send_points");
+      out += FarmJsonCanonicalNumber(root_15, true);
+   }
+   CFarmJsonValue *root_16 = value.Get("swap");
+   if(root_16 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "swap");
+      out += FarmJsonCanonicalNumber(root_16, false);
+   }
+   CFarmJsonValue *root_17 = value.Get("ticket");
+   if(root_17 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "ticket");
+      if(root_17 != NULL && root_17.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalNumber(root_17, true);
+      }
+   }
+   return out + "}";
+}
+
+string FarmCanonicalRiskDirective(CFarmJsonValue *value)
+{
+   string out = "{";
+   bool first = true;
+   CFarmJsonValue *root_0 = value.Get("directive_id");
+   if(root_0 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "directive_id");
+      out += FarmJsonCanonicalValue(root_0);
+   }
+   CFarmJsonValue *root_1 = value.Get("mode");
+   if(root_1 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "mode");
+      out += FarmJsonCanonicalValue(root_1);
+   }
+   CFarmJsonValue *root_2 = value.Get("scale_factor");
+   if(root_2 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "scale_factor");
+      out += FarmJsonCanonicalNumber(root_2, false);
+   }
+   CFarmJsonValue *root_3 = value.Get("reason");
+   if(root_3 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "reason");
+      out += FarmJsonCanonicalValue(root_3);
+   }
+   CFarmJsonValue *root_4 = value.Get("detail");
+   if(root_4 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "detail");
+      if(root_4 != NULL && root_4.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalValue(root_4);
+      }
+   }
+   CFarmJsonValue *root_5 = value.Get("expires_at");
+   if(root_5 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "expires_at");
+      if(root_5 != NULL && root_5.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalValue(root_5);
+      }
+   }
+   CFarmJsonValue *root_6 = value.Get("flatten_symbols");
+   if(root_6 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "flatten_symbols");
+      out += "[";
+      if(root_6 != NULL)
+      {
+         for(int i = 0; i < root_6.Size(); i++)
+         {
+            if(i > 0) out += ",";
+            out += FarmJsonCanonicalValue(root_6.At(i));
+         }
+      }
+      out += "]";
+   }
+   return out + "}";
+}
+
+string FarmCanonicalConfigUpdate(CFarmJsonValue *value)
+{
+   string out = "{";
+   bool first = true;
+   CFarmJsonValue *root_0 = value.Get("config_id");
+   if(root_0 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "config_id");
+      out += FarmJsonCanonicalValue(root_0);
+   }
+   CFarmJsonValue *root_1 = value.Get("settings");
+   if(root_1 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "settings");
+      out += "{";
+      bool root_1_first = true;
+      CFarmJsonValue *root_1_0 = root_1.Get("bar_backfill_count");
+      if(root_1_0 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "bar_backfill_count");
+         out += FarmJsonCanonicalNumber(root_1_0, true);
+      }
+      CFarmJsonValue *root_1_1 = root_1.Get("heartbeat_sec");
+      if(root_1_1 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "heartbeat_sec");
+         out += FarmJsonCanonicalNumber(root_1_1, true);
+      }
+      CFarmJsonValue *root_1_2 = root_1.Get("state_interval_sec");
+      if(root_1_2 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "state_interval_sec");
+         out += FarmJsonCanonicalNumber(root_1_2, true);
+      }
+      CFarmJsonValue *root_1_3 = root_1.Get("verbose_log");
+      if(root_1_3 != NULL)
+      {
+         FarmJsonAppendFieldPrefix(out, root_1_first, "verbose_log");
+         out += FarmJsonCanonicalValue(root_1_3);
+      }
+      out += "}";
+   }
+   CFarmJsonValue *root_2 = value.Get("apply_at");
+   if(root_2 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "apply_at");
+      if(root_2 != NULL && root_2.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += FarmJsonCanonicalValue(root_2);
+      }
+   }
+   return out + "}";
+}
+
+string FarmCanonicalError(CFarmJsonValue *value)
+{
+   string out = "{";
+   bool first = true;
+   CFarmJsonValue *root_0 = value.Get("code");
+   if(root_0 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "code");
+      out += FarmJsonCanonicalValue(root_0);
+   }
+   CFarmJsonValue *root_1 = value.Get("severity");
+   if(root_1 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "severity");
+      out += FarmJsonCanonicalValue(root_1);
+   }
+   CFarmJsonValue *root_2 = value.Get("message");
+   if(root_2 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "message");
+      out += FarmJsonCanonicalValue(root_2);
+   }
+   CFarmJsonValue *root_3 = value.Get("fatal");
+   if(root_3 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "fatal");
+      out += FarmJsonCanonicalValue(root_3);
+   }
+   CFarmJsonValue *root_4 = value.Get("context");
+   if(root_4 != NULL)
+   {
+      FarmJsonAppendFieldPrefix(out, first, "context");
+      if(root_4 != NULL && root_4.type == FARM_JSON_NULL)
+         out += "null";
+      else
+      {
+         out += "{";
+         bool root_4_first = true;
+         out += "}";
+      }
+   }
+   return out + "}";
+}
+
+string FarmCanonicalizePayloadJson(const ENUM_FARM_MSG_TYPE msg_type, CFarmJsonValue *payload)
+{
+   if(msg_type == FARM_MSG_HELLO)
+      return FarmCanonicalHello(payload);
+   if(msg_type == FARM_MSG_HELLO_ACK)
+      return FarmCanonicalHelloAck(payload);
+   if(msg_type == FARM_MSG_HEARTBEAT)
+      return FarmCanonicalHeartbeat(payload);
+   if(msg_type == FARM_MSG_HEARTBEAT_ACK)
+      return FarmCanonicalHeartbeatAck(payload);
+   if(msg_type == FARM_MSG_BAR)
+      return FarmCanonicalBar(payload);
+   if(msg_type == FARM_MSG_STATE)
+      return FarmCanonicalState(payload);
+   if(msg_type == FARM_MSG_INTENT)
+      return FarmCanonicalIntent(payload);
+   if(msg_type == FARM_MSG_INTENT_ACK)
+      return FarmCanonicalIntentAck(payload);
+   if(msg_type == FARM_MSG_EXEC_REPORT)
+      return FarmCanonicalExecReport(payload);
+   if(msg_type == FARM_MSG_RISK_DIRECTIVE)
+      return FarmCanonicalRiskDirective(payload);
+   if(msg_type == FARM_MSG_CONFIG_UPDATE)
+      return FarmCanonicalConfigUpdate(payload);
+   if(msg_type == FARM_MSG_ERROR)
+      return FarmCanonicalError(payload);
+   return FarmJsonCanonicalValue(payload);
+}
+
 bool FarmParsePayloadJson(const ENUM_FARM_MSG_TYPE msg_type, const string json, string &out_json)
 {
    CFarmJsonDoc doc;
    if(!doc.Parse(json)) return false;
    if(!FarmValidatePayload(msg_type, doc.Root())) { doc.Free(); return false; }
-   out_json = doc.Root().ToJson();
+   out_json = FarmCanonicalizePayloadJson(msg_type, doc.Root());
    doc.Free();
    return true;
 }
@@ -523,7 +2076,7 @@ void FarmFillStringArray(CFarmJsonValue *src, string &out[])
 void FarmFillState(CFarmJsonValue *root, FarmStatePayload &out)
 {
    out.Free();
-   out.raw_json = root.ToJson();
+   out.raw_json = FarmCanonicalState(root);
    out.balance = FarmJsonNumberValue(root, "balance");
    out.equity = FarmJsonNumberValue(root, "equity");
    out.margin_used = FarmJsonNumberValue(root, "margin_used");
